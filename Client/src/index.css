@@ -1,0 +1,43 @@
+@import url('https://fonts.googleapis.com/css?family=Inter:wght@400;600;800&display=swap');
+@import "tailwindcss";
+
+:root {
+  --theme-base: #000000;
+  --theme-outline: #000000;
+  --theme-primary: #007bff;
+  --theme-secondary: #6c757d;
+  --theme-success: #6ee7b7;
+  --theme-error: #ef0000;
+  --theme-error-dark: #b30000;
+  --theme-warning: #6366f1;
+  --theme-info: #17a2b8;
+  --theme-light: #f8f9fa;
+  --theme-dark: #343a40;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--theme-base);
+  color: var(--theme-outline);
+}
+
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--theme-primary) var(--theme-dark); /* thumb, track */
+}
+
+/* Chrome, Edge, Safari */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 10px;
+  border-radius: 8px;
+  background: var(--theme-dark);
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: var(--theme-dark);
+  border-radius: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--theme-primary);    /* Change to --theme-success for emerald */
+  border-radius: 8px;
+  border: 2px solid var(--theme-dark); /* Padding/visual space */
+}
