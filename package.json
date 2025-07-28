@@ -1,0 +1,17 @@
+{
+  "name": "oneguyproductions",
+  "version": "1.0.0",
+  "description": "Brand page",
+  "main": "server.js",
+  "scripts": {
+    "install": "if [ -d './Server' ]; then cd Server && npm i; cd ..; fi && cd Client && npm i",
+    "dev": "concurrently \"npm run dev --prefix Client\" \"npm run dev --prefix Server\"",
+    "build": "npm run build --prefix Server && npm run build --prefix Client",
+    "start": "npm run start --prefix Server"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "nodemon": "^3.1.10",
+    "ts-node": "^10.9.1"
+  }
+}
