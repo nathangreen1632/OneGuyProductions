@@ -7,7 +7,7 @@ interface Props {
 export default function ProjectCardWithIframe({ project }: Readonly<Props>) {
   return (
     <div className="rounded-2xl bg-[var(--theme-base)] text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)] flex flex-col">
-      <div className="w-full aspect-[4/3] rounded-2xl overflow-hidden">
+      <div className="w-full aspect-[1/1] rounded-2xl overflow-hidden">
         <iframe
           src={project.url}
           title={project.name}
