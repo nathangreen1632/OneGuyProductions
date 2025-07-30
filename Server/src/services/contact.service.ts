@@ -1,4 +1,4 @@
-import { sendEmail } from './Resend.service.js';
+import { sendEmail } from './resend.service.js';
 
 export async function sendContactEmail(data: { name: string; email: string; message: string }) {
   const from = process.env.RESEND_FROM_EMAIL!;
