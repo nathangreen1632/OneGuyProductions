@@ -24,7 +24,7 @@ export default function AboutSection() {
         <img
           src="/me.png"
           alt="Nathan - One Guy Productions"
-          className="w-48 h-48 rounded-full border-2 border-[var(--theme-border-red)]"
+          className="w-48 h-48 rounded-full focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_4px_var(--theme-shadow)]"
         />
 
         <h1 className="text-4xl font-bold text-[var(--theme-accent)]">Hey, I’m Nathan</h1>
