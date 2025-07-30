@@ -1,12 +1,41 @@
-export async function verifyRecaptchaToken(token: string, expectedAction: string): Promise<boolean> {
+type RecaptchaVerificationResult = {
+  success: boolean;
+  score?: number;
+  action?: string;
+  hostname?: string;
+  challenge_ts?: string;
+  errorCodes?: string[];
+  isActionValid: boolean;
+  isScoreAcceptable: boolean;
+};
+
+export async function verifyRecaptchaToken(
+  token: string,
+  expectedAction: string
+): Promise<RecaptchaVerificationResult> {
   const secret = process.env.RECAPTCHA_SECRET;
   const isProd = process.env.NODE_ENV === 'production';
 
-  console.log('🔍 Verifying reCAPTCHA:', { isProd, tokenExists: !!token, secretExists: !!secret });
+  const result: RecaptchaVerificationResult = {
+    success: false,
+    score: undefined,
+    action: undefined,
+    hostname: undefined,
+    challenge_ts: undefined,
+    errorCodes: [],
+    isActionValid: false,
+    isScoreAcceptable: false,
+  };
+
+  console.log('🔍 Verifying reCAPTCHA:', {
+    environment: isProd ? 'production' : 'development',
+    tokenExists: !!token,
+    secretExists: !!secret,
+  });
 
   if (!secret) {
-    console.warn('❌ RECAPTCHA_SECRET missing.');
-    return false;
+    console.warn('❌ Missing RECAPTCHA_SECRET in environment.');
+    return result;
   }
 
   const params = new URLSearchParams();
@@ -22,29 +51,21 @@ export async function verifyRecaptchaToken(token: string, expectedAction: string
 
     const data = await response.json();
 
-    console.log('🧠 reCAPTCHA response:', data);
+    result.success = data.success;
+    result.score = data.score;
+    result.action = data.action;
+    result.hostname = data.hostname;
+    result.challenge_ts = data.challenge_ts;
+    result.errorCodes = data['error-codes'] ?? [];
 
-    const isScoreAcceptable = data.success && (isProd ? data.score >= 0.5 : data.score >= 0.1);
-    const isActionValid = data.action === expectedAction;
+    result.isActionValid = data.action === expectedAction;
+    result.isScoreAcceptable = data.success && (isProd ? data.score >= 0.5 : data.score >= 0.1);
 
-    if (!data.success) {
-      console.warn('⚠️ CAPTCHA validation failed:', data['error-codes']);
-      return false;
-    }
+    console.log('🧠 Full reCAPTCHA response:', result);
 
-    if (!isScoreAcceptable) {
-      console.warn('⚠️ Low CAPTCHA score:', data.score);
-      return false;
-    }
-
-    if (!isActionValid) {
-      console.warn(`⚠️ CAPTCHA action mismatch: expected "${expectedAction}", got "${data.action}"`);
-      // You may choose to reject here: return false;
-    }
-
-    return true;
+    return result;
   } catch (err) {
-    console.error('🔥 CAPTCHA verification error:', err);
-    return false;
+    console.error('🔥 Error verifying reCAPTCHA token:', err);
+    return result;
   }
 }
