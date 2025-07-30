@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import toast from 'react-hot-toast';
 import type { OrderPayload } from '../types/order';
 import { useOrderStore } from '../store/useOrderStore';
+import { waitForRecaptcha } from '../helpers/recaptcha';
 
 const initialForm: Omit<OrderPayload, 'captchaToken'> = {
   name: '',
@@ -50,7 +51,7 @@ export default function OrderForm() {
         return;
       }
 
-      await new Promise<void>((resolve) => window.grecaptcha.ready(resolve));
+      await waitForRecaptcha();
 
       const captchaToken = await window.grecaptcha.execute(siteKey, {
         action: 'submit_order_form',
