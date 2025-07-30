@@ -9,7 +9,7 @@ const RECAPTCHA_SITE_KEY = '6LfNMZMrAAAAAPyNsUaFA22FmXQ9Tw-fd3s_Uy6q';
 if (typeof window !== 'undefined' && !document.getElementById('recaptcha-script')) {
   const script = document.createElement('script');
   script.id = 'recaptcha-script';
-  script.src = `https://www.google.com/recaptcha/api.js?render=${RECAPTCHA_SITE_KEY}`;
+  script.src = `https://www.google.com/recaptcha/enterprise.js?render=${RECAPTCHA_SITE_KEY}`;
   script.async = true;
   script.defer = true;
   document.head.appendChild(script);
@@ -38,6 +38,8 @@ export default function ContactForm() {
         toast.error('reCAPTCHA is not available.');
         return;
       }
+
+      await new Promise<void>((resolve) => window.grecaptcha.ready(resolve));
 
       const captchaToken = await window.grecaptcha.execute(RECAPTCHA_SITE_KEY, {
         action: 'submit_contact_form',
