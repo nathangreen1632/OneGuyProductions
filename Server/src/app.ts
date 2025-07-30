@@ -18,7 +18,6 @@ app.use(
   helmet.contentSecurityPolicy({
     directives: {
       defaultSrc: ["'self'"],
-      blockAllMixedContent: [],
       scriptSrc: ["'self'", 'https://www.google.com', 'https://www.gstatic.com'],
       objectSrc: ["'none'"],
       frameSrc: [
@@ -35,12 +34,10 @@ app.use(
         'https://www.google.com',
         'https://api.resend.com',
       ],
-      frameAncestors: [
-        'https://www.cvitaepro.com',
-        'https://www.careergistpro.com',
-        'https://www.pydatapro.com',
-        'https://www.leaseclaritypro.com',
-      ],
+      // ✅ Safe clickjacking protection (allowing embedding by your own apps)
+      frameAncestors: ["'self'", 'https://www.oneguyproductions.com'],
+      // ✅ This upgrades mixed content to HTTPS without blocking
+      upgradeInsecureRequests: [],
     },
     useDefaults: true,
   })
