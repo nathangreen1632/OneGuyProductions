@@ -27,6 +27,7 @@ app.use(
         'https://www.gstatic.com',
         'https://www.cvitaepro.com',
         'https://www.careergistpro.com',
+        'https://careergistpro.com',
         'https://www.pydatapro.com',
         'https://www.leaseclaritypro.com',
       ],
