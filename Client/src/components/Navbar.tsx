@@ -23,9 +23,9 @@ export default function Navbar() {
                 to={path}
                 className={`flex items-center gap-1 border-b-2 ${
                   location.pathname === path
-                    ? 'border-[var(--theme-border-red)] text-[var(--theme-border-red)]'
+                    ? 'border-[var(--theme-border)] text-[var(--theme-border-red)]'
                     : 'border-transparent'
-                } hover:underline underline-offset-4 decoration-[var(--theme-border-red)] transition-colors duration-200`}
+                } hover:underline underline-offset-4 decoration-[var(--theme-border)] transition-colors duration-200`}
               >
                 {Icon && <Icon size={18} />}
                 {label}
