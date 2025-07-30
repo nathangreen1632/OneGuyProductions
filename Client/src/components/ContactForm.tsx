@@ -6,7 +6,6 @@ import { waitForRecaptcha } from '../helpers/recaptcha';
 
 const RECAPTCHA_SITE_KEY = '6LfNMZMrAAAAAPyNsUaFA22FmXQ9Tw-fd3s_Uy6q';
 
-// Inject reCAPTCHA script once
 if (typeof window !== 'undefined' && !document.getElementById('recaptcha-script')) {
   const script = document.createElement('script');
   script.id = 'recaptcha-script';
@@ -77,7 +76,7 @@ export default function ContactForm() {
 
   return (
     <section className="max-w-2xl mx-auto px-4 py-12">
-      <div className="bg-[var(--theme-surface)] border border-[var(--theme-border-red)] rounded-lg shadow-[0_4px_14px_0_var(--theme-shadow)] p-6">
+      <div className=" rounded-2xl shadow-[0_4px_14px_0_var(--theme-shadow)] bg-[var(--theme-base)] p-6">
         <h2 className="text-2xl font-bold text-[var(--theme-accent)] mb-6 text-center">
           Contact Me
         </h2>
@@ -88,7 +87,7 @@ export default function ContactForm() {
             value={formData.name}
             onChange={handleChange}
             required
-            className="w-full px-4 py-2 border border-[var(--theme-border-red)] rounded bg-[var(--theme-base)] text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
+            className="w-full px-4 py-2 rounded-2xl bg-[var(--theme-base)] text-[var(--theme-text)] placeholder:text-white placeholder:text-opacity-100 focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)] overflow-hidden"
           />
           <input
             name="email"
@@ -97,7 +96,7 @@ export default function ContactForm() {
             value={formData.email}
             onChange={handleChange}
             required
-            className="w-full px-4 py-2 border border-[var(--theme-border-red)] rounded bg-[var(--theme-base)] text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
+            className="w-full px-4 py-2 rounded-2xl bg-[var(--theme-base)] text-[var(--theme-text)] placeholder:text-white placeholder:text-opacity-100 focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)] overflow-hidden"
           />
           <textarea
             name="message"
@@ -105,15 +104,18 @@ export default function ContactForm() {
             value={formData.message}
             onChange={handleChange}
             required
-            className="w-full h-32 px-4 py-2 border border-[var(--theme-border-red)] rounded bg-[var(--theme-base)] text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
+            className="w-full h-32 px-4 py-2 rounded-2xl bg-[var(--theme-base)] text-[var(--theme-text)] placeholder:text-white placeholder:text-opacity-100 focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)] overflow-hidden"
           />
-          <button
-            type="submit"
-            disabled={submitting}
-            className="w-full bg-[var(--theme-button)] hover:bg-[var(--theme-hover)] text-black hover:text-white font-semibold py-2 rounded transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
-          >
-            {submitting ? 'Sending...' : 'Send Message'}
-          </button>
+          <div className="flex justify-center">
+            <button
+              type="submit"
+              disabled={submitting}
+              className="w-fit bg-[var(--theme-button)] hover:bg-[var(--theme-hover)] text-black hover:text-white font-semibold py-2 px-6 rounded transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30"
+            >
+              {submitting ? 'Sending...' : 'Send Message'}
+            </button>
+          </div>
+
         </form>
       </div>
     </section>
