@@ -4,11 +4,12 @@
 :root {
   --theme-bg: #000000;               /* Pure Black */
   --theme-surface: #000000;          /* Card Surface - Black */
-  --theme-text: #f1f5f9;             /* slate-100 */
+  --theme-text: #ffffff;
+  --theme-text-white: #ffffff;        /* slate-100 */
   --theme-accent: #ffffff;           /* emerald-400 */
   --theme-border: #ffffff;
   --theme-border-red: #ef4444;       /* red-500 */
-  --theme-button: #60A5FA;           /* emerald-600 */
+  --theme-button: #e7dfcf;           /* emerald-600 */
   --theme-hover: #047857;            /* emerald-700 */
   --theme-focus: #ef4444;            /* emerald-500 */
   --theme-shadow: rgba(239, 68, 68, 0.6); /* emerald-500 @ 30% */
