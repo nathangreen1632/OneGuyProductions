@@ -1,4 +1,4 @@
-import express, {Express} from 'express';
+import express, { Express } from 'express';
 import path from 'path';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
@@ -14,31 +14,51 @@ const app: Express = express();
 
 app.disable('x-powered-by');
 
-
+app.use(
   helmet.contentSecurityPolicy({
     directives: {
       defaultSrc: ["'self'"],
+      blockAllMixedContent: [],
       scriptSrc: ["'self'", 'https://www.google.com', 'https://www.gstatic.com'],
       objectSrc: ["'none'"],
-      frameSrc: ['https://www.google.com', 'https://www.gstatic.com'],
+      frameSrc: [
+        "'self'",
+        'https://www.google.com',
+        'https://www.gstatic.com',
+        'https://www.cvitaepro.com',
+        'https://www.careergistpro.com',
+        'https://www.pydatapro.com',
+        'https://www.leaseclaritypro.com',
+      ],
       connectSrc: [
         "'self'",
         'https://www.google.com',
-        'https://api.resend.com', // Include if using Resend
+        'https://api.resend.com',
       ],
-      frameAncestors: ["'none'"], // ✅ Clickjacking protection
-      upgradeInsecureRequests: [], // ✅ Mixed-content protection
+      frameAncestors: [
+        'https://www.cvitaepro.com',
+        'https://www.careergistpro.com',
+        'https://www.pydatapro.com',
+        'https://www.leaseclaritypro.com',
+      ],
     },
-  });
-
+    useDefaults: true,
+  })
+);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use('/api', router);
 
-const clientBuildPath: string = path.resolve(__dirname, '../../Client/dist');
+const clientBuildPath: string =
+  process.env.NODE_ENV === 'production'
+    ? path.join(__dirname, '../Client/dist')
+    : path.join(__dirname, '../../Client/dist');
+
 const indexHtmlPath: string = path.join(clientBuildPath, 'index.html');
+
+console.log('📦 Serving frontend from:', clientBuildPath);
 
 app.use(express.static(clientBuildPath));
 
