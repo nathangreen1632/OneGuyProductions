@@ -1,11 +1,11 @@
 import HeroSection from '../components/HeroSection';
-import ProjectsPreview from '../components/ProjectsPreview';
+import Philosophy from '../components/Philosophy.tsx';
 
 export default function HomePage() {
   return (
     <div className="bg-[var(--theme-bg)] text-[var(--theme-text)] min-h-screen flex flex-col">
       <main className="flex-grow">
-        <ProjectsPreview />
+        <Philosophy />
         <HeroSection />
       </main>
     </div>
