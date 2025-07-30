@@ -34,6 +34,7 @@ app.use(
         "'self'",
         'https://www.google.com',
         'https://api.resend.com',
+        'https://www.oneguyproductions.com',
       ],
       // ✅ Safe clickjacking protection (allowing embedding by your own apps)
       frameAncestors: ["'self'", 'https://www.oneguyproductions.com'],
