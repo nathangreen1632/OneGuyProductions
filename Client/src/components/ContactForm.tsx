@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import type { ContactPayload } from '../types/contact';
 import { useContactStore } from '../store/useContactStore';
+import { waitForRecaptcha } from '../helpers/recaptcha';
 
 const RECAPTCHA_SITE_KEY = '6LfNMZMrAAAAAPyNsUaFA22FmXQ9Tw-fd3s_Uy6q';
 
@@ -39,7 +40,7 @@ export default function ContactForm() {
         return;
       }
 
-      await new Promise<void>((resolve) => window.grecaptcha.ready(resolve));
+      await waitForRecaptcha();
 
       const captchaToken = await window.grecaptcha.execute(RECAPTCHA_SITE_KEY, {
         action: 'submit_contact_form',
