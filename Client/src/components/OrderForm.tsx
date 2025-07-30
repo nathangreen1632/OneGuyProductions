@@ -13,18 +13,28 @@ const initialForm: Omit<OrderPayload, 'captchaToken'> = {
   description: '',
 };
 
+// Inject reCAPTCHA Enterprise script once
+if (typeof window !== 'undefined' && !document.getElementById('recaptcha-script')) {
+  const script = document.createElement('script');
+  script.id = 'recaptcha-script';
+  script.src = `https://www.google.com/recaptcha/enterprise.js?render=${import.meta.env.VITE_RECAPTCHA_SITE_KEY}`;
+  script.async = true;
+  script.defer = true;
+  document.head.appendChild(script);
+}
+
 export default function OrderForm() {
   const [formData, setFormData] = useState(initialForm);
   const [submitting, setSubmitting] = useState(false);
   const { setLastOrder, clearOrder } = useOrderStore();
+
+  const lockRef = useRef(false);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ): void => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
-
-  const lockRef = useRef(false);
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
@@ -41,7 +51,10 @@ export default function OrderForm() {
       }
 
       await new Promise<void>((resolve) => window.grecaptcha.ready(resolve));
-      const captchaToken = await window.grecaptcha.execute(siteKey, { action: 'order_form' });
+
+      const captchaToken = await window.grecaptcha.execute(siteKey, {
+        action: 'submit_order_form',
+      });
 
       if (!captchaToken) {
         toast.error('CAPTCHA token failed.');
@@ -62,7 +75,8 @@ export default function OrderForm() {
         clearOrder();
         setFormData(initialForm);
       } else {
-        toast.error('Something went wrong. Please try again.');
+        const result = await res.json();
+        toast.error(result?.error ?? 'Something went wrong. Please try again.');
       }
     } catch (error) {
       console.error('Error submitting order form:', error);
@@ -72,7 +86,6 @@ export default function OrderForm() {
       setSubmitting(false);
     }
   };
-
 
   return (
     <section className="max-w-2xl mx-auto px-4 py-12">
