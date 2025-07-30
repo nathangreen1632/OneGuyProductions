@@ -14,6 +14,7 @@ const app: Express = express();
 
 app.disable('x-powered-by');
 
+// ✅ Safe & working Helmet CSP
 app.use(
   helmet.contentSecurityPolicy({
     directives: {
@@ -48,15 +49,11 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use('/api', router);
 
-const clientBuildPath: string =
-  process.env.NODE_ENV === 'production'
-    ? path.join(__dirname, '../Client/dist')
-    : path.join(__dirname, '../../Client/dist');
+const clientBuildPath: string = path.resolve(__dirname, 'Client/dist');
 
 const indexHtmlPath: string = path.join(clientBuildPath, 'index.html');
 
 console.log('📦 Serving frontend from:', clientBuildPath);
-
 app.use(express.static(clientBuildPath));
 
 app.use((req, res, next): void => {
