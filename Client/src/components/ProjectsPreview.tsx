@@ -7,9 +7,9 @@ export default function ProjectsPreview() {
       <div className="rounded-lg overflow-hidden shadow-[0_4px_14px_0_var(--theme-shadow)] border border-[var(--theme-border-red)]">
         <div className="w-full h-[300px] sm:h-[400px] md:h-[500px] lg:h-[600px] xl:h-[650px] 2xl:h-[700px]">
           <img
-            src="/images/brand-story.png"
+            src="/images/brand-banner.png"
             alt="One Guy Productions - Story"
-            className="w-full h-full object-cover"
+            className="w-full h-full object-center"
           />
         </div>
         <div className="p-4 sm:p-6 bg-[var(--theme-base)] text-left sm:text-center">
