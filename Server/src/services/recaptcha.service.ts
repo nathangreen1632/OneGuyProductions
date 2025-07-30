@@ -60,6 +60,7 @@ export async function verifyRecaptchaToken(
 
     result.isActionValid = data.action === expectedAction;
     result.isScoreAcceptable = data.success && (isProd ? data.score >= 0.5 : data.score >= 0.1);
+    console.log('📊 Score:', data.score, '✅ Success:', data.success, '⚡️ Action:', data.action);
 
     console.log('🧠 Full reCAPTCHA response:', result);
 
