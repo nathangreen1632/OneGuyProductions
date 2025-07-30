@@ -6,8 +6,8 @@ interface Props {
 
 export default function ProjectCardWithIframe({ project }: Readonly<Props>) {
   return (
-    <div className="border border-[var(--theme-border-red)] rounded-lg shadow-[0_4px_14px_0_var(--theme-shadow)] overflow-hidden bg-[var(--theme-base)] flex flex-col">
-      <div className="w-full aspect-[4/3]">
+    <div className="rounded-2xl bg-[var(--theme-base)] text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)] flex flex-col">
+      <div className="w-full aspect-[4/3] rounded-2xl overflow-hidden">
         <iframe
           src={project.url}
           title={project.name}
@@ -25,7 +25,7 @@ export default function ProjectCardWithIframe({ project }: Readonly<Props>) {
           href={project.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-sm px-3 py-1 bg-[var(--theme-button)] hover:bg-[var(--theme-hover)] text-black hover:text-white rounded text-center"
+          className="w-fit mx-auto text-sm px-3 py-1 bg-[var(--theme-button)] hover:bg-[var(--theme-hover)] text-black hover:text-white rounded-lg text-center"
         >
           Demo Live
         </a>
