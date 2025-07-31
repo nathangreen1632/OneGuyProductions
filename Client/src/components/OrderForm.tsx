@@ -1,10 +1,10 @@
-import React, { useState, useRef } from 'react';
+import React, {useState, useRef, type RefObject} from 'react';
 import toast from 'react-hot-toast';
-import type { OrderPayload } from '../types/order';
+import type {OrderPayload, OrderFormData, OrderResponse, DerivedOrderFormData} from '../types/order';
 import { useOrderStore } from '../store/useOrderStore';
 import { waitForRecaptcha } from '../helpers/recaptcha';
 
-const initialForm: Omit<OrderPayload, 'captchaToken'> = {
+const initialForm: Omit<DerivedOrderFormData, 'captchaToken'> = {
   name: '',
   email: '',
   businessName: '',
@@ -15,7 +15,7 @@ const initialForm: Omit<OrderPayload, 'captchaToken'> = {
 };
 
 if (typeof window !== 'undefined' && !document.getElementById('recaptcha-script')) {
-  const script = document.createElement('script');
+  const script: HTMLScriptElement = document.createElement('script');
   script.id = 'recaptcha-script';
   script.src = `https://www.google.com/recaptcha/enterprise.js?render=${import.meta.env.VITE_RECAPTCHA_SITE_KEY}`;
   script.async = true;
@@ -23,20 +23,31 @@ if (typeof window !== 'undefined' && !document.getElementById('recaptcha-script'
   document.head.appendChild(script);
 }
 
-export default function OrderForm() {
-  const [formData, setFormData] = useState(initialForm);
+export default function OrderForm(): React.ReactElement {
+  const [formData, setFormData] = useState<OrderFormData>(initialForm);
   const [submitting, setSubmitting] = useState(false);
   const { setLastOrder, clearOrder } = useOrderStore();
 
-  const lockRef = useRef(false);
+  const lockRef: RefObject<boolean> = useRef(false);
 
-  const handleChange = (
+
+  const handleChange: (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ): void => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  ) => void = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>): void => {
+    const { name, value } = e.target;
+
+    if (!name) return;
+
+    if (name in formData) {
+      setFormData((prev: OrderFormData): { name: string; email: string; businessName: string; projectType: string; budget: string; timeline: string; description: string } => ({
+        ...prev,
+        [name as keyof OrderFormData]: value,
+      }));
+    }
   };
 
-  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
+
+  const handleSubmit: (e: React.FormEvent) => Promise<void> = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     if (lockRef.current || submitting) return;
 
@@ -44,7 +55,7 @@ export default function OrderForm() {
     setSubmitting(true);
 
     try {
-      const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
+      const siteKey: string | undefined = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
       if (!window.grecaptcha || !siteKey) {
         toast.error('reCAPTCHA not available.');
         return;
@@ -52,7 +63,7 @@ export default function OrderForm() {
 
       await waitForRecaptcha();
 
-      const captchaToken = await window.grecaptcha.execute(siteKey, {
+      const captchaToken: string = await window.grecaptcha.execute(siteKey, {
         action: 'submit_order_form',
       });
 
@@ -63,7 +74,7 @@ export default function OrderForm() {
 
       const payload: OrderPayload = { ...formData, captchaToken };
 
-      const res = await fetch('/api/order/submit', {
+      const res: Response = await fetch('/api/order/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -75,7 +86,7 @@ export default function OrderForm() {
         clearOrder();
         setFormData(initialForm);
       } else {
-        const result = await res.json();
+        const result: OrderResponse = await res.json();
         toast.error(result?.error ?? 'Something went wrong. Please try again.');
       }
     } catch (error) {
