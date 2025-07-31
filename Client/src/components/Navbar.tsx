@@ -48,7 +48,7 @@ export default function Navbar(): React.ReactElement {
                 onClick={closeMenu}
                 className={`block py-2 ${
                   location.pathname === path
-                    ? 'text-[var(--theme-accent)] border-b-2 border-[var(--theme-border)]'
+                    ? 'text-[var(--theme-border-red)] border-b-2 border-[var(--theme-border)]'
                     : 'border-b border-transparent'
                 }`}
               >
