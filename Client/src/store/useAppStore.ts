@@ -1,4 +1,5 @@
-import { create } from 'zustand';
+import {create} from 'zustand';
+import type {BoundStore} from "./useBoundStore.ts";
 
 interface AppState {
   menuOpen: boolean;
@@ -6,8 +7,17 @@ interface AppState {
   closeMenu: () => void;
 }
 
-export const useAppStore = create<AppState>((set) => ({
-  menuOpen: false,
-  toggleMenu: () => set((state) => ({ menuOpen: !state.menuOpen })),
-  closeMenu: () => set({ menuOpen: false }),
-}));
+export const useAppStore: BoundStore<AppState> = create<AppState>(
+  (set: (partial: Partial<AppState> | ((state: AppState) => Partial<AppState>)) => void): AppState => ({
+    menuOpen: false,
+
+    toggleMenu: (): void =>
+      set((state: AppState): Partial<AppState> => ({
+        menuOpen: !state.menuOpen,
+      })),
+
+    closeMenu: (): void =>
+      set({ menuOpen: false }),
+  })
+);
+
