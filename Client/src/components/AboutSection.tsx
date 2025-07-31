@@ -22,7 +22,7 @@ export default function AboutSection() {
       {/* About Me Section */}
       <div className="flex flex-col items-center space-y-8 text-center">
         <img
-          src="/me.png"
+          src="/me.webp"
           alt="Nathan - One Guy Productions"
           className="w-48 h-48 rounded-full focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_4px_var(--theme-shadow)]"
         />
