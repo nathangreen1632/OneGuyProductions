@@ -1,10 +1,11 @@
+import React from "react";
 import type { Project } from '../types/project';
 
 interface Props {
   project: Project;
 }
 
-export default function ProjectCardWithIframe({ project }: Readonly<Props>) {
+export default function ProjectCardWithIframe({ project }: Readonly<Props>): React.ReactElement {
   return (
     <div className="rounded-2xl bg-[var(--theme-base)] text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)] flex flex-col">
       <div className="w-full aspect-[1/1] rounded-2xl overflow-hidden">

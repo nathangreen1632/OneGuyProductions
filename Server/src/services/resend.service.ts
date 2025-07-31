@@ -2,7 +2,7 @@ import { CreateEmailResponse, Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-// === 🛠️ Shared email sender utility ===
+// === Shared email sender utility ===
 export async function sendEmail(options: {
   from: string;
   to: string;
@@ -39,8 +39,8 @@ export async function sendOrderEmail(data: {
   `;
 
   return await sendEmail({
-    from: process.env.RESEND_FROM_EMAIL!,
-    to: process.env.RESEND_ORDER_RECEIVER_EMAIL ?? process.env.RESEND_TO_EMAIL!,
+    from: process.env.EMAIL_FROM_ORDER!,
+    to: process.env.RESEND_ORDER_RECEIVER_EMAIL ?? process.env.RESEND_TO_ORDER!,
     subject: `New Project Inquiry from ${data.name}`,
     html,
   });
@@ -62,7 +62,7 @@ export async function sendContactEmail(data: {
 
   return await sendEmail({
     from: process.env.RESEND_FROM_EMAIL!,
-    to: process.env.RESEND_CONTACT_RECEIVER_EMAIL ?? process.env.RESEND_TO_EMAIL!, // fallback
+    to: process.env.RESEND_CONTACT_RECEIVER_EMAIL ?? process.env.RESEND_TO_EMAIL ?? '',
     subject: `New Contact Message from ${data.name}`,
     html,
   });

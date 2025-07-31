@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { sendContactEmail } from '../services/contact.service.js';
+import { sendContactEmail } from '../services/resend.service.js';
 
 export async function submitContactForm(req: Request, res: Response): Promise<void> {
   console.log('📬 Contact route hit');

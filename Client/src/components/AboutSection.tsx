@@ -1,9 +1,9 @@
 import { Link } from 'react-router-dom';
+import type {ReactElement} from "react";
 
-export default function AboutSection() {
+export default function AboutSection(): ReactElement {
   return (
     <section className="max-w-3xl mx-auto px-6 py-20 text-[var(--theme-text)] space-y-16">
-      {/* Origin Story Section */}
       <div>
         <h2 className="text-4xl font-bold text-[var(--theme-accent)] mb-4 text-center">
           How One Guy Productions Was Born
@@ -19,7 +19,6 @@ export default function AboutSection() {
         </p>
       </div>
 
-      {/* About Me Section */}
       <div className="flex flex-col items-center space-y-8 text-center">
         <img
           src="/me.webp"

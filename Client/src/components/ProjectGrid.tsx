@@ -1,3 +1,4 @@
+import React from "react";
 import ProjectCardWithIframe from './ProjectCardWithIframe';
 import type { Project } from '../types/project';
 
@@ -24,14 +25,14 @@ const projects: Project[] = [
   },
 ];
 
-export default function ProjectGrid() {
+export default function ProjectGrid(): React.ReactElement {
   return (
-    <section className="py-28 px-6 sm:px-10 max-w-[90rem] mx-auto rounded-2xl">
+    <section className="py-15 px-6 sm:px-10 max-w-[90rem] mx-auto rounded-2xl">
       <h2 className="text-5xl font-extrabold text-center text-[var(--theme-accent)] mb-16 tracking-tight">
         Live Products
       </h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-10">
-        {projects.map((project) => (
+        {projects.map((project: Project): React.ReactElement => (
           <ProjectCardWithIframe key={project.name} project={project} />
         ))}
       </div>

@@ -1,3 +1,4 @@
+import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import ProductsPage from './pages/ProductsPage';
@@ -9,7 +10,7 @@ import NotFoundPage from './pages/NotFoundPage';
 // Optional: add auth store logic here later
 // import { useAuthStore } from './store/useAuthStore';
 
-export default function AppRoutes() {
+export default function AppRoutes(): React.ReactElement {
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />

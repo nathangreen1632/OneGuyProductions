@@ -1,23 +1,23 @@
-import { useLocation, Link } from 'react-router-dom';
+import React from "react";
+import {type Location, useLocation, Link } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
-import { navLinks } from '../constants/navLinks';
+import {type NavLink, navLinks} from '../constants/navLinks';
 import { useAppStore } from '../store/useAppStore';
 
-export default function Navbar() {
-  const location = useLocation();
+
+export default function Navbar(): React.ReactElement {
+  const location: Location = useLocation();
   const { menuOpen, toggleMenu, closeMenu } = useAppStore();
 
   return (
     <header className="sticky top-0 z-50 bg-[var(--theme-bg)] border-b border-[var(--theme-border-red)] shadow-[0_4px_14px_0_var(--theme-shadow)]">
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
-        {/* Logo / Brand */}
         <Link to="/" className="text-xl font-bold text-[var(--theme-accent)]">
           One Guy Productions
         </Link>
 
-        {/* Desktop Navigation */}
         <ul className="hidden sm:flex gap-6 text-sm font-medium">
-          {navLinks.map(({ label, path, icon: Icon }) => (
+          {navLinks.map(({ label, path, icon: Icon }: NavLink): React.ReactElement => (
             <li key={path}>
               <Link
                 to={path}
@@ -34,17 +34,14 @@ export default function Navbar() {
           ))}
         </ul>
 
-
-        {/* Mobile Toggle */}
         <button onClick={toggleMenu} className="sm:hidden" aria-label="Toggle menu">
           {menuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
       </nav>
 
-      {/* Mobile Menu */}
       {menuOpen && (
         <ul className="sm:hidden flex flex-col gap-4 px-6 pb-6 text-sm font-medium border-t border-[var(--theme-border)] bg-[var(--theme-bg)]">
-          {navLinks.map(({ label, path, icon: Icon }) => (
+          {navLinks.map(({ label, path, icon: Icon }: NavLink): React.ReactElement => (
             <li key={path}>
               <Link
                 to={path}

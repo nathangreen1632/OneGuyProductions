@@ -1,7 +1,6 @@
 import { DataTypes, Model, Optional } from 'sequelize';
 import { sequelize } from '../config/db.js';
 
-// Step 1: Define the shape of a saved order
 export interface OrderAttributes {
   id: number;
   name: string;
@@ -13,15 +12,12 @@ export interface OrderAttributes {
   description: string;
 }
 
-// Step 2: Define the shape of a new order (no `id` yet)
 export interface OrderCreationAttributes extends Optional<OrderAttributes, 'id'> {}
 
-// Step 3: Extend the Sequelize model type with both interfaces
 export interface OrderInstance
   extends Model<OrderAttributes, OrderCreationAttributes>,
     OrderAttributes {}
 
-// Step 4: Define the model and include the missing `id` field
 export const OrderModel = sequelize.define<OrderInstance>(
   'orders',
   {

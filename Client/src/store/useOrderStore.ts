@@ -1,5 +1,4 @@
-// Client/src/store/useOrderStore.ts
-import { create } from 'zustand';
+import { create, type StateCreator, type StoreApi, type UseBoundStore } from 'zustand';
 import type { OrderPayload } from '../types/order';
 
 interface OrderState {
@@ -8,8 +7,17 @@ interface OrderState {
   clearOrder: () => void;
 }
 
-export const useOrderStore = create<OrderState>((set) => ({
+const orderStoreCreator: StateCreator<OrderState> = (set) => ({
   lastOrder: null,
-  setLastOrder: (order) => set({ lastOrder: order }),
-  clearOrder: () => set({ lastOrder: null }),
-}));
+
+  setLastOrder: (order: OrderPayload): void => {
+    set({ lastOrder: order });
+  },
+
+  clearOrder: (): void => {
+    set({ lastOrder: null });
+  },
+});
+
+export const useOrderStore: UseBoundStore<StoreApi<OrderState>> =
+  create<OrderState>(orderStoreCreator);

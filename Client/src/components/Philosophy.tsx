@@ -1,9 +1,8 @@
-export default function Philosophy() {
+import React from "react";
+
+export default function Philosophy(): React.ReactElement {
   return (
     <section className="py-16 px-4 sm:px-6 max-w-6xl mx-auto text-center">
-      <h3 className="text-2xl sm:text-3xl font-semibold mb-6 text-[var(--theme-accent)]">
-        The One Guy Philosophy
-      </h3>
       <div className="rounded-3xl overflow-hidden shadow-[0_4px_14px_0_var(--theme-shadow)] bg-[var(--theme-base)]">
         <div className="w-full h-[300px] sm:h-[400px] md:h-[500px] lg:h-[600px] xl:h-[650px] 2xl:h-[700px] rounded-2xl overflow-hidden">
           <img
