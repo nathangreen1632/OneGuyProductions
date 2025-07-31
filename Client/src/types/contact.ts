@@ -4,3 +4,8 @@ export interface ContactPayload {
   message: string;
   captchaToken: string;
 }
+
+export interface ContactResponse {
+  success: boolean;
+  error?: string;
+}
