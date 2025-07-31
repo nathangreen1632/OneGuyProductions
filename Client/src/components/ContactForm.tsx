@@ -1,13 +1,14 @@
-import React, { useRef, useState } from 'react';
+import React, { type ReactElement, type RefObject, useRef, useState} from 'react';
 import toast from 'react-hot-toast';
-import type { ContactPayload } from '../types/contact';
+import type {ContactPayload, ContactResponse} from '../types/contact';
 import { useContactStore } from '../store/useContactStore';
 import { waitForRecaptcha } from '../helpers/recaptcha';
+import type {ContactFormData} from "../types/formData";
 
 const RECAPTCHA_SITE_KEY = '6LfNMZMrAAAAAPyNsUaFA22FmXQ9Tw-fd3s_Uy6q';
 
 if (typeof window !== 'undefined' && !document.getElementById('recaptcha-script')) {
-  const script = document.createElement('script');
+  const script: HTMLScriptElement = document.createElement('script');
   script.id = 'recaptcha-script';
   script.src = `https://www.google.com/recaptcha/enterprise.js?render=${RECAPTCHA_SITE_KEY}`;
   script.async = true;
@@ -15,18 +16,27 @@ if (typeof window !== 'undefined' && !document.getElementById('recaptcha-script'
   document.head.appendChild(script);
 }
 
-export default function ContactForm() {
+export default function ContactForm(): ReactElement {
   const [formData, setFormData] = useState({ name: '', email: '', message: '' });
-  const lockRef = useRef(false);
+  const lockRef: RefObject<boolean> = useRef(false);
   const { submitting, setSubmitting } = useContactStore();
 
-  const handleChange = (
+  const handleChange: (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ): void => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  ) => void = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>): void => {
+    const { name, value } = e.target;
+
+    if (!name) return;
+
+    if (name in formData) {
+      setFormData((prev: ContactFormData): { name: string; email: string; message: string} => ({
+        ...prev,
+        [name as keyof ContactFormData]: value,
+      }));
+    }
   };
 
-  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
+  const handleSubmit: (e: React.FormEvent) => Promise<void> = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     if (lockRef.current || submitting) return;
 
@@ -41,7 +51,7 @@ export default function ContactForm() {
 
       await waitForRecaptcha();
 
-      const captchaToken = await window.grecaptcha.execute(RECAPTCHA_SITE_KEY, {
+      const captchaToken: string = await window.grecaptcha.execute(RECAPTCHA_SITE_KEY, {
         action: 'submit_contact_form',
       });
 
@@ -52,13 +62,13 @@ export default function ContactForm() {
 
       const payload: ContactPayload = { ...formData, captchaToken };
 
-      const res = await fetch('/api/contact/submit', {
+      const res: Response = await fetch('/api/contact/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
-      const result = await res.json();
+      const result: ContactResponse = await res.json();
       if (!res.ok || !result.success) {
         toast.error(result?.error ?? 'Submission error');
       } else {
@@ -70,7 +80,7 @@ export default function ContactForm() {
       toast.error('Something went wrong.');
     } finally {
       lockRef.current = false;
-      setTimeout(() => setSubmitting(false), 500);
+      setTimeout((): void => setSubmitting(false), 500);
     }
   };
 
