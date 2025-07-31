@@ -2,17 +2,17 @@
 @import "tailwindcss";
 
 :root {
-  --theme-bg: #000000;               /* Pure Black */
-  --theme-surface: #000000;          /* Card Surface - Black */
-  --theme-text: #ffffff;
-  --theme-text-white: #ffffff;        /* slate-100 */
-  --theme-accent: #ffffff;           /* emerald-400 */
-  --theme-border: #ffffff;
-  --theme-border-red: #ef4444;       /* red-500 */
-  --theme-button: #e7dfcf;           /* emerald-600 */
-  --theme-hover: #047857;            /* emerald-700 */
-  --theme-focus: #ef4444;            /* emerald-500 */
-  --theme-shadow: rgba(239, 68, 68, 0.6); /* emerald-500 @ 30% */
+  --theme-bg: #000000;                       /* Pure Black Background */
+  --theme-surface: #000000;                  /* Pure Black Surface */
+  --theme-text: #ffffff;                     /* Pure White Text */
+  --theme-text-white: #ffffff;               /* Pure White Text */
+  --theme-accent: #ffffff;                   /* Pure White Accent */
+  --theme-border: #ffffff;                   /* Pure White Border */
+  --theme-border-red: #ef4444;               /* red-500 */
+  --theme-button: #e7dfcf;                   /* light beige button */
+  --theme-hover: #047857;                    /* emerald-700 */
+  --theme-focus: #ef4444;                    /* red-500 */
+  --theme-shadow: rgba(239, 68, 68, 0.6);    /* red-500 shadow */
 }
 
 body {
