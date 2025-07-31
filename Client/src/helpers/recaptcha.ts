@@ -7,8 +7,8 @@ declare global {
 }
 
 export async function waitForRecaptcha(): Promise<void> {
-  return new Promise((resolve) => {
-    const check = () => {
+  return new Promise((resolve: (value: void) => void): void => {
+    const check: () => void = (): void => {
       if (
         typeof window !== 'undefined' &&
         window.grecaptcha &&
@@ -19,6 +19,7 @@ export async function waitForRecaptcha(): Promise<void> {
         setTimeout(check, 100);
       }
     };
+
     check();
   });
 }
