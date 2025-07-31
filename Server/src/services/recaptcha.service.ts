@@ -1,20 +1,11 @@
-type RecaptchaVerificationResult = {
-  success: boolean;
-  score?: number;
-  action?: string;
-  hostname?: string;
-  challenge_ts?: string;
-  errorCodes?: string[];
-  isActionValid: boolean;
-  isScoreAcceptable: boolean;
-};
+import { RecaptchaVerificationResult, RecaptchaVerificationResponse } from '../types/FormRequestBodies.js';
 
 export async function verifyRecaptchaToken(
   token: string,
   expectedAction: string
 ): Promise<RecaptchaVerificationResult> {
-  const secret = process.env.RECAPTCHA_SECRET;
-  const isProd = process.env.NODE_ENV === 'production';
+  const secret: string = process.env.RECAPTCHA_SECRET ?? '';
+  const isProd: boolean = process.env.NODE_ENV === 'production';
 
   const result: RecaptchaVerificationResult = {
     success: false,
@@ -43,20 +34,20 @@ export async function verifyRecaptchaToken(
   params.append('response', token);
 
   try {
-    const response = await fetch('https://www.google.com/recaptcha/api/siteverify', {
+    const response: Response = await fetch('https://www.google.com/recaptcha/api/siteverify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: params.toString(),
     });
 
-    const data = await response.json();
+    const data: RecaptchaVerificationResponse = await response.json();
 
     result.success = data.success;
     result.score = data.score;
     result.action = data.action;
     result.hostname = data.hostname;
     result.challenge_ts = data.challenge_ts;
-    result.errorCodes = data['error-codes'] ?? [];
+    result.errorCodes = data["errorCodes"] ?? [];
 
     result.isActionValid = data.action === expectedAction;
     result.isScoreAcceptable = data.success && (isProd ? data.score >= 0.5 : data.score >= 0.1);
