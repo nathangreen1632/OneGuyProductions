@@ -14,7 +14,6 @@ const initialForm: Omit<OrderPayload, 'captchaToken'> = {
   description: '',
 };
 
-// Inject reCAPTCHA Enterprise script once
 if (typeof window !== 'undefined' && !document.getElementById('recaptcha-script')) {
   const script = document.createElement('script');
   script.id = 'recaptcha-script';
@@ -114,7 +113,7 @@ export default function OrderForm() {
           />
           <input
             name="businessName"
-            placeholder="Business Name"
+            placeholder="Business Name (If applicable)"
             value={formData.businessName}
             onChange={handleChange}
             className="w-full px-4 py-2 rounded-2xl bg-[var(--theme-base)] text-[var(--theme-text)] placeholder:text-white placeholder:text-opacity-100 focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)] overflow-hidden"
@@ -152,14 +151,16 @@ export default function OrderForm() {
             className="w-full px-4 py-2 rounded-2xl bg-[var(--theme-base)] text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)] overflow-hidden"
           >
             <option value="">Select Budget</option>
-            <option>$500 - $1,000</option>
-            <option>$1,000 - $2,500</option>
-            <option>$2,500 - $5,000+</option>
-            <option>$5001+</option>
+            <option value="$250-$500">$250 – $500</option>
+            <option value="$501-$1000">$501 – $1,000</option>
+            <option value="$1001-$2500">$1,001 – $2,500</option>
+            <option value="$2501-$5000">$2,501 – $5,000</option>
+            <option value="$5000+">$5,000+</option>
           </select>
           <input
             name="timeline"
             placeholder="Desired Timeline (e.g. 4 weeks)"
+            required
             value={formData.timeline}
             onChange={handleChange}
             className="w-full px-4 py-2 rounded-2xl bg-[var(--theme-base)] text-[var(--theme-text)] placeholder:text-white placeholder:text-opacity-100 focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)] overflow-hidden"

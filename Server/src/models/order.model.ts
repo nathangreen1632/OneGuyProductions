@@ -9,7 +9,7 @@ export interface OrderAttributes {
   businessName?: string;
   projectType: string;
   budget: string;
-  timeline?: string;
+  timeline: string;
   description: string;
 }
 
@@ -35,7 +35,7 @@ export const OrderModel = sequelize.define<OrderInstance>(
     businessName: { type: DataTypes.STRING },
     projectType: { type: DataTypes.STRING, allowNull: false },
     budget: { type: DataTypes.STRING, allowNull: false },
-    timeline: { type: DataTypes.STRING },
+    timeline: { type: DataTypes.STRING, allowNull: false},
     description: { type: DataTypes.TEXT, allowNull: false },
   }
 );

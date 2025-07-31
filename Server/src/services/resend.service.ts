@@ -24,23 +24,28 @@ export async function sendOrderEmail(data: {
   projectType: string;
   budget: string;
   description: string;
+  businessName?: string;
+  timeline: string;
 }): Promise<CreateEmailResponse> {
   const html = `
     <h2>New Web Project Inquiry</h2>
     <p><strong>Name:</strong> ${data.name}</p>
     <p><strong>Email:</strong> ${data.email}</p>
+    <p><strong>Business Name:</strong> ${data.businessName ?? 'N/A'}</p>
     <p><strong>Project Type:</strong> ${data.projectType}</p>
     <p><strong>Budget:</strong> ${data.budget}</p>
+    <p><strong>Timeline:</strong> ${data.timeline}</p>
     <p><strong>Description:</strong><br>${data.description}</p>
   `;
 
   return await sendEmail({
     from: process.env.RESEND_FROM_EMAIL!,
-    to: process.env.RESEND_ORDER_RECEIVER_EMAIL ?? process.env.RESEND_TO_EMAIL!, // fallback
+    to: process.env.RESEND_ORDER_RECEIVER_EMAIL ?? process.env.RESEND_TO_EMAIL!,
     subject: `New Project Inquiry from ${data.name}`,
     html,
   });
 }
+
 
 // === 📬 Contact Form Email ===
 export async function sendContactEmail(data: {
