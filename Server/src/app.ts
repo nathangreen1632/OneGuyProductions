@@ -14,7 +14,6 @@ const app: Express = express();
 
 app.disable('x-powered-by');
 
-// ✅ Safe & working Helmet CSP
 app.use(
   helmet.contentSecurityPolicy({
     directives: {
@@ -37,9 +36,7 @@ app.use(
         'https://api.resend.com',
         'https://www.oneguyproductions.com',
       ],
-      // ✅ Safe clickjacking protection (allowing embedding by your own apps)
       frameAncestors: ["'self'", 'https://www.oneguyproductions.com'],
-      // ✅ This upgrades mixed content to HTTPS without blocking
       upgradeInsecureRequests: [],
     },
     useDefaults: true,
@@ -53,8 +50,6 @@ app.use('/api', router);
 
 const clientBuildPath: string = path.resolve(__dirname, '../../Client/dist');
 const indexHtmlPath: string = path.join(clientBuildPath, 'index.html');
-
-console.log('📦 Serving frontend from:', clientBuildPath);
 
 import fs from 'fs';
 if (!fs.existsSync(clientBuildPath)) {
