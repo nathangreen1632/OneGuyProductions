@@ -7,7 +7,7 @@ export default function Philosophy() {
       <div className="rounded-3xl overflow-hidden shadow-[0_4px_14px_0_var(--theme-shadow)] bg-[var(--theme-base)]">
         <div className="w-full h-[300px] sm:h-[400px] md:h-[500px] lg:h-[600px] xl:h-[650px] 2xl:h-[700px] rounded-2xl overflow-hidden">
           <img
-            src="/images/brand-banner.png"
+            src="/images/brand-banner.webp"
             alt="One Guy Productions - Story"
             className="w-full h-full object-center overflow-hidden rounded-3xl"
           />
