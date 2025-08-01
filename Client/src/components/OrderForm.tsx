@@ -1,8 +1,21 @@
-import React, {useState, useRef, type RefObject} from 'react';
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  type RefObject,
+  type ReactElement,
+} from 'react';
 import toast from 'react-hot-toast';
-import type {OrderPayload, OrderFormData, OrderResponse, DerivedOrderFormData} from '../types/order';
+import type {
+  OrderPayload,
+  OrderFormData,
+  OrderResponse,
+  DerivedOrderFormData,
+} from '../types/order';
 import { useOrderStore } from '../store/useOrderStore';
 import { waitForRecaptcha } from '../helpers/recaptcha';
+
+const siteKey: string | undefined = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
 
 const initialForm: Omit<DerivedOrderFormData, 'captchaToken'> = {
   name: '',
@@ -14,40 +27,33 @@ const initialForm: Omit<DerivedOrderFormData, 'captchaToken'> = {
   description: '',
 };
 
-if (typeof window !== 'undefined' && !document.getElementById('recaptcha-script')) {
-  const script: HTMLScriptElement = document.createElement('script');
-  script.id = 'recaptcha-script';
-  script.src = `https://www.google.com/recaptcha/enterprise.js?render=${import.meta.env.VITE_RECAPTCHA_SITE_KEY}`;
-  script.async = true;
-  script.defer = true;
-  document.head.appendChild(script);
-}
-
-export default function OrderForm(): React.ReactElement {
+export default function OrderForm(): ReactElement {
   const [formData, setFormData] = useState<OrderFormData>(initialForm);
-  const [submitting, setSubmitting] = useState(false);
+  const [submitting, setSubmitting] = useState<boolean>(false);
+  const lockRef: RefObject<boolean> = useRef<boolean>(false);
   const { setLastOrder, clearOrder } = useOrderStore();
 
-  const lockRef: RefObject<boolean> = useRef(false);
+  useEffect((): void => {
+    if (typeof window === 'undefined' || !siteKey) return;
+    console.log('⛳ VITE_RECAPTCHA_SITE_KEY at runtime:', siteKey);
+  }, []);
 
-
-  const handleChange: (
+  const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) => void = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>): void => {
+  ): void => {
     const { name, value } = e.target;
 
     if (!name) return;
 
     if (name in formData) {
-      setFormData((prev: OrderFormData): { name: string; email: string; businessName: string; projectType: string; budget: string; timeline: string; description: string } => ({
+      setFormData((prev: OrderFormData): OrderFormData => ({
         ...prev,
         [name as keyof OrderFormData]: value,
       }));
     }
   };
 
-
-  const handleSubmit: (e: React.FormEvent) => Promise<void> = async (e: React.FormEvent): Promise<void> => {
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     if (lockRef.current || submitting) return;
 
@@ -55,7 +61,6 @@ export default function OrderForm(): React.ReactElement {
     setSubmitting(true);
 
     try {
-      const siteKey: string | undefined = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
       if (!window.grecaptcha || !siteKey) {
         toast.error('reCAPTCHA not available.');
         return;
@@ -89,7 +94,7 @@ export default function OrderForm(): React.ReactElement {
         const result: OrderResponse = await res.json();
         toast.error(result?.error ?? 'Something went wrong. Please try again.');
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error submitting order form:', error);
       toast.error('CAPTCHA failed or network error.');
     } finally {
@@ -134,7 +139,7 @@ export default function OrderForm(): React.ReactElement {
             required
             value={formData.projectType}
             onChange={handleChange}
-            className="w-full px-4 py-2 rounded-2xl bg-[var(--theme-base)] text-[var(--theme-text)]  focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)] overflow-hidden"
+            className="w-full px-4 py-2 rounded-2xl bg-[var(--theme-base)] text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)] overflow-hidden"
           >
             <option value="">Select Project Type</option>
             <option>Portfolio</option>
@@ -179,7 +184,7 @@ export default function OrderForm(): React.ReactElement {
           <textarea
             name="description"
             placeholder={`Tell me about your project... Please be as detailed as possible.
-            
+
 - What problem does it solve?
 - Who is the target audience?
 - What features are essential?
