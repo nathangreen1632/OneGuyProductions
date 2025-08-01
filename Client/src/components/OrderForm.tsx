@@ -160,7 +160,6 @@ export default function OrderForm(): ReactElement {
               <option>Geolocation App</option>
               <option>OTP/Password Reset System</option>
             </select>
-
             <div className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 text-[var(--theme-text)]">
               <svg
                 className="w-6 h-6"
@@ -171,7 +170,6 @@ export default function OrderForm(): ReactElement {
               </svg>
             </div>
           </div>
-
           <div className="relative rounded-2xl shadow-[0_4px_14px_0_var(--theme-shadow)] overflow-hidden">
             <select
               name="budget"
@@ -187,8 +185,6 @@ export default function OrderForm(): ReactElement {
               <option value="$2501-$5000">$2,501 – $5,000</option>
               <option value="$5000+">$5,000+</option>
             </select>
-
-            {/* Custom dropdown icon */}
             <div className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 text-[var(--theme-text)]">
               <svg
                 className="w-6 h-6"
@@ -199,8 +195,6 @@ export default function OrderForm(): ReactElement {
               </svg>
             </div>
           </div>
-
-
           <input
             name="timeline"
             placeholder="Timeframe... (e.g. 4 weeks)"
