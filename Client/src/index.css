@@ -1,45 +1,62 @@
 @import url('https://fonts.googleapis.com/css?family=Inter:wght@400;600;800&display=swap');
 @import "tailwindcss";
 
-:root {
-  --theme-bg: #000000;                       /* Pure Black Background */
-  --theme-surface: #000000;                  /* Pure Black Surface */
-  --theme-text: #ffffff;                     /* Pure White Text */
-  --theme-text-white: #ffffff;               /* Pure White Text */
-  --theme-accent: #ffffff;                   /* Pure White Accent */
-  --theme-border: #ffffff;                   /* Pure White Border */
-  --theme-border-red: #ef4444;               /* red-500 */
-  --theme-button: #e7dfcf;                   /* light beige button */
-  --theme-hover: #047857;                    /* emerald-700 */
-  --theme-focus: #ef4444;                    /* red-500 */
-  --theme-shadow: rgba(239, 68, 68, 0.6);    /* red-500 shadow */
-}
+@layer base {
+  :root {
+    /* Light mode defaults: background light, border light-blue */
+    --theme-bg: #e7dfcf;
+    --theme-surface: #ddd4c5;
+    --theme-text: #000000;           /* slate‑800 */
+    --theme-text-white: #ffffff;
+    --theme-accent: #000000;         /* blue‑500 borders/highlights */
+    --theme-border: #3b82f6;
+    --theme-border-red: #3b82f6;     /* red‑500 unchanged */
+    --theme-border-blue: #3b82f6; /* blue‑500 unchanged */
+    --theme-button: #000000;
+    --theme-card: #555555;
+    --theme-hover: #047857;
+    --theme-focus: #ef4444;
+    --theme-shadow: rgba(59, 130, 246, 0.9);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      /* Dark mode (your original color scheme) */
+      --theme-bg: #000000;
+      --theme-surface: #000000;
+      --theme-text: #ffffff;
+      --theme-text-white: #000000;
+      --theme-accent: #ffffff;
+      --theme-border: #000000;
+      --theme-border-red: #ef4444;
+      --theme-button: #e7dfcf;
+      --theme-button-text: #000000;
+      --theme-hover: #047857;
+      --theme-focus: #ef4444;
+      --theme-shadow: rgba(239,68,68,0.6);
+    }
+  }
 
-body {
-  font-family: 'Inter', sans-serif;
-  background: var(--theme-bg);         /* pure black background */
-  color: var(--theme-text);            /* slate-100 text */
-}
-
-.custom-scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: var(--theme-accent) var(--theme-surface); /* thumb, track */
-}
-
-/* Chrome, Edge, Safari */
-.custom-scrollbar::-webkit-scrollbar {
-  width: 10px;
-  border-radius: 8px;
-  background: var(--theme-surface);    /* track background */
-}
-
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: var(--theme-surface);
-  border-radius: 8px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: var(--theme-accent);     /* emerald thumb */
-  border-radius: 8px;
-  border: 2px solid var(--theme-surface);
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--theme-bg);
+    color: var(--theme-text);
+  }
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: var(--theme-accent) var(--theme-surface);
+  }
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 10px;
+    border-radius: 8px;
+    background: var(--theme-surface);
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: var(--theme-surface);
+    border-radius: 8px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: var(--theme-accent);
+    border-radius: 8px;
+    border: 2px solid var(--theme-surface);
+  }
 }
