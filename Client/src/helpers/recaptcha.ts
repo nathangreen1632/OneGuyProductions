@@ -1,13 +1,5 @@
-declare global {
-  interface Window {
-    grecaptcha: {
-      execute(siteKey: string, options: { action: string }): Promise<string>;
-    };
-  }
-}
-
 export async function waitForRecaptcha(): Promise<void> {
-  return new Promise((resolve: (value: void) => void): void => {
+  return new Promise((resolve: () => void): void => {
     const check: () => void = (): void => {
       if (
         typeof window !== 'undefined' &&
