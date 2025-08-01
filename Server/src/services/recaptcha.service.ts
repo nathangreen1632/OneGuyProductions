@@ -1,4 +1,5 @@
 import { RecaptchaVerificationResult, RecaptchaVerificationResponse } from '../types/FormRequestBodies.js';
+import '../config/dotenv.js';
 
 export async function verifyRecaptchaToken(
   token: string,
