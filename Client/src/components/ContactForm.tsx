@@ -1,42 +1,61 @@
-import React, { type ReactElement, type RefObject, useRef, useState} from 'react';
+import React, {
+  type ReactElement,
+  type RefObject,
+  useRef,
+  useState,
+  useEffect,
+} from 'react';
 import toast from 'react-hot-toast';
-import type {ContactPayload, ContactResponse} from '../types/contact';
+import type { ContactPayload, ContactResponse } from '../types/contact';
+import type { ContactFormData } from '../types/formData';
 import { useContactStore } from '../store/useContactStore';
 import { waitForRecaptcha } from '../helpers/recaptcha';
-import type {ContactFormData} from "../types/formData";
 
-const RECAPTCHA_SITE_KEY = '6LfNMZMrAAAAAPyNsUaFA22FmXQ9Tw-fd3s_Uy6q';
-
-if (typeof window !== 'undefined' && !document.getElementById('recaptcha-script')) {
-  const script: HTMLScriptElement = document.createElement('script');
-  script.id = 'recaptcha-script';
-  script.src = `https://www.google.com/recaptcha/enterprise.js?render=${RECAPTCHA_SITE_KEY}`;
-  script.async = true;
-  script.defer = true;
-  document.head.appendChild(script);
-}
+const RECAPTCHA_SITE_KEY: string = '6LfNMZMrAAAAAPyNsUaFA22FmXQ9Tw-fd3s_Uy6q';
 
 export default function ContactForm(): ReactElement {
-  const [formData, setFormData] = useState({ name: '', email: '', message: '' });
-  const lockRef: RefObject<boolean> = useRef(false);
+  const [formData, setFormData] = useState<ContactFormData>({
+    name: '',
+    email: '',
+    message: '',
+  });
+
+  const lockRef: RefObject<boolean> = useRef<boolean>(false);
   const { submitting, setSubmitting } = useContactStore();
 
-  const handleChange: (
+  useEffect(() => {
+    console.log('⛳ VITE_RECAPTCHA_SITE_KEY at runtime:', import.meta.env.VITE_RECAPTCHA_SITE_KEY);
+
+    if (typeof window === 'undefined') return;
+
+    const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
+    if (!siteKey) {
+      console.error('❌ No site key found at runtime!');
+      return;
+    }
+
+    window.grecaptcha?.ready?.(() => {
+      console.log('✅ reCAPTCHA ready');
+    });
+  }, []);
+
+
+  const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => void = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>): void => {
+  ): void => {
     const { name, value } = e.target;
 
     if (!name) return;
 
     if (name in formData) {
-      setFormData((prev: ContactFormData): { name: string; email: string; message: string} => ({
+      setFormData((prev: ContactFormData): ContactFormData => ({
         ...prev,
         [name as keyof ContactFormData]: value,
       }));
     }
   };
 
-  const handleSubmit: (e: React.FormEvent) => Promise<void> = async (e: React.FormEvent): Promise<void> => {
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     if (lockRef.current || submitting) return;
 
@@ -51,9 +70,15 @@ export default function ContactForm(): ReactElement {
 
       await waitForRecaptcha();
 
+      if (!window.grecaptcha?.execute) {
+        toast.error('reCAPTCHA failed to load. Please refresh and try again.');
+        return;
+      }
+
       const captchaToken: string = await window.grecaptcha.execute(RECAPTCHA_SITE_KEY, {
         action: 'submit_contact_form',
       });
+
 
       if (!captchaToken) {
         toast.error('CAPTCHA token not received.');
@@ -75,7 +100,7 @@ export default function ContactForm(): ReactElement {
         toast.success('Message sent successfully!');
         setFormData({ name: '', email: '', message: '' });
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Error submitting form:', err);
       toast.error('Something went wrong.');
     } finally {
@@ -86,7 +111,7 @@ export default function ContactForm(): ReactElement {
 
   return (
     <section className="max-w-2xl mx-auto px-4 py-12">
-      <div className=" rounded-2xl shadow-[0_4px_14px_0_var(--theme-shadow)] bg-[var(--theme-base)] p-6">
+      <div className="rounded-2xl shadow-[0_4px_14px_0_var(--theme-shadow)] bg-[var(--theme-base)] p-6">
         <h2 className="text-2xl font-bold text-[var(--theme-accent)] mb-6 text-center">
           Contact Me
         </h2>
@@ -125,7 +150,6 @@ export default function ContactForm(): ReactElement {
               {submitting ? 'Sending...' : 'Send Message'}
             </button>
           </div>
-
         </form>
       </div>
     </section>
