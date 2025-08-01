@@ -1,5 +1,11 @@
 import React from 'react';
-import { Mail, ShoppingBag } from 'lucide-react';
+import {
+  Home,
+  Box,
+  Info,
+  Mail,
+  ShoppingBag,
+} from 'lucide-react';
 
 export interface NavLink {
   label: string;
@@ -8,9 +14,9 @@ export interface NavLink {
 }
 
 export const navLinks: NavLink[] = [
-  { label: 'Home', path: '/' },
-  { label: 'Products', path: '/products' },
-  { label: 'About', path: '/about' },
+  { label: 'Home', path: '/', icon: Home },
+  { label: 'Products', path: '/products', icon: Box },
+  { label: 'About', path: '/about', icon: Info },
   { label: 'Contact', path: '/contact', icon: Mail },
   { label: 'Order', path: '/order', icon: ShoppingBag },
 ];
