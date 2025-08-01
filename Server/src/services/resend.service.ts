@@ -1,6 +1,8 @@
 import { CreateEmailResponse, Resend } from 'resend';
+import '../config/dotenv.js'
+import {ENV} from "../config/env.js";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = new Resend(ENV.RESEND_API_KEY);
 
 // === Shared email sender utility ===
 export async function sendEmail(options: {
@@ -39,8 +41,8 @@ export async function sendOrderEmail(data: {
   `;
 
   return await sendEmail({
-    from: process.env.EMAIL_FROM_ORDER!,
-    to: process.env.RESEND_ORDER_RECEIVER_EMAIL ?? process.env.RESEND_TO_ORDER!,
+    from: ENV.EMAIL_FROM_ORDER,
+    to: ENV.RESEND_ORDER_RECEIVER_EMAIL ?? ENV.RESEND_TO_ORDER!,
     subject: `New Project Inquiry from ${data.name}`,
     html,
   });
@@ -61,8 +63,8 @@ export async function sendContactEmail(data: {
   `;
 
   return await sendEmail({
-    from: process.env.RESEND_FROM_EMAIL!,
-    to: process.env.RESEND_CONTACT_RECEIVER_EMAIL ?? process.env.RESEND_TO_EMAIL ?? '',
+    from: ENV.RESEND_FROM_EMAIL ?? ENV.EMAIL_FROM_CONTACT,
+    to: ENV.RESEND_CONTACT_RECEIVER_EMAIL ?? ENV.RESEND_TO_EMAIL ?? '',
     subject: `New Contact Message from ${data.name}`,
     html,
   });
