@@ -15,8 +15,9 @@ import type {
 import { useOrderStore } from '../store/useOrderStore';
 import {
   waitForRecaptchaReady,
-  loadRecaptcha, // ✅ newly added
+  loadRecaptcha,
 } from '../utils/loadRecaptcha';
+import { getRecaptchaToken } from '../utils/getRecaptchaToken'; // ✅ New import
 
 const RECAPTCHA_SITE_KEY: string = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
 
@@ -45,14 +46,12 @@ export default function OrderForm(): ReactElement {
     loadRecaptcha(RECAPTCHA_SITE_KEY);
   }, []);
 
-
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >
   ): void => {
     const { name, value } = e.target;
-
     if (!name) return;
 
     if (name in formData) {
@@ -62,27 +61,6 @@ export default function OrderForm(): ReactElement {
       }));
     }
   };
-
-  async function getRecaptchaToken(action: string, siteKey: string): Promise<string> {
-    console.log('🧠 Starting token request for:', action);
-
-    const grecaptcha = window.grecaptcha;
-
-    if (!grecaptcha || typeof grecaptcha.execute !== 'function') {
-      toast.error('reCAPTCHA is not available.');
-      throw new Error('grecaptcha.execute is not available');
-    }
-
-    try {
-      const token: string = await grecaptcha.execute(siteKey, { action });
-      console.log('✅ Token received:', token);
-      return token;
-    } catch (err: unknown) {
-      toast.error('Failed to execute reCAPTCHA.');
-      console.error('❌ reCAPTCHA execute error:', err);
-      throw err instanceof Error ? err : new Error('Unknown reCAPTCHA error');
-    }
-  }
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
@@ -94,10 +72,8 @@ export default function OrderForm(): ReactElement {
     try {
       console.log('🌀 Step 1: Waiting for grecaptcha...');
       try {
-        console.log('🌀 Step 1: Waiting for grecaptcha...');
         await waitForRecaptchaReady();
         console.log('✅ Step 1 complete: grecaptcha is ready');
-
       } catch (err) {
         console.error('❌ Failed at Step 1 (waitForRecaptcha):', err);
         toast.error('CAPTCHA failed to initialize.');
