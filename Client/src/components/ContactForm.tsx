@@ -1,50 +1,45 @@
 import React, {
   type ReactElement,
   type RefObject,
+  useEffect,
   useRef,
   useState,
-  useEffect,
 } from 'react';
 import toast from 'react-hot-toast';
 import type { ContactPayload, ContactResponse } from '../types/contact';
 import type { ContactFormData } from '../types/formData';
 import { useContactStore } from '../store/useContactStore';
-import { waitForRecaptcha } from '../helpers/recaptcha';
+import {
+  waitForRecaptchaReady,
+  loadRecaptcha,
+} from '../utils/loadRecaptcha';
 
-const RECAPTCHA_SITE_KEY: string = '6LfNMZMrAAAAAPyNsUaFA22FmXQ9Tw-fd3s_Uy6q';
+const RECAPTCHA_SITE_KEY: string = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
+
+const initialForm: ContactFormData = {
+  name: '',
+  email: '',
+  message: '',
+};
 
 export default function ContactForm(): ReactElement {
-  const [formData, setFormData] = useState<ContactFormData>({
-    name: '',
-    email: '',
-    message: '',
-  });
-
+  const [formData, setFormData] = useState<ContactFormData>(initialForm);
   const lockRef: RefObject<boolean> = useRef<boolean>(false);
   const { submitting, setSubmitting } = useContactStore();
 
   useEffect(() => {
-    console.log('⛳ VITE_RECAPTCHA_SITE_KEY at runtime:', import.meta.env.VITE_RECAPTCHA_SITE_KEY);
+    if (typeof window === 'undefined' || !RECAPTCHA_SITE_KEY) return;
 
-    if (typeof window === 'undefined') return;
+    console.log('⛳ VITE_RECAPTCHA_SITE_KEY at runtime:', RECAPTCHA_SITE_KEY);
 
-    const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
-    if (!siteKey) {
-      console.error('❌ No site key found at runtime!');
-      return;
-    }
-
-    window.grecaptcha?.ready?.(() => {
-      console.log('✅ reCAPTCHA ready');
-    });
+    // ✅ Inject reCAPTCHA script if not ready
+    loadRecaptcha(RECAPTCHA_SITE_KEY);
   }, []);
-
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ): void => {
     const { name, value } = e.target;
-
     if (!name) return;
 
     if (name in formData) {
@@ -55,6 +50,26 @@ export default function ContactForm(): ReactElement {
     }
   };
 
+  async function getRecaptchaToken(action: string, siteKey: string): Promise<string> {
+    console.log('🧠 Starting token request for:', action);
+
+    const grecaptcha = window.grecaptcha;
+    if (!grecaptcha || typeof grecaptcha.execute !== 'function') {
+      toast.error('reCAPTCHA is not available.');
+      throw new Error('grecaptcha.execute is not available');
+    }
+
+    try {
+      const token: string = await grecaptcha.execute(siteKey, { action });
+      console.log('✅ Token received:', token);
+      return token;
+    } catch (err: unknown) {
+      toast.error('Failed to execute reCAPTCHA.');
+      console.error('❌ reCAPTCHA execute error:', err);
+      throw err instanceof Error ? err : new Error('Unknown reCAPTCHA error');
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     if (lockRef.current || submitting) return;
@@ -63,49 +78,60 @@ export default function ContactForm(): ReactElement {
     setSubmitting(true);
 
     try {
-      if (!window.grecaptcha) {
-        toast.error('reCAPTCHA is not available.');
+      console.log('🌀 Step 1: Waiting for grecaptcha...');
+      try {
+        await waitForRecaptchaReady();
+        console.log('✅ Step 1 complete: grecaptcha is ready');
+      } catch (err) {
+        console.error('❌ Failed at Step 1 (waitForRecaptcha):', err);
+        toast.error('CAPTCHA failed to initialize.');
         return;
       }
 
-      await waitForRecaptcha();
-
-      if (!window.grecaptcha?.execute) {
-        toast.error('reCAPTCHA failed to load. Please refresh and try again.');
-        return;
-      }
-
-      const captchaToken: string = await window.grecaptcha.execute(RECAPTCHA_SITE_KEY, {
-        action: 'submit_contact_form',
-      });
-
-
-      if (!captchaToken) {
-        toast.error('CAPTCHA token not received.');
+      console.log('🌀 Step 2: Getting token...');
+      let captchaToken: string;
+      try {
+        captchaToken = await getRecaptchaToken('submit_contact_form', RECAPTCHA_SITE_KEY);
+        console.log('✅ Step 2 complete: Token retrieved');
+      } catch (err) {
+        console.error('❌ Failed at Step 2 (getRecaptchaToken):', err);
+        toast.error('CAPTCHA token failed. Please refresh and try again.');
         return;
       }
 
       const payload: ContactPayload = { ...formData, captchaToken };
+      console.log('📦 Step 3: Sending payload to backend...', payload);
 
-      const res: Response = await fetch('/api/contact/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+      let res: Response;
+      try {
+        res = await fetch('/api/contact/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      } catch (err) {
+        console.error('❌ Failed at Step 3 (fetch error):', err);
+        toast.error('Network error while submitting request.');
+        return;
+      }
 
+      console.log('📬 Step 4: Awaiting server response...');
       const result: ContactResponse = await res.json();
+
       if (!res.ok || !result.success) {
-        toast.error(result?.error ?? 'Submission error');
+        console.error('⚠️ Server responded with error:', result);
+        toast.error(result?.error ?? 'Something went wrong. Please try again.');
       } else {
+        console.log('✅ Step 4 complete: Success response received');
         toast.success('Message sent successfully!');
-        setFormData({ name: '', email: '', message: '' });
+        setFormData(initialForm);
       }
     } catch (err: unknown) {
-      console.error('Error submitting form:', err);
-      toast.error('Something went wrong.');
+      console.error('🧨 Unexpected failure during form submission:', err);
+      toast.error('Unexpected error. Try again or refresh the page.');
     } finally {
       lockRef.current = false;
-      setTimeout((): void => setSubmitting(false), 500);
+      setSubmitting(false);
     }
   };
 
