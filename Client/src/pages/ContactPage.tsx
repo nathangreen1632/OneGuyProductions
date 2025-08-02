@@ -1,15 +1,10 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useLocation } from 'react-router-dom';
 import ContactForm from '../components/ContactForm';
-import { useContactStore } from '../store/useContactStore';
 
 export default function ContactPage(): React.ReactElement {
   const { pathname } = useLocation();
-  const setSubmitting = useContactStore((state) => state.setSubmitting);
 
-  useEffect(() => {
-    setSubmitting(false);
-  }, [setSubmitting]);
 
   return (
     <main className="bg-[var(--theme-bg)] text-[var(--theme-text)] min-h-screen py-15 px-6 max-w-2xl mx-auto">
