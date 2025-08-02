@@ -1,21 +1,24 @@
 import React, {
-  useState,
-  useRef,
-  useEffect,
-  type RefObject,
   type ReactElement,
+  type RefObject,
+  useEffect,
+  useRef,
+  useState,
 } from 'react';
 import toast from 'react-hot-toast';
 import type {
-  OrderPayload,
-  OrderFormData,
-  OrderResponse,
   DerivedOrderFormData,
+  OrderFormData,
+  OrderPayload,
+  OrderResponse,
 } from '../types/order';
 import { useOrderStore } from '../store/useOrderStore';
-import { waitForRecaptcha } from '../helpers/recaptcha';
+import {
+  waitForRecaptchaReady,
+  loadRecaptcha, // ✅ newly added
+} from '../utils/loadRecaptcha';
 
-const siteKey: string | undefined = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
+const RECAPTCHA_SITE_KEY: string = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
 
 const initialForm: Omit<DerivedOrderFormData, 'captchaToken'> = {
   name: '',
@@ -34,12 +37,19 @@ export default function OrderForm(): ReactElement {
   const { setLastOrder, clearOrder } = useOrderStore();
 
   useEffect((): void => {
-    if (typeof window === 'undefined' || !siteKey) return;
-    console.log('⛳ VITE_RECAPTCHA_SITE_KEY at runtime:', siteKey);
+    if (typeof window === 'undefined' || !RECAPTCHA_SITE_KEY) return;
+
+    console.log('⛳ VITE_RECAPTCHA_SITE_KEY at runtime:', RECAPTCHA_SITE_KEY);
+
+    // ✅ Ensure grecaptcha is injected or initialized again after SPA route nav
+    loadRecaptcha(RECAPTCHA_SITE_KEY);
   }, []);
 
+
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ): void => {
     const { name, value } = e.target;
 
@@ -53,6 +63,27 @@ export default function OrderForm(): ReactElement {
     }
   };
 
+  async function getRecaptchaToken(action: string, siteKey: string): Promise<string> {
+    console.log('🧠 Starting token request for:', action);
+
+    const grecaptcha = window.grecaptcha;
+
+    if (!grecaptcha || typeof grecaptcha.execute !== 'function') {
+      toast.error('reCAPTCHA is not available.');
+      throw new Error('grecaptcha.execute is not available');
+    }
+
+    try {
+      const token: string = await grecaptcha.execute(siteKey, { action });
+      console.log('✅ Token received:', token);
+      return token;
+    } catch (err: unknown) {
+      toast.error('Failed to execute reCAPTCHA.');
+      console.error('❌ reCAPTCHA execute error:', err);
+      throw err instanceof Error ? err : new Error('Unknown reCAPTCHA error');
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     if (lockRef.current || submitting) return;
@@ -61,42 +92,66 @@ export default function OrderForm(): ReactElement {
     setSubmitting(true);
 
     try {
-      if (!window.grecaptcha || !siteKey) {
-        toast.error('reCAPTCHA not available.');
+      console.log('🌀 Step 1: Waiting for grecaptcha...');
+      try {
+        console.log('🌀 Step 1: Waiting for grecaptcha...');
+        await waitForRecaptchaReady();
+        console.log('✅ Step 1 complete: grecaptcha is ready');
+
+      } catch (err) {
+        console.error('❌ Failed at Step 1 (waitForRecaptcha):', err);
+        toast.error('CAPTCHA failed to initialize.');
         return;
       }
 
-      await waitForRecaptcha();
-
-      const captchaToken: string = await window.grecaptcha.execute(siteKey, {
-        action: 'submit_order_form',
-      });
-
-      if (!captchaToken) {
-        toast.error('CAPTCHA token failed.');
+      console.log('🌀 Step 2: Getting token...');
+      let captchaToken: string;
+      try {
+        captchaToken = await getRecaptchaToken('submit_order_form', RECAPTCHA_SITE_KEY);
+        console.log('✅ Step 2 complete: Token retrieved');
+      } catch (err) {
+        console.error('❌ Failed at Step 2 (getRecaptchaToken):', err);
+        toast.error('CAPTCHA token failed. Please refresh and try again.');
         return;
       }
 
       const payload: OrderPayload = { ...formData, captchaToken };
+      console.log('📦 Step 3: Sending payload to backend...', payload);
 
-      const res: Response = await fetch('/api/order/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+      let res: Response;
+      try {
+        res = await fetch('/api/order/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      } catch (err) {
+        console.error('❌ Failed at Step 3 (fetch error):', err);
+        toast.error('Network error while submitting request.');
+        return;
+      }
 
+      console.log('📬 Step 4: Awaiting server response...');
       if (res.ok) {
+        console.log('✅ Step 4 complete: Success response received');
         toast.success('Your request was submitted successfully!');
         setLastOrder(payload);
         clearOrder();
         setFormData(initialForm);
       } else {
-        const result: OrderResponse = await res.json();
+        let result: OrderResponse | null = null;
+        try {
+          result = await res.json();
+          console.error('⚠️ Server responded with error:', result);
+        } catch (jsonErr) {
+          console.error('❌ Failed to parse error response:', jsonErr);
+        }
+
         toast.error(result?.error ?? 'Something went wrong. Please try again.');
       }
-    } catch (error: unknown) {
-      console.error('Error submitting order form:', error);
-      toast.error('CAPTCHA failed or network error.');
+    } catch (err: unknown) {
+      console.error('🧨 Unexpected failure during form submission:', err);
+      toast.error('Unexpected error. Try again or refresh the page.');
     } finally {
       lockRef.current = false;
       setSubmitting(false);
