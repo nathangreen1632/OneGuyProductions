@@ -1,19 +1,10 @@
-import React, {
-  type ReactElement,
-  type RefObject,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
+import React, { type ReactElement, type RefObject, useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import type { ContactPayload, ContactResponse } from '../types/contact';
 import type { ContactFormData } from '../types/formData';
 import { useContactStore } from '../store/useContactStore';
-import {
-  waitForRecaptchaReady,
-  loadRecaptcha,
-} from '../utils/loadRecaptcha';
-import { getRecaptchaToken } from '../utils/getRecaptchaToken'; // ✅ new import
+import { waitForRecaptchaReady, loadRecaptcha } from '../utils/loadRecaptcha';
+import { getRecaptchaToken } from '../utils/getRecaptchaToken';
 
 const RECAPTCHA_SITE_KEY: string = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
 
@@ -33,7 +24,7 @@ export default function ContactForm(): ReactElement {
 
     console.log('⛳ VITE_RECAPTCHA_SITE_KEY at runtime:', RECAPTCHA_SITE_KEY);
 
-    // ✅ Inject reCAPTCHA script if not ready
+    // Inject reCAPTCHA script if not ready
     loadRecaptcha(RECAPTCHA_SITE_KEY);
   }, []);
 
