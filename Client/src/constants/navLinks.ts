@@ -3,8 +3,8 @@ import {
   Home,
   Box,
   Info,
-  // Mail,
-  // ShoppingBag,
+  Mail,
+  ShoppingBag,
 } from 'lucide-react';
 
 export interface NavLink {
@@ -17,6 +17,6 @@ export const navLinks: NavLink[] = [
   { label: 'Home', path: '/', icon: Home },
   { label: 'Products', path: '/products', icon: Box },
   { label: 'About', path: '/about', icon: Info },
-  // { label: 'Contact', path: '/contact', icon: Mail },
-  // { label: 'Order', path: '/order', icon: ShoppingBag },
+  { label: 'Contact', path: '/contact', icon: Mail },
+  { label: 'Order', path: '/order', icon: ShoppingBag },
 ];
