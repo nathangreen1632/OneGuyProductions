@@ -1,42 +1,48 @@
-import React, { type ReactElement, type RefObject, useRef, useState} from 'react';
+import React, { type ReactElement, type RefObject, useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
-import type {ContactPayload, ContactResponse} from '../types/contact';
+import type { ContactPayload, ContactResponse } from '../types/contact';
+import type { ContactFormData } from '../types/formData';
 import { useContactStore } from '../store/useContactStore';
-import { waitForRecaptcha } from '../helpers/recaptcha';
-import type {ContactFormData} from "../types/formData";
+import { loadRecaptcha } from '../utils/loadRecaptcha';
+import { executeRecaptchaFlow } from '../utils/recaptchaHandler';
 
-const RECAPTCHA_SITE_KEY = '6LfNMZMrAAAAAPyNsUaFA22FmXQ9Tw-fd3s_Uy6q';
+const RECAPTCHA_SITE_KEY: string = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
 
-if (typeof window !== 'undefined' && !document.getElementById('recaptcha-script')) {
-  const script: HTMLScriptElement = document.createElement('script');
-  script.id = 'recaptcha-script';
-  script.src = `https://www.google.com/recaptcha/enterprise.js?render=${RECAPTCHA_SITE_KEY}`;
-  script.async = true;
-  script.defer = true;
-  document.head.appendChild(script);
-}
+const initialForm: ContactFormData = {
+  name: '',
+  email: '',
+  message: '',
+};
 
 export default function ContactForm(): ReactElement {
-  const [formData, setFormData] = useState({ name: '', email: '', message: '' });
-  const lockRef: RefObject<boolean> = useRef(false);
+  const [formData, setFormData] = useState<ContactFormData>(initialForm);
+  const lockRef: RefObject<boolean> = useRef<boolean>(false);
   const { submitting, setSubmitting } = useContactStore();
 
-  const handleChange: (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => void = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>): void => {
-    const { name, value } = e.target;
+  useEffect(() => {
+    if (typeof window === 'undefined' || !RECAPTCHA_SITE_KEY) return;
 
+    console.log('⛳ VITE_RECAPTCHA_SITE_KEY at runtime:', RECAPTCHA_SITE_KEY);
+
+    // Inject reCAPTCHA script if not ready
+    loadRecaptcha(RECAPTCHA_SITE_KEY);
+  }, []);
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ): void => {
+    const { name, value } = e.target;
     if (!name) return;
 
     if (name in formData) {
-      setFormData((prev: ContactFormData): { name: string; email: string; message: string} => ({
+      setFormData((prev: ContactFormData): ContactFormData => ({
         ...prev,
         [name as keyof ContactFormData]: value,
       }));
     }
   };
 
-  const handleSubmit: (e: React.FormEvent) => Promise<void> = async (e: React.FormEvent): Promise<void> => {
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     if (lockRef.current || submitting) return;
 
@@ -44,49 +50,49 @@ export default function ContactForm(): ReactElement {
     setSubmitting(true);
 
     try {
-      if (!window.grecaptcha) {
-        toast.error('reCAPTCHA is not available.');
-        return;
-      }
+      const captchaToken = await executeRecaptchaFlow('submit_contact_form');
+      if (!captchaToken) return;
 
-      await waitForRecaptcha();
-
-      const captchaToken: string = await window.grecaptcha.execute(RECAPTCHA_SITE_KEY, {
-        action: 'submit_contact_form',
-      });
-
-      if (!captchaToken) {
-        toast.error('CAPTCHA token not received.');
-        return;
-      }
 
       const payload: ContactPayload = { ...formData, captchaToken };
+      console.log('📦 Step 3: Sending payload to backend...', payload);
 
-      const res: Response = await fetch('/api/contact/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      const result: ContactResponse = await res.json();
-      if (!res.ok || !result.success) {
-        toast.error(result?.error ?? 'Submission error');
-      } else {
-        toast.success('Message sent successfully!');
-        setFormData({ name: '', email: '', message: '' });
+      let res: Response;
+      try {
+        res = await fetch('/api/contact/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      } catch (err) {
+        console.error('❌ Failed at Step 3 (fetch error):', err);
+        toast.error('Network error while submitting request.');
+        return;
       }
-    } catch (err) {
-      console.error('Error submitting form:', err);
-      toast.error('Something went wrong.');
+
+      console.log('📬 Step 4: Awaiting server response...');
+      const result: ContactResponse = await res.json();
+
+      if (!res.ok || !result.success) {
+        console.error('⚠️ Server responded with error:', result);
+        toast.error(result?.error ?? 'Something went wrong. Please try again.');
+      } else {
+        console.log('✅ Step 4 complete: Success response received');
+        toast.success('Message sent successfully!');
+        setFormData(initialForm);
+      }
+    } catch (err: unknown) {
+      console.error('🧨 Unexpected failure during form submission:', err);
+      toast.error('Unexpected error. Try again or refresh the page.');
     } finally {
       lockRef.current = false;
-      setTimeout((): void => setSubmitting(false), 500);
+      setSubmitting(false);
     }
   };
 
   return (
     <section className="max-w-2xl mx-auto px-4 py-12">
-      <div className=" rounded-2xl shadow-[0_4px_14px_0_var(--theme-shadow)] bg-[var(--theme-base)] p-6">
+      <div className="rounded-2xl shadow-[0_4px_14px_0_var(--theme-shadow)] bg-[var(--theme-surface)] p-6">
         <h2 className="text-2xl font-bold text-[var(--theme-accent)] mb-6 text-center">
           Contact Me
         </h2>
@@ -97,7 +103,7 @@ export default function ContactForm(): ReactElement {
             value={formData.name}
             onChange={handleChange}
             required
-            className="w-full px-4 py-2 rounded-2xl bg-[var(--theme-base)] text-[var(--theme-text)] placeholder:text-white placeholder:text-opacity-100 focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)] overflow-hidden"
+            className="w-full px-4 py-2 rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] placeholder:text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)] overflow-hidden"
           />
           <input
             name="email"
@@ -106,7 +112,7 @@ export default function ContactForm(): ReactElement {
             value={formData.email}
             onChange={handleChange}
             required
-            className="w-full px-4 py-2 rounded-2xl bg-[var(--theme-base)] text-[var(--theme-text)] placeholder:text-white placeholder:text-opacity-100 focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)] overflow-hidden"
+            className="w-full px-4 py-2 rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] placeholder:text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)] overflow-hidden"
           />
           <textarea
             name="message"
@@ -114,18 +120,17 @@ export default function ContactForm(): ReactElement {
             value={formData.message}
             onChange={handleChange}
             required
-            className="w-full h-32 px-4 py-2 rounded-2xl bg-[var(--theme-base)] text-[var(--theme-text)] placeholder:text-white placeholder:text-opacity-100 focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)] overflow-hidden"
+            className="w-full h-32 px-4 py-2 rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] placeholder:text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)] overflow-hidden"
           />
           <div className="flex justify-center">
             <button
               type="submit"
               disabled={submitting}
-              className="w-fit bg-[var(--theme-button)] hover:bg-[var(--theme-hover)] text-black hover:text-white font-semibold py-2 px-6 rounded transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30"
+              className="w-fit bg-[var(--theme-button)] hover:bg-[var(--theme-hover)] text-[var(--theme-text-white)] font-semibold py-2 px-6 rounded transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30"
             >
               {submitting ? 'Sending...' : 'Send Message'}
             </button>
           </div>
-
         </form>
       </div>
     </section>

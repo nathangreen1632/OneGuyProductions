@@ -20,9 +20,17 @@ if (process.env.RENDER === undefined) {
 const REQUIRED_ENV: string[] = [
   'DATABASE_URL',
   'JWT_SECRET',
+  'RECAPTCHA_SECRET',
   'RESEND_API_KEY',
   'RESEND_FROM_EMAIL',
   'RESEND_TO_EMAIL',
+  'RESEND_CONTACT_RECEIVER_EMAIL',
+  'RESEND_ORDER_RECEIVER_EMAIL',
+  'EMAIL_FROM_ORDER',
+  'EMAIL_TO_ORDER',
+  'EMAIL_FROM_CONTACT',
+  'EMAIL_TO_CONTACT',
+
 ];
 
 const missingVars: string[] = REQUIRED_ENV.filter((v: string): boolean => !process.env[v]);
