@@ -3,8 +3,8 @@ import toast from 'react-hot-toast';
 import type { ContactPayload, ContactResponse } from '../types/contact';
 import type { ContactFormData } from '../types/formData';
 import { useContactStore } from '../store/useContactStore';
-import { waitForRecaptchaReady, loadRecaptcha } from '../utils/loadRecaptcha';
-import { getRecaptchaToken } from '../utils/getRecaptchaToken';
+import { loadRecaptcha } from '../utils/loadRecaptcha';
+import { executeRecaptchaFlow } from '../utils/recaptchaHandler';
 
 const RECAPTCHA_SITE_KEY: string = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
 
@@ -50,26 +50,9 @@ export default function ContactForm(): ReactElement {
     setSubmitting(true);
 
     try {
-      console.log('🌀 Step 1: Waiting for grecaptcha...');
-      try {
-        await waitForRecaptchaReady();
-        console.log('✅ Step 1 complete: grecaptcha is ready');
-      } catch (err) {
-        console.error('❌ Failed at Step 1 (waitForRecaptcha):', err);
-        toast.error('CAPTCHA failed to initialize.');
-        return;
-      }
+      const captchaToken = await executeRecaptchaFlow('submit_contact_form');
+      if (!captchaToken) return;
 
-      console.log('🌀 Step 2: Getting token...');
-      let captchaToken: string;
-      try {
-        captchaToken = await getRecaptchaToken('submit_contact_form', RECAPTCHA_SITE_KEY);
-        console.log('✅ Step 2 complete: Token retrieved');
-      } catch (err) {
-        console.error('❌ Failed at Step 2 (getRecaptchaToken):', err);
-        toast.error('CAPTCHA token failed. Please refresh and try again.');
-        return;
-      }
 
       const payload: ContactPayload = { ...formData, captchaToken };
       console.log('📦 Step 3: Sending payload to backend...', payload);
