@@ -14,6 +14,38 @@ const app: Express = express();
 
 app.disable('x-powered-by');
 
+app.use((req, res, next): void => {
+  const blockedPaths: string[] = [
+    '/wp-includes/',
+    '/xmlrpc.php',
+    '/wp/',
+    '/blog/',
+    '/wordpress/',
+    '/cms/',
+    '/site/',
+    '/sito/',
+    '/shop/',
+    '/wp1/',
+    '/wp2/',
+    '/media/',
+    '/news/',
+    '/2018/',
+    '/2019/',
+    '/2020/',
+    '/test/',
+    '/wlwmanifest.xml',
+  ];
+
+  const matched = blockedPaths.some((path) => req.url.toLowerCase().includes(path));
+  if (matched) {
+    console.warn(`🛑 Blocked bot probe: ${req.method} ${req.url} from ${req.ip}`);
+    res.status(404).send('Not Found');
+    return;
+  }
+
+  next();
+});
+
 app.use(
   helmet.contentSecurityPolicy({
     directives: {
