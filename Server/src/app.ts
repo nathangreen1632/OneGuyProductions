@@ -68,7 +68,7 @@ app.use(
         'https://api.resend.com',
         'https://www.oneguyproductions.com',
       ],
-      frameAncestors: ["'self'", 'https://www.oneguyproductions.com'],
+      frameAncestors: ["'self'", 'https://www.oneguyproductions.com', 'https://www.google.com'],
       upgradeInsecureRequests: [],
     },
     useDefaults: true,
