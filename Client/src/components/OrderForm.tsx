@@ -14,10 +14,9 @@ import type {
 } from '../types/order';
 import { useOrderStore } from '../store/useOrderStore';
 import {
-  waitForRecaptchaReady,
   loadRecaptcha,
 } from '../utils/loadRecaptcha';
-import { getRecaptchaToken } from '../utils/getRecaptchaToken'; // ✅ New import
+import { executeRecaptchaFlow } from '../utils/recaptchaHandler';
 
 const RECAPTCHA_SITE_KEY: string = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
 
@@ -70,26 +69,9 @@ export default function OrderForm(): ReactElement {
     setSubmitting(true);
 
     try {
-      console.log('🌀 Step 1: Waiting for grecaptcha...');
-      try {
-        await waitForRecaptchaReady();
-        console.log('✅ Step 1 complete: grecaptcha is ready');
-      } catch (err) {
-        console.error('❌ Failed at Step 1 (waitForRecaptcha):', err);
-        toast.error('CAPTCHA failed to initialize.');
-        return;
-      }
+      const captchaToken = await executeRecaptchaFlow('submit_order_form');
+      if (!captchaToken) return;
 
-      console.log('🌀 Step 2: Getting token...');
-      let captchaToken: string;
-      try {
-        captchaToken = await getRecaptchaToken('submit_order_form', RECAPTCHA_SITE_KEY);
-        console.log('✅ Step 2 complete: Token retrieved');
-      } catch (err) {
-        console.error('❌ Failed at Step 2 (getRecaptchaToken):', err);
-        toast.error('CAPTCHA token failed. Please refresh and try again.');
-        return;
-      }
 
       const payload: OrderPayload = { ...formData, captchaToken };
       console.log('📦 Step 3: Sending payload to backend...', payload);
