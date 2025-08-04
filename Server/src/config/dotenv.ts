@@ -20,7 +20,6 @@ if (process.env.RENDER === undefined) {
 const REQUIRED_ENV: string[] = [
   'DATABASE_URL',
   'JWT_SECRET',
-  'RECAPTCHA_SECRET',
   'RESEND_API_KEY',
   'RESEND_FROM_EMAIL',
   'RESEND_TO_EMAIL',
