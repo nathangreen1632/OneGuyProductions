@@ -1,12 +1,9 @@
-import React, { type ReactElement, type RefObject, useEffect, useRef, useState } from 'react';
+import React, { type ReactElement, type RefObject, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import type { DerivedOrderFormData, OrderFormData, OrderPayload, OrderResponse } from '../types/order';
 import { useOrderStore } from '../store/useOrderStore';
-import { loadRecaptcha } from '../utils/loadRecaptcha';
 import { executeRecaptchaFlow } from '../utils/recaptchaHandler';
 import OrderFormView from '../jsx/orderFormView';
-
-const RECAPTCHA_SITE_KEY: string = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
 
 const initialForm: Omit<DerivedOrderFormData, 'captchaToken'> = {
   name: '',
@@ -23,12 +20,6 @@ export default function OrderForm(): ReactElement {
   const [submitting, setSubmitting] = useState<boolean>(false);
   const lockRef: RefObject<boolean> = useRef<boolean>(false);
   const { setLastOrder, clearOrder } = useOrderStore();
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || !RECAPTCHA_SITE_KEY) return;
-    console.log('⛳ VITE_RECAPTCHA_SITE_KEY at runtime:', RECAPTCHA_SITE_KEY);
-    loadRecaptcha(RECAPTCHA_SITE_KEY);
-  }, []);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
