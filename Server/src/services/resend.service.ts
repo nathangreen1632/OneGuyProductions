@@ -30,7 +30,8 @@ export async function sendOrderEmail(data: {
   timeline: string;
 }): Promise<CreateEmailResponse> {
   const html = `
-    <html>
+    <html lang="us-en">
+      <head>
       <body>
         <h2>New Web Project Inquiry</h2>
         <p><strong>Name:</strong> ${data.name}</p>
@@ -41,6 +42,7 @@ export async function sendOrderEmail(data: {
         <p><strong>Timeline:</strong> ${data.timeline}</p>
         <p><strong>Description:</strong><br>${data.description}</p>
       </body>
+      </head>
     </html>
   `;
 
