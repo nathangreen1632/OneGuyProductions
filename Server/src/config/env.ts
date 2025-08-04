@@ -13,9 +13,6 @@ export const ENV = {
   // JWT
   JWT_SECRET: process.env.JWT_SECRET!,
 
-  // reCAPTCHA
-  RECAPTCHA_SECRET: process.env.RECAPTCHA_SECRET!,
-
   // Resend API
   RESEND_API_KEY: process.env.RESEND_API_KEY!,
   RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL!,
