@@ -1,13 +1,17 @@
-import React, { type ReactElement, type RefObject, useEffect, useRef, useState } from 'react';
+console.log('📝 ContactForm initialized');
+
+import React, {
+  type ReactElement,
+  type RefObject,
+  useRef,
+  useState,
+} from 'react';
 import toast from 'react-hot-toast';
 import type { ContactPayload, ContactResponse } from '../types/contact';
 import type { ContactFormData } from '../types/formData';
 import { useContactStore } from '../store/useContactStore';
-import { loadRecaptcha } from '../utils/loadRecaptcha';
-import { executeRecaptchaFlow } from '../utils/recaptchaHandler';
 import ContactFormView from '../jsx/contactFormView';
-
-const RECAPTCHA_SITE_KEY: string = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
+import { waitForReCaptchaEnterpriseAndExecute } from '../utils/waitForRecaptchaEnterprise'; // ✅ New helper
 
 const initialForm: ContactFormData = {
   name: '',
@@ -17,15 +21,9 @@ const initialForm: ContactFormData = {
 
 export default function ContactForm(): ReactElement {
   const [formData, setFormData] = useState<ContactFormData>(initialForm);
+  const [isRecaptchaReady] = useState<boolean>(true); // ✅ always true since we poll on submit
   const lockRef: RefObject<boolean> = useRef<boolean>(false);
   const { submitting, setSubmitting } = useContactStore();
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || !RECAPTCHA_SITE_KEY) return;
-
-    console.log('⛳ VITE_RECAPTCHA_SITE_KEY at runtime:', RECAPTCHA_SITE_KEY);
-    loadRecaptcha(RECAPTCHA_SITE_KEY);
-  }, []);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -42,16 +40,32 @@ export default function ContactForm(): ReactElement {
   };
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
+    console.log('🚀 Submitting form...');
     e.preventDefault();
     if (lockRef.current || submitting) return;
 
     lockRef.current = true;
     setSubmitting(true);
 
-    try {
-      const captchaToken = await executeRecaptchaFlow('submit_contact_form');
-      if (!captchaToken) return;
+    const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
+    if (!siteKey) {
+      toast.error('Missing reCAPTCHA key');
+      return;
+    }
 
+    let captchaToken: string;
+    try {
+      captchaToken = await waitForReCaptchaEnterpriseAndExecute(siteKey, 'submit_contact_form');
+      console.log('✅ Captcha token received');
+    } catch (err) {
+      console.error('❌ Error generating reCAPTCHA token', err);
+      toast.error('Captcha error. Please try again.');
+      lockRef.current = false;
+      setSubmitting(false);
+      return;
+    }
+
+    try {
       const payload: ContactPayload = { ...formData, captchaToken };
       console.log('📦 Step 3: Sending payload to backend...', payload);
 
@@ -94,6 +108,7 @@ export default function ContactForm(): ReactElement {
       submitting={submitting}
       handleChange={handleChange}
       handleSubmit={handleSubmit}
+      isRecaptchaReady={isRecaptchaReady}
     />
   );
 }
