@@ -1,6 +1,6 @@
 import { CreateEmailResponse, Resend } from 'resend';
-import '../config/dotenv.js'
-import {ENV} from "../config/env.js";
+import '../config/dotenv.js';
+import { ENV } from '../config/env.js';
 
 const resend = new Resend(ENV.RESEND_API_KEY);
 
@@ -30,14 +30,18 @@ export async function sendOrderEmail(data: {
   timeline: string;
 }): Promise<CreateEmailResponse> {
   const html = `
-    <h2>New Web Project Inquiry</h2>
-    <p><strong>Name:</strong> ${data.name}</p>
-    <p><strong>Email:</strong> ${data.email}</p>
-    <p><strong>Business Name:</strong> ${data.businessName ?? 'N/A'}</p>
-    <p><strong>Project Type:</strong> ${data.projectType}</p>
-    <p><strong>Budget:</strong> ${data.budget}</p>
-    <p><strong>Timeline:</strong> ${data.timeline}</p>
-    <p><strong>Description:</strong><br>${data.description}</p>
+    <html>
+      <body>
+        <h2>New Web Project Inquiry</h2>
+        <p><strong>Name:</strong> ${data.name}</p>
+        <p><strong>Email:</strong> <a href="mailto:${data.email}">${data.email}</a></p>
+        <p><strong>Business Name:</strong> ${data.businessName ?? 'N/A'}</p>
+        <p><strong>Project Type:</strong> ${data.projectType}</p>
+        <p><strong>Budget:</strong> ${data.budget}</p>
+        <p><strong>Timeline:</strong> ${data.timeline}</p>
+        <p><strong>Description:</strong><br>${data.description}</p>
+      </body>
+    </html>
   `;
 
   return await sendEmail({
@@ -48,18 +52,29 @@ export async function sendOrderEmail(data: {
   });
 }
 
-
 // === 📬 Contact Form Email ===
 export async function sendContactEmail(data: {
   name: string;
   email: string;
   message: string;
 }): Promise<CreateEmailResponse> {
+  // Optionally auto-link /order, /contact, or email-like text
+  const autoLinkedMessage = data.message
+    .replace(/(\bhttps?:\/\/[^\s<]+)/g, '<a href="$1">$1</a>')
+    .replace(/(\s\/[a-z0-9\-_/]+)/gi, match => `<a href="https://oneguyproductions.com${match.trim()}">${match.trim()}</a>`)
+    .replace(/\b([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\b/g, '<a href="mailto:$1">$1</a>');
+
   const html = `
-    <h2>New Contact Message</h2>
-    <p><strong>Name:</strong> ${data.name}</p>
-    <p><strong>Email:</strong> ${data.email}</p>
-    <p><strong>Message:</strong><br>${data.message}</p>
+    <html lang="us-en">
+      <head>
+      <body>
+        <h2>New Contact Message</h2>
+        <p><strong>Name:</strong> ${data.name}</p>
+        <p><strong>Email:</strong> <a href="mailto:${data.email}">${data.email}</a></p>
+        <p><strong>Message:</strong><br>${autoLinkedMessage}</p>
+      </body>
+      </head>
+    </html>
   `;
 
   return await sendEmail({
