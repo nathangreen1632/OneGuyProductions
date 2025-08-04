@@ -1,8 +1,8 @@
 import { OrderModel, OrderCreationAttributes } from '../models/order.model.js';
 import { sendOrderEmail } from './resend.service.js';
 
-export async function handleNewOrder(data: OrderCreationAttributes): Promise<void> {
-  console.log('📦 Handling new order:', {
+export async function handleNewOrder(data: OrderCreationAttributes): Promise<{ dbSuccess: boolean; emailSuccess: boolean }> {
+  console.log('📦 Handling new order submission:', {
     name: data.name,
     email: data.email,
     projectType: data.projectType,
@@ -11,19 +11,43 @@ export async function handleNewOrder(data: OrderCreationAttributes): Promise<voi
     timeline: data.timeline ?? 'N/A',
   });
 
+  let dbSuccess = false;
+  let emailSuccess = false;
+
+  // Database operation
   try {
     await OrderModel.create(data);
-    console.log('✅ Order saved to database.');
+    dbSuccess = true;
+    console.log('✅ Order saved to database successfully.');
   } catch (err) {
-    console.error('❌ Failed to save order to database:', err);
-    throw new Error('Database error while saving order.');
+    console.error('❌ Error saving order to database:', {
+      error: err,
+      payload: data,
+    });
   }
 
+  // Email operation
   try {
     await sendOrderEmail(data);
-    console.log('✉️ Order confirmation email sent.');
+    emailSuccess = true;
+    console.log('✉️ Order confirmation email sent successfully.');
   } catch (err) {
-    console.error('❌ Failed to send order email:', err);
-    throw new Error('Email service failed for order notification.');
+    console.error('❌ Error sending order confirmation email:', {
+      error: err,
+      payload: {
+        name: data.name,
+        email: data.email,
+        projectType: data.projectType,
+      },
+    });
   }
+
+  // Final status
+  console.log('📊 Order handling complete:', {
+    dbSuccess,
+    emailSuccess,
+    result: dbSuccess && emailSuccess ? 'full success' : dbSuccess ? 'partial (email failed)' : 'partial (db failed)',
+  });
+
+  return { dbSuccess, emailSuccess };
 }
