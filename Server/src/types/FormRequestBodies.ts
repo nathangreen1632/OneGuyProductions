@@ -46,10 +46,18 @@ export type RecaptchaVerificationResult = {
 };
 
 export interface RecaptchaVerificationResponse {
-  success: boolean;
-  score: number;
-  action?: string;
-  hostname?: string;
-  challenge_ts?: string;
-  errorCodes: string[];
+  name: string;
+  event?: unknown;
+  tokenProperties: {
+    valid: boolean;
+    invalidReason?: string;
+    hostname?: string;
+    action?: string;
+    createTime?: string;
+  };
+  riskAnalysis?: {
+    score?: number;
+    reasons?: string[];
+  };
 }
+
