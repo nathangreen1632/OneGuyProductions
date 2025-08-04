@@ -7,9 +7,16 @@ interface ContactFormViewProps {
   submitting: boolean;
   handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   handleSubmit: (e: React.FormEvent) => Promise<void>;
+  isRecaptchaReady: boolean;
 }
 
-export default function ContactFormView({ formData, submitting, handleChange, handleSubmit }: Readonly<ContactFormViewProps>): React.ReactElement {
+export default function ContactFormView({
+                                          formData,
+                                          submitting,
+                                          handleChange,
+                                          handleSubmit,
+                                          isRecaptchaReady,
+                                        }: Readonly<ContactFormViewProps>): React.ReactElement {
   return (
     <section className="max-w-2xl mx-auto px-4 py-12">
       <div className="rounded-2xl shadow-[0_4px_14px_0_var(--theme-shadow)] bg-[var(--theme-surface)] p-6">
@@ -42,14 +49,21 @@ export default function ContactFormView({ formData, submitting, handleChange, ha
             required
             className="w-full h-32 px-4 py-2 rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] placeholder:text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)] overflow-hidden"
           />
-          <div className="flex justify-center">
+          <div className="flex justify-center items-center gap-4">
             <button
               type="submit"
-              disabled={submitting}
-              className="w-fit bg-[var(--theme-button)] hover:bg-[var(--theme-hover)] text-[var(--theme-text-white)] font-semibold py-2 px-6 rounded transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30"
+              disabled={submitting || !isRecaptchaReady}
+              className="w-fit bg-[var(--theme-button)] hover:bg-[var(--theme-hover)] text-[var(--theme-text-white)] font-semibold py-2 px-6 rounded transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting ? 'Sending...' : 'Send Message'}
             </button>
+
+            {!isRecaptchaReady && (
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+                <span className="text-sm text-red-500">reCAPTCHA loading…</span>
+              </div>
+            )}
           </div>
         </form>
       </div>
