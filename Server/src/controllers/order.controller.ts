@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
 import { handleNewOrder } from '../services/order.service.js';
+import {HandleOrderResult} from "../types/FormRequestBodies.js";
 
 export async function submitOrder(req: Request, res: Response): Promise<void> {
-  console.log('📝 Order route hit');
 
   const {
     name,
@@ -15,7 +15,6 @@ export async function submitOrder(req: Request, res: Response): Promise<void> {
     captchaToken,
   } = req.body;
 
-  // 🚨 Validate request body
   if (!name || !email || !projectType || !budget || !description || !captchaToken) {
     console.warn('⚠️ Missing required fields in request:', {
       name,
@@ -29,10 +28,7 @@ export async function submitOrder(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  // 🔐 reCAPTCHA token was already verified in middleware — skip re-verification
-
-  // 📤 Proceed with order creation
-  const result = await handleNewOrder({
+  const result: HandleOrderResult = await handleNewOrder({
     name,
     email,
     businessName,
@@ -57,7 +53,6 @@ export async function submitOrder(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  console.log('✅ Order submitted successfully.');
   res.status(200).json({
     success: true,
     message: 'Order submitted and confirmation sent.',
