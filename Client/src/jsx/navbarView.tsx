@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {type ReactElement} from 'react';
 import { Link, type Location } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import type { NavLink } from '../constants/navLinks';
@@ -20,7 +20,7 @@ export default function NavbarView({ location, navLinks, menuOpen, toggleMenu, c
         </Link>
 
         <ul className="hidden sm:flex gap-6 text-sm font-medium">
-          {navLinks.map(({ label, path, icon: Icon }) => (
+          {navLinks.map(({ label, path, icon: Icon }: NavLink): ReactElement => (
             <li key={path}>
               <Link
                 to={path}
@@ -44,7 +44,7 @@ export default function NavbarView({ location, navLinks, menuOpen, toggleMenu, c
 
       {menuOpen && (
         <ul className="sm:hidden flex flex-col gap-4 px-6 pb-6 text-sm font-medium border-t border-[var(--theme-border)] bg-[var(--theme-bg)]">
-          {navLinks.map(({ label, path, icon: Icon }) => (
+          {navLinks.map(({ label, path, icon: Icon }: NavLink): ReactElement => (
             <li key={path}>
               <Link
                 to={path}
