@@ -1,5 +1,3 @@
-// Server/src/middleware/recaptcha.middleware.ts
-
 import { Request, Response, NextFunction } from 'express';
 import { verifyRecaptchaToken } from '../services/recaptcha.service.js';
 import type {
@@ -20,36 +18,44 @@ export async function recaptchaMiddleware(
   res: Response,
   next: NextFunction
 ): Promise<void> {
-  const token: string = req.body?.captchaToken;
+  const token: string | undefined = req.body?.captchaToken;
   const path: string = req.originalUrl;
-
   const expectedAction: string | undefined = actionMap[path];
 
-  console.log('🧱 [reCAPTCHA] Middleware hit:', {
-    route: path,
-    tokenExists: !!token,
-    expectedAction,
-  });
-
-  // 🔒 Basic token and path validation
   if (!token) {
-    console.warn('⛔ Missing reCAPTCHA token');
+    console.warn('⚠️ CAPTCHA token missing from request body:', path);
     res.status(400).json({ error: 'Missing CAPTCHA token' });
     return;
   }
 
   if (!expectedAction) {
-    console.warn('⚠️ No action mapping found for this path:', path);
+    console.error('❌ No expected CAPTCHA action mapped for path:', path);
     res.status(400).json({ error: 'Unrecognized form submission route' });
     return;
   }
 
-  // 🔍 Token verification
-  const result: RecaptchaVerificationResult = await verifyRecaptchaToken(token, expectedAction);
+  let result: RecaptchaVerificationResult;
 
-  // ❌ Validation failures
+  try {
+    result = await verifyRecaptchaToken(token, expectedAction);
+  } catch (err: unknown) {
+    let message: string;
+
+    if (err instanceof Error) {
+      message = err.message;
+    } else if (typeof err === 'string') {
+      message = err;
+    } else {
+      message = 'Unknown error during CAPTCHA verification';
+    }
+
+    console.error('❌ reCAPTCHA verification failed:', message);
+    res.status(500).json({ error: 'CAPTCHA verification error', message });
+    return;
+  }
+
   if (!result.success) {
-    console.warn('⛔ CAPTCHA verification failed:', result.errorCodes);
+    console.warn('⚠️ CAPTCHA verification failed:', result.errorCodes);
     res.status(403).json({
       error: 'CAPTCHA failed',
       details: result.errorCodes,
@@ -58,7 +64,7 @@ export async function recaptchaMiddleware(
   }
 
   if (!result.isScoreAcceptable) {
-    console.warn('📉 Low CAPTCHA score:', result.score);
+    console.warn('⚠️ CAPTCHA score too low:', result.score);
     res.status(403).json({
       error: 'CAPTCHA score too low',
       score: result.score,
@@ -67,9 +73,9 @@ export async function recaptchaMiddleware(
   }
 
   if (!result.isActionValid) {
-    console.warn('⚠️ Action mismatch:', {
+    console.warn('⚠️ CAPTCHA action mismatch:', {
       expected: expectedAction,
-      received: result.action,
+      actual: result.action,
     });
     res.status(400).json({
       error: 'CAPTCHA action mismatch',
@@ -79,6 +85,5 @@ export async function recaptchaMiddleware(
     return;
   }
 
-  console.log('✅ reCAPTCHA verified successfully. Proceeding.');
   next();
 }
