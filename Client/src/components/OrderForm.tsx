@@ -21,21 +21,22 @@ export default function OrderForm(): ReactElement {
   const lockRef: RefObject<boolean> = useRef<boolean>(false);
   const { setLastOrder, clearOrder } = useOrderStore();
 
-  const handleChange = (
+  const handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+) => void = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ): void => {
     const { name, value } = e.target;
     if (!name) return;
 
     if (name in formData) {
-      setFormData((prev) => ({
+      setFormData((prev: OrderFormData): OrderFormData => ({
         ...prev,
         [name as keyof OrderFormData]: value,
       }));
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
+  const handleSubmit: ((e: React.FormEvent) => Promise<void>) = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     if (lockRef.current || submitting) return;
 
@@ -43,11 +44,10 @@ export default function OrderForm(): ReactElement {
     setSubmitting(true);
 
     try {
-      const captchaToken = await executeRecaptchaFlow('submit_order_form');
+      const captchaToken: string | null = await executeRecaptchaFlow('submit_order_form');
       if (!captchaToken) return;
 
       const payload: OrderPayload = { ...formData, captchaToken };
-      console.log('📦 Step 3: Sending payload to backend...', payload);
 
       let res: Response;
       try {
@@ -57,14 +57,12 @@ export default function OrderForm(): ReactElement {
           body: JSON.stringify(payload),
         });
       } catch (err) {
-        console.error('❌ Failed at Step 3 (fetch error):', err);
+        console.error('❌ Network error during form submission:', err);
         toast.error('Network error while submitting request.');
         return;
       }
 
-      console.log('📬 Step 4: Awaiting server response...');
       if (res.ok) {
-        console.log('✅ Step 4 complete: Success response received');
         toast.success('Your request was submitted successfully!');
         setLastOrder(payload);
         clearOrder();
