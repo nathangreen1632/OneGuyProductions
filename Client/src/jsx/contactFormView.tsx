@@ -1,4 +1,3 @@
-// Client/src/jsx/contactFormView.tsx
 import React from 'react';
 import type { ContactFormData } from '../types/formData';
 
@@ -10,13 +9,7 @@ interface ContactFormViewProps {
   isRecaptchaReady: boolean;
 }
 
-export default function ContactFormView({
-                                          formData,
-                                          submitting,
-                                          handleChange,
-                                          handleSubmit,
-                                          isRecaptchaReady,
-                                        }: Readonly<ContactFormViewProps>): React.ReactElement {
+export default function ContactFormView({ formData, submitting, handleChange, handleSubmit, isRecaptchaReady }: Readonly<ContactFormViewProps>): React.ReactElement {
   return (
     <section className="max-w-2xl mx-auto px-4 py-12">
       <div className="rounded-2xl shadow-[0_4px_14px_0_var(--theme-shadow)] bg-[var(--theme-surface)] p-6">
@@ -57,7 +50,8 @@ export default function ContactFormView({
             >
               {submitting ? 'Sending...' : 'Send Message'}
             </button>
-
+          </div>
+          <div className="flex justify-center items-center mt-4">
             {!isRecaptchaReady && (
               <div className="flex items-center gap-2">
                 <div className="w-5 h-5 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
