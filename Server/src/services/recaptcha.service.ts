@@ -1,4 +1,5 @@
 import { GoogleAuth } from 'google-auth-library';
+import fs from 'fs/promises';
 import type {
   RecaptchaVerificationResponse,
   RecaptchaVerificationResult,
@@ -8,8 +9,23 @@ import '../config/dotenv.js';
 const PROJECT_ID = process.env.RECAPTCHA_PROJECT_ID || '';
 const SITE_KEY = process.env.RECAPTCHA_SITE_KEY || '';
 const MIN_SCORE = parseFloat(process.env.RECAPTCHA_MIN_SCORE || '0.5');
-const SERVICE_ACCOUNT_KEY_PATH = process.env.GOOGLE_APPLICATION_CREDENTIALS || './service-account.json';
 const IS_PROD = process.env.NODE_ENV === 'production';
+
+const SERVICE_ACCOUNT_KEY_PATH = '/tmp/service-account.json';
+
+(async () => {
+  if (process.env.GOOGLE_CREDENTIALS_B64) {
+    try {
+      const buffer = Buffer.from(process.env.GOOGLE_CREDENTIALS_B64, 'base64');
+      await fs.writeFile(SERVICE_ACCOUNT_KEY_PATH, buffer, { mode: 0o600 });
+      console.log('✅ Service account credentials decoded and written to /tmp with secure permissions');
+    } catch (err) {
+      console.error('❌ Failed to decode or write service account credentials to /tmp:', err);
+    }
+  } else {
+    console.error('❌ GOOGLE_CREDENTIALS_B64 is not set. reCAPTCHA verification will fail.');
+  }
+})();
 
 const auth = new GoogleAuth({
   keyFile: SERVICE_ACCOUNT_KEY_PATH,
@@ -31,7 +47,6 @@ export async function verifyRecaptchaToken(
     isScoreAcceptable: false,
   };
 
-  // Early exit if misconfigured
   if (!token || !SITE_KEY || !PROJECT_ID) {
     console.warn('⚠️ reCAPTCHA verification skipped due to missing config:', {
       tokenProvided: !!token,
@@ -46,7 +61,6 @@ export async function verifyRecaptchaToken(
     console.log('🔐 GoogleAuth client acquired successfully');
 
     const { token: accessToken } = await client.getAccessToken() || {};
-
     if (!accessToken) {
       console.error('❌ Failed to acquire reCAPTCHA access token');
       return defaultResult;
@@ -80,10 +94,9 @@ export async function verifyRecaptchaToken(
     const data: RecaptchaVerificationResponse = await response.json();
     console.log('📥 Raw reCAPTCHA API response:', data);
 
-
     const result: RecaptchaVerificationResult = {
       success: data.tokenProperties?.valid ?? false,
-      score: data.riskAnalysis?.score, // ✅ FIXED
+      score: data.riskAnalysis?.score,
       action: data.tokenProperties?.action,
       hostname: data.tokenProperties?.hostname,
       challenge_ts: data.tokenProperties?.createTime,
@@ -95,8 +108,6 @@ export async function verifyRecaptchaToken(
         (data.tokenProperties?.valid ?? false) &&
         (data.riskAnalysis?.score ?? 0) >= (IS_PROD ? MIN_SCORE : 0.1),
     };
-
-
 
     console.log('📊 reCAPTCHA verification result:', {
       success: result.success,
