@@ -36,7 +36,7 @@ app.use((req, res, next): void => {
     '/wlwmanifest.xml',
   ];
 
-  const matched = blockedPaths.some((path) => req.url.toLowerCase().includes(path));
+  const matched: boolean = blockedPaths.some((path: string): boolean => req.url.toLowerCase().includes(path));
   if (matched) {
     console.warn(`🛑 Blocked bot probe: ${req.method} ${req.url} from ${req.ip}`);
     res.status(404).send('Not Found');

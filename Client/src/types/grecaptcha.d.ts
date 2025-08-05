@@ -1,11 +1,15 @@
-export interface ReCaptchaV3 {
+// Client/src/types/grecaptcha.d.ts
+
+export interface ReCaptchaEnterpriseV3 {
   ready(callback: () => void): void;
   execute(siteKey: string, options: { action: string }): Promise<string>;
 }
 
 declare global {
   interface Window {
-    grecaptcha?: ReCaptchaV3; // ✅ Make optional so optional chaining works
+    grecaptcha: {
+      enterprise: ReCaptchaEnterpriseV3;
+    };
   }
 }
 

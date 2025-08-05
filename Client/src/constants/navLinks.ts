@@ -1,11 +1,5 @@
 import React from 'react';
-import {
-  Home,
-  Box,
-  Info,
-  Mail,
-  ShoppingBag,
-} from 'lucide-react';
+import { Home, Box, Info, Mail, ShoppingBag } from 'lucide-react';
 
 export interface NavLink {
   label: string;

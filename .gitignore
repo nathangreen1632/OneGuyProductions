@@ -273,3 +273,8 @@ fabric.properties
 
 # Sequelize configuration file
 .sequelizerc
+
+# Google CLI files
+.gcloud
+# Ignore Google Cloud SDK
+/google-cloud-sdk/

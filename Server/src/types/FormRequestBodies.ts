@@ -1,7 +1,3 @@
-// =============================
-// FORM BODY TYPES
-// =============================
-
 export interface ContactFormBody {
   captchaToken: string;
   name: string;
@@ -20,19 +16,11 @@ export interface OrderFormBody {
   description: string;
 }
 
-// =============================
-// ROUTE + REQUEST MAPPING TYPES
-// =============================
-
 export type KnownFormPaths = '/api/contact/submit' | '/api/order/submit';
 
 export type RecaptchaRequestBody =
   | (ContactFormBody & { path: '/api/contact/submit' })
   | (OrderFormBody & { path: '/api/order/submit' });
-
-// =============================
-// RECAPTCHA VERIFICATION TYPES
-// =============================
 
 export type RecaptchaVerificationResult = {
   success: boolean;
@@ -46,10 +34,22 @@ export type RecaptchaVerificationResult = {
 };
 
 export interface RecaptchaVerificationResponse {
-  success: boolean;
-  score: number;
-  action?: string;
-  hostname?: string;
-  challenge_ts?: string;
-  errorCodes: string[];
+  name: string;
+  event?: unknown;
+  tokenProperties: {
+    valid: boolean;
+    invalidReason?: string;
+    hostname?: string;
+    action?: string;
+    createTime?: string;
+  };
+  riskAnalysis?: {
+    score?: number;
+    reasons?: string[];
+  };
+}
+
+export interface HandleOrderResult {
+  dbSuccess: boolean;
+  emailSuccess: boolean;
 }

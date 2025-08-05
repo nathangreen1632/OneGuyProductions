@@ -1,29 +1,43 @@
 import { OrderModel, OrderCreationAttributes } from '../models/order.model.js';
 import { sendOrderEmail } from './resend.service.js';
 
-export async function handleNewOrder(data: OrderCreationAttributes): Promise<void> {
-  console.log('📦 Handling new order:', {
-    name: data.name,
-    email: data.email,
-    projectType: data.projectType,
-    budget: data.budget,
-    businessName: data.businessName ?? 'N/A',
-    timeline: data.timeline ?? 'N/A',
-  });
+interface OrderHandlingResult {
+  dbSuccess: boolean;
+  emailSuccess: boolean;
+}
+
+export async function handleNewOrder(data: OrderCreationAttributes): Promise<OrderHandlingResult> {
+
+  let dbSuccess: boolean = false;
+  let emailSuccess: boolean = false;
 
   try {
     await OrderModel.create(data);
-    console.log('✅ Order saved to database.');
-  } catch (err) {
-    console.error('❌ Failed to save order to database:', err);
-    throw new Error('Database error while saving order.');
+    dbSuccess = true;
+  } catch (err: unknown) {
+    const dbErrorMessage: string =
+      err instanceof Error ? err.message : 'Unknown database error';
+    console.error('❌ [handleNewOrder] DB save failed:', {
+      error: dbErrorMessage,
+      payload: data,
+    });
   }
 
   try {
     await sendOrderEmail(data);
-    console.log('✉️ Order confirmation email sent.');
-  } catch (err) {
-    console.error('❌ Failed to send order email:', err);
-    throw new Error('Email service failed for order notification.');
+    emailSuccess = true;
+  } catch (err: unknown) {
+    const emailErrorMessage: string =
+      err instanceof Error ? err.message : 'Unknown email error';
+    console.error('❌ [handleNewOrder] Email send failed:', {
+      error: emailErrorMessage,
+      payload: {
+        name: data.name,
+        email: data.email,
+        projectType: data.projectType,
+      },
+    });
   }
+
+  return { dbSuccess, emailSuccess };
 }

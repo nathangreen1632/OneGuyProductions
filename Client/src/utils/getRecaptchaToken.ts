@@ -1,25 +1,23 @@
 import toast from 'react-hot-toast';
+import type {ReCaptchaEnterpriseV3} from '../types/grecaptcha';
 
 export async function getRecaptchaToken(
   action: string,
   siteKey: string
 ): Promise<string> {
-  console.log('🧠 Starting token request for:', action);
-
-  const grecaptcha = window.grecaptcha;
+  const grecaptcha: ReCaptchaEnterpriseV3 | undefined = window.grecaptcha?.enterprise;
 
   if (!grecaptcha || typeof grecaptcha.execute !== 'function') {
-    toast.error('reCAPTCHA is not available.');
-    throw new Error('grecaptcha.execute is not available');
+    console.error('❌ grecaptcha.enterprise.execute is not available');
+    toast.error('Security verification unavailable. Please try again later.');
+    return '';
   }
 
   try {
-    const token: string = await grecaptcha.execute(siteKey, { action });
-    console.log('✅ Token received:', token);
-    return token;
+    return await grecaptcha.execute(siteKey, {action});
   } catch (err: unknown) {
-    toast.error('Failed to execute reCAPTCHA.');
-    console.error('❌ reCAPTCHA execute error:', err);
-    throw err instanceof Error ? err : new Error('Unknown reCAPTCHA error');
+    console.error('❌ reCAPTCHA Enterprise execute error:', err);
+    toast.error('Could not verify request. Please try again.');
+    return '';
   }
 }
