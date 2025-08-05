@@ -1,9 +1,6 @@
-import { GoogleAuth } from 'google-auth-library';
+import {GoogleAuth} from 'google-auth-library';
 import fs from 'fs/promises';
-import type {
-  RecaptchaVerificationResponse,
-  RecaptchaVerificationResult,
-} from '../types/FormRequestBodies.js';
+import type {RecaptchaVerificationResponse, RecaptchaVerificationResult,} from '../types/FormRequestBodies.js';
 import '../config/dotenv.js';
 
 const PROJECT_ID: string = process.env.RECAPTCHA_PROJECT_ID || '';
@@ -91,7 +88,7 @@ export async function verifyRecaptchaToken(
 
     const data: RecaptchaVerificationResponse = await response.json();
 
-    const result: RecaptchaVerificationResult = {
+    return {
       success: data.tokenProperties?.valid ?? false,
       score: data.riskAnalysis?.score,
       action: data.tokenProperties?.action,
@@ -105,8 +102,6 @@ export async function verifyRecaptchaToken(
         (data.tokenProperties?.valid ?? false) &&
         (data.riskAnalysis?.score ?? 0) >= (IS_PROD ? MIN_SCORE : 0.1),
     };
-
-    return result;
   } catch (err) {
     console.error('❌ Unexpected error during reCAPTCHA verification:', err);
     return defaultResult;
