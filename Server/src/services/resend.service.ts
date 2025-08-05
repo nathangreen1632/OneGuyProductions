@@ -4,7 +4,6 @@ import { ENV } from '../config/env.js';
 
 const resend = new Resend(ENV.RESEND_API_KEY);
 
-// === Shared email sender utility ===
 export async function sendEmail(options: {
   from: string;
   to: string;
@@ -19,7 +18,6 @@ export async function sendEmail(options: {
   });
 }
 
-// === 💼 Project Order Email ===
 export async function sendOrderEmail(data: {
   name: string;
   email: string;
@@ -47,20 +45,18 @@ export async function sendOrderEmail(data: {
   `;
 
   return await sendEmail({
-    from: ENV.EMAIL_FROM_ORDER,
-    to: ENV.RESEND_ORDER_RECEIVER_EMAIL ?? ENV.RESEND_TO_ORDER!,
+    from: ENV.EMAIL_FROM_ORDER ?? '',
+    to: ENV.RESEND_ORDER_RECEIVER_EMAIL ?? ENV.RESEND_TO_ORDER ?? '',
     subject: `New Project Inquiry from ${data.name}`,
     html,
   });
 }
 
-// === 📬 Contact Form Email ===
 export async function sendContactEmail(data: {
   name: string;
   email: string;
   message: string;
 }): Promise<CreateEmailResponse> {
-  // Optionally auto-link /order, /contact, or email-like text
   const autoLinkedMessage = data.message
     .replace(/(\bhttps?:\/\/[^\s<]+)/g, '<a href="$1">$1</a>')
     .replace(/(\s\/[a-z0-9\-_/]+)/gi, match => `<a href="https://oneguyproductions.com${match.trim()}">${match.trim()}</a>`)
@@ -80,7 +76,7 @@ export async function sendContactEmail(data: {
   `;
 
   return await sendEmail({
-    from: ENV.RESEND_FROM_EMAIL ?? ENV.EMAIL_FROM_CONTACT,
+    from: ENV.RESEND_FROM_EMAIL ?? ENV.EMAIL_FROM_CONTACT ?? '',
     to: ENV.RESEND_CONTACT_RECEIVER_EMAIL ?? ENV.RESEND_TO_EMAIL ?? '',
     subject: `New Contact Message from ${data.name}`,
     html,
