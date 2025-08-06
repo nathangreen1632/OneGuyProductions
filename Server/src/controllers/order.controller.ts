@@ -80,6 +80,53 @@ export async function submitOrder(req: Request, res: Response): Promise<void> {
   }
 }
 
+// ─────────────────────────────────────────────────────────────
+// ✏️ Update Order (within 72 hours)
+// ─────────────────────────────────────────────────────────────
+export async function updateOrder(req: Request, res: Response): Promise<void> {
+  const userId = (req as any).user?.id;
+  const orderId = parseInt(req.params.id, 10);
+  const { businessName, projectType, budget, timeline, description } = req.body;
+
+  if (!userId) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+
+  if (isNaN(orderId)) {
+    res.status(400).json({ error: 'Invalid order ID.' });
+    return;
+  }
+
+  try {
+    const order = await Order.findOne({ where: { id: orderId, customerId: userId } });
+
+    if (!order) {
+      res.status(404).json({ error: 'Order not found.' });
+      return;
+    }
+
+    if (!isWithin72Hours(order.createdAt.toISOString())) {
+      res.status(403).json({ error: 'Order can no longer be edited.' });
+      return;
+    }
+
+    await order.update({
+      businessName,
+      projectType,
+      budget,
+      timeline,
+      description,
+    });
+
+    res.status(200).json({ success: true, message: 'Order updated.', orderId });
+  } catch (err) {
+    console.error('❌ Update Order Error:', err);
+    res.status(500).json({ error: 'Failed to update order.' });
+  }
+}
+
+
 
 // ─────────────────────────────────────────────────────────────
 // 📦 Get Orders for Logged-In Customer
