@@ -1,12 +1,12 @@
 import React from 'react';
 import { useOrderStore } from '../store/useOrderStore';
-import { useEditOrderStore } from '../store/useEditOrderStore'; // ✅ added
+import { useEditOrderStore } from '../store/useEditOrderStore';
 import { isWithin72Hours } from '../utils/dateHelpers';
 import { format } from 'date-fns';
 
 export default function OrderTimelineView(): React.ReactElement {
   const { orders } = useOrderStore();
-  const { openModal: openEditModal } = useEditOrderStore(); // ✅ extract edit modal handler
+  const { openModal: openEditModal } = useEditOrderStore();
 
   return (
     <div className="flex flex-col gap-6">
@@ -40,18 +40,22 @@ export default function OrderTimelineView(): React.ReactElement {
 
             {/* Timeline */}
             <div className="flex flex-col gap-4 border-l-2 border-[var(--theme-border)] pl-4">
-              {order.updates.map((update, index) => (
-                <div key={index} className="relative">
-                  <div className="absolute -left-3 top-1.5 w-3 h-3 rounded-full bg-[var(--theme-border)]" />
-                  <div className="flex flex-col gap-1">
-                    <p className="text-sm font-semibold">{update.user}</p>
-                    <p className="text-xs text-gray-500">
-                      {format(new Date(update.timestamp), 'PPP p')}
-                    </p>
-                    <p className="text-sm">{update.message}</p>
+              {order.updates.map((update) => {
+                const uniqueKey = `${update.user}-${update.timestamp}-${update.message.slice(0, 20)}`;
+
+                return (
+                  <div key={uniqueKey} className="relative">
+                    <div className="absolute -left-3 top-1.5 w-3 h-3 rounded-full bg-[var(--theme-border)]" />
+                    <div className="flex flex-col gap-1">
+                      <p className="text-sm font-semibold">{update.user}</p>
+                      <p className="text-xs text-gray-500">
+                        {format(new Date(update.timestamp), 'PPP p')}
+                      </p>
+                      <p className="text-sm">{update.message}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
 
               {order.updates.length === 0 && (
                 <p className="text-sm text-gray-400 italic">No updates yet.</p>
