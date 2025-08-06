@@ -15,7 +15,7 @@ router.post('/submit', recaptchaMiddleware, submitOrder);
 
 // ✅ Customer Portal routes (must be authenticated via JWT)
 router.get('/my-orders', authenticateToken, getUserOrders);
-router.post('/:id/cancel', authenticateToken, cancelOrder);
+router.patch('/:id/cancel', authenticateToken, cancelOrder);
 router.get('/:id/invoice', authenticateToken, downloadInvoice);
 
 export default router;
