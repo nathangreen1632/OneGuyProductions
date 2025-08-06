@@ -12,7 +12,7 @@ export interface OrderAttributes {
   description: string;
   customerId: number | null;
   status?: 'pending' | 'in-progress' | 'needs-feedback' | 'complete' | 'cancelled';
-  createdAt?: Date;
+  createdAt: Date;
   updatedAt?: Date;
 }
 
@@ -38,14 +38,11 @@ export const OrderModel = sequelize.define<OrderInstance>(
     budget: { type: DataTypes.STRING, allowNull: false },
     timeline: { type: DataTypes.STRING, allowNull: false },
     description: { type: DataTypes.TEXT, allowNull: false },
-
-    // ✅ Explicit field mapping for PostgreSQL case-sensitive column
     customerId: {
       type: DataTypes.INTEGER.UNSIGNED,
       allowNull: true,
       field: 'customerId',
     },
-
     status: {
       type: DataTypes.ENUM(
         'pending',
@@ -57,6 +54,16 @@ export const OrderModel = sequelize.define<OrderInstance>(
       allowNull: false,
       defaultValue: 'pending',
     },
+
+    // 👇 Add these two fields just to satisfy TypeScript
+    createdAt: {
+      type: DataTypes.DATE,
+      allowNull: false,
+    },
+    updatedAt: {
+      type: DataTypes.DATE,
+      allowNull: false,
+    },
   },
   {
     modelName: 'Order',
@@ -64,3 +71,4 @@ export const OrderModel = sequelize.define<OrderInstance>(
     timestamps: true,
   }
 );
+
