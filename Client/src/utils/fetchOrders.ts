@@ -1,6 +1,6 @@
 export async function fetchOrders(): Promise<any[]> {
   try {
-    const res = await fetch('/api/orders', {
+    const res = await fetch('/api/order', {
       method: 'GET',
       credentials: 'include',
     });
