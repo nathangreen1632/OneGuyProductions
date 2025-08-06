@@ -4,13 +4,14 @@ import { useOrderStore } from '../store/useOrderStore';
 import { isWithin72Hours } from '../utils/dateHelpers';
 import NotificationBadge from '../components/NotificationBadge';
 import OrderEditModal from './orderEditModal';
-import type { Order } from '../types/order';
+import type { Order, OrderStatus } from '../types/order';
 
 export default function OrderCardView(): React.ReactElement {
   const { orders, unreadOrderIds, markAsRead } = useOrderStore();
 
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [canceledOrderIds, setCanceledOrderIds] = useState<number[]>([]);
 
   const handleCardClick = (order: Order): void => {
     if (unreadOrderIds.includes(order.id)) {
@@ -43,9 +44,36 @@ export default function OrderCardView(): React.ReactElement {
     }
   };
 
-  const handleCancel = (order: Order): void => {
-    console.log('Canceling order:', order.id);
+  const handleCancel = async (order: Order): Promise<void> => {
+    try {
+      // Optimistically mark as canceled
+      setCanceledOrderIds((prev) => [...prev, order.id]);
+
+      const res = await fetch(`/api/order/${order.id}/cancel`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      });
+
+      if (!res.ok) {
+        toast.error('Failed to cancel order.');
+        console.error('❌ Cancel order failed:', await res.text());
+        return;
+      }
+
+      // ✅ Update local order status
+      const updatedOrders = orders.map((o) =>
+        o.id === order.id ? { ...o, status: 'cancelled' as OrderStatus } : o
+      );
+      useOrderStore.setState({ orders: updatedOrders });
+
+      toast.success('Order canceled.');
+    } catch (err) {
+      console.error('❌ Cancel error:', err);
+      toast.error('Server error while canceling order.');
+    }
   };
+
 
   const handleDownload = (orderId: number): void => {
     console.log('Downloading invoice for:', orderId);
@@ -106,7 +134,16 @@ export default function OrderCardView(): React.ReactElement {
                 </div>
                 <div className="sm:col-span-2">
                   <p className="text-sm text-[var(--theme-border)]">Status</p>
-                  <p className="font-bold text-emerald-600 capitalize">{order.status}</p>
+                  <p
+                    className={`font-bold capitalize ${
+                      order.status === 'cancelled'
+                        ? 'text-red-500'
+                        : 'text-emerald-600'
+                    }`}
+                  >
+                    {order.status}
+                  </p>
+
                 </div>
               </div>
 
@@ -124,11 +161,17 @@ export default function OrderCardView(): React.ReactElement {
                 {isEditable && (
                   <button
                     onClick={() => handleCancel(order)}
-                    className="px-4 py-2 bg-[var(--theme-border-red)] text-[var(--theme-text-white)] text-sm rounded shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60"
+                    disabled={canceledOrderIds.includes(order.id)}
+                    className={`px-4 py-2 text-sm rounded shadow-md focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60 ${
+                      canceledOrderIds.includes(order.id)
+                        ? 'bg-gray-500 cursor-not-allowed text-white'
+                        : 'bg-[var(--theme-border-red)] hover:bg-red-700 text-[var(--theme-text-white)]'
+                    }`}
                   >
-                    Cancel
+                    {canceledOrderIds.includes(order.id) ? 'Cancelled' : 'Cancel'}
                   </button>
                 )}
+
 
                 <button
                   onClick={() => handleDownload(order.id)}
