@@ -1,6 +1,6 @@
-import './dotenv.js';
+import './dotenv.config.js';
 
-export const ENV = {
+export const EnvConfig = {
   // Runtime environment
   NODE_ENV: process.env.NODE_ENV ?? 'development',
 
