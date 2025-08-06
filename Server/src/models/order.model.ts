@@ -10,7 +10,7 @@ export interface OrderAttributes {
   budget: string;
   timeline: string;
   description: string;
-  customerId: number;
+  customerId: number | null;
   status?: 'pending' | 'in-progress' | 'needs-feedback' | 'complete' | 'cancelled';
   createdAt?: Date;
   updatedAt?: Date;
@@ -42,7 +42,7 @@ export const OrderModel = sequelize.define<OrderInstance>(
     // ✅ Explicit field mapping for PostgreSQL case-sensitive column
     customerId: {
       type: DataTypes.INTEGER.UNSIGNED,
-      allowNull: false,
+      allowNull: true,
       field: 'customerId',
     },
 
