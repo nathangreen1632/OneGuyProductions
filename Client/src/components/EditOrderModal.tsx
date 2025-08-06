@@ -37,9 +37,10 @@ export default function EditOrderModal(): React.ReactElement | null {
 
     setLoading(true);
     try {
-      const res = await fetch(`/api/orders/${targetOrder.id}`, {
+      const res = await fetch(`/api/order/${targetOrder.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(form),
       });
 
