@@ -52,6 +52,15 @@ export default function AuthForm(): React.ReactElement {
     }
   }
 
+  let buttonText: string;
+  if (loading) {
+    buttonText = 'Please wait...';
+  } else if (isLogin) {
+    buttonText = 'Log In';
+  } else {
+    buttonText = 'Register';
+  }
+
   return (
     <div className="min-h-[85vh] flex items-center justify-center px-8 bg-[var(--theme-bg)] text-[var(--theme-text)]">
       <div className="w-full max-w-md bg-[var(--theme-surface)] rounded-2xl p-6 sm:p-8 shadow-[0_0_25px_3px_var(--theme-shadow)]">
@@ -99,8 +108,9 @@ export default function AuthForm(): React.ReactElement {
             className="mt-2 w-full py-2 rounded bg-[var(--theme-button)] text-[var(--theme-text-white)] font-medium shadow hover:bg-[var(--theme-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 transition"
             disabled={loading}
           >
-            {loading ? 'Please wait...' : isLogin ? 'Log In' : 'Register'}
+            {buttonText}
           </button>
+
         </form>
 
         {isLogin && (
