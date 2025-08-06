@@ -128,42 +128,51 @@ export default function OrderCardView(): React.ReactElement {
           return (
             <div
               key={order.id}
+              className="relative rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] p-4 sm:p-6 shadow-[0_4px_14px_0_var(--theme-shadow)] border border-[var(--theme-border)] transition cursor-pointer hover:shadow-[0_0_25px_2px_var(--theme-shadow)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
+              role="group"
+              aria-label={`Order card for ${order.name}`}
+              tabIndex={0}
               onClick={() => handleCardClick(order)}
-              className="relative rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] p-4 sm:p-6 shadow-[0_4px_14px_0_var(--theme-shadow)] border border-[var(--theme-border)] transition cursor-pointer hover:shadow-[0_0_25px_2px_var(--theme-shadow)] focus-within:ring-2 focus-within:ring-[var(--theme-focus)]"
+              onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleCardClick(order);
+                }
+              }}
             >
               {isUnread && <NotificationBadge />}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm text-[var(--theme-border)]">Name</p>
+                  <p className="text-lg text-[var(--theme-text)] underline">Name</p>
                   <p className="font-semibold">{order.name}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-[var(--theme-border)]">Email</p>
+                  <p className="text-lg text-[var(--theme-text)] underline">Email</p>
                   <p className="font-semibold">{order.email}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-[var(--theme-border)]">Business</p>
+                  <p className="text-lg text-[var(--theme-text)] underline">Business</p>
                   <p className="font-semibold">{order.businessName}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-[var(--theme-border)]">Project Type</p>
+                  <p className="text-lg text-[var(--theme-text)] underline">Project Type</p>
                   <p className="font-semibold">{order.projectType}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-[var(--theme-border)]">Budget</p>
+                  <p className="text-lg text-[var(--theme-text)] underline">Budget</p>
                   <p className="font-semibold">{order.budget}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-[var(--theme-border)]">Timeline</p>
+                  <p className="text-lg text-[var(--theme-text)] underline">Timeline</p>
                   <p className="font-semibold">{order.timeline}</p>
                 </div>
                 <div className="sm:col-span-2">
-                  <p className="text-sm text-[var(--theme-border)]">Description</p>
+                  <p className="text-lg text-[var(--theme-text)] underline">Description</p>
                   <p className="font-medium">{order.description}</p>
                 </div>
                 <div className="sm:col-span-2">
-                  <p className="text-sm text-[var(--theme-border)]">Status</p>
+                  <p className="text-lg text-[var(--theme-text)] underline">Status</p>
                   <p
                     className={`font-bold capitalize ${
                       order.status === 'cancelled'
@@ -173,7 +182,6 @@ export default function OrderCardView(): React.ReactElement {
                   >
                     {order.status}
                   </p>
-
                 </div>
               </div>
 
@@ -201,7 +209,6 @@ export default function OrderCardView(): React.ReactElement {
                     {canceledOrderIds.includes(order.id) ? 'Cancelled' : 'Cancel'}
                   </button>
                 )}
-
 
                 <button
                   onClick={() => handleDownload(order.id)}
