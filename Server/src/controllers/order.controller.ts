@@ -34,15 +34,13 @@ export async function submitOrder(req: Request, res: Response): Promise<void> {
   }
 
   try {
+    // Try to find an existing user — but don't require one
     const user = await User.findOne({ where: { email } });
+    const customerId = user?.id || null;
 
     if (!user) {
-      console.error(`❌ No user found for email: ${email}`);
-      res.status(401).json({ error: 'Unauthorized. User not found for this email.' });
-      return;
+      console.warn(`🟡 Proceeding without linked user for email: ${email}`);
     }
-
-    const customerId = user.id; // ✅ safely set from DB
 
     const result: HandleOrderResult = await handleNewOrder({
       name,
@@ -52,7 +50,7 @@ export async function submitOrder(req: Request, res: Response): Promise<void> {
       budget,
       timeline,
       description,
-      customerId,
+      customerId, // ✅ null-safe
     });
 
     if (!result.dbSuccess) {
@@ -79,6 +77,7 @@ export async function submitOrder(req: Request, res: Response): Promise<void> {
     res.status(500).json({ error: 'Server error while submitting order.' });
   }
 }
+
 
 // ─────────────────────────────────────────────────────────────
 // 📦 Get Orders for Logged-In Customer
