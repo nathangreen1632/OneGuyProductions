@@ -1,7 +1,7 @@
 // Client/src/components/ResetPasswordModal.tsx
 import React, { useState } from 'react';
 import toast from 'react-hot-toast';
-import Modal from './Modal';
+import TimelineEditModal from './TimelineEditModal';
 import { useResetPasswordStore } from '../store/useResetPasswordStore';
 
 export default function ResetPasswordModal(): React.ReactElement | null {
@@ -83,7 +83,7 @@ export default function ResetPasswordModal(): React.ReactElement | null {
   };
 
   return (
-    <Modal isOpen={modalOpen} onClose={reset} title="Reset Password">
+    <TimelineEditModal isOpen={modalOpen} onClose={reset} title="Reset Password">
       {step === 'request' ? (
         <div className="flex flex-col gap-4">
           <input
@@ -133,6 +133,6 @@ export default function ResetPasswordModal(): React.ReactElement | null {
           </button>
         </div>
       )}
-    </Modal>
+    </TimelineEditModal>
   );
 }
