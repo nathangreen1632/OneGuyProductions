@@ -9,19 +9,16 @@ interface ModalProps {
 }
 
 export default function TimelineEditModal({
-                                isOpen,
-                                onClose,
-                                title,
-                                children,
-                              }: ModalProps): React.ReactElement | null {
+                                            isOpen,
+                                            onClose,
+                                            title,
+                                            children,
+                                          }: ModalProps): React.ReactElement | null {
   if (!isOpen) return null;
 
-  const childArray = React.Children.toArray(children);
-
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4 sm:px-0">
-      <div className="relative w-full max-w-2xl sm:max-w-3xl rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] shadow-[0_0_25px_2px_var(--theme-shadow)] p-6 sm:p-8 focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/40">
-
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center px-4">
+      <div className="bg-[var(--theme-surface)] text-[var(--theme-text)] w-full max-w-lg rounded-2xl shadow-[0_4px_14px_0_var(--theme-shadow)] p-6">
         {/* Close Button */}
         <button
           onClick={onClose}
@@ -33,28 +30,13 @@ export default function TimelineEditModal({
 
         {/* Modal Title */}
         {title && (
-          <h3 className="text-xl sm:text-2xl font-bold text-[var(--theme-accent)] mb-6 text-center">
-            {title}
-          </h3>
+          <h2 className="text-xl font-bold mb-4 text-center">{title}</h2>
         )}
 
-        {/* Each Child Section in a Themed Box */}
-        <div className="space-y-4">
-          {childArray.map((child, index) => (
-            <div
-              key={index}
-              className="p-4 rounded-2xl bg-[var(--theme-surface)] border border-[var(--theme-border)]  shadow-[0_4px_14px_0_var(--theme-shadow)] text-[var(--theme-text)]"
-            >
-              {/* Automatically wrap basic input-like elements */}
-              {typeof child === 'string' ? (
-                <p className="text-base">{child}</p>
-              ) : (
-                child
-              )}
-            </div>
-          ))}
+        {/* Directly Render Children */}
+        <div className="flex flex-col gap-4">
+          {children}
         </div>
-
       </div>
     </div>,
     document.body
