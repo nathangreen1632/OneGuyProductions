@@ -11,7 +11,7 @@ export default function OrderTimelineView(): React.ReactElement {
 
   const handleCancel = async (orderId: number): Promise<void> => {
     try {
-      const res = await fetch(`/api/orders/${orderId}/cancel`, {
+      const res = await fetch(`/api/order/${orderId}/cancel`, {
         method: 'POST',
       });
 
