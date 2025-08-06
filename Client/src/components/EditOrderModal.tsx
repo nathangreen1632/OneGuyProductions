@@ -81,7 +81,7 @@ export default function EditOrderModal(): React.ReactElement | null {
           <p className="text-lg text-[var(--theme-text)] underline mb-1">Budget</p>
           <input
             name="budget"
-            placeholder="$3000"
+            placeholder="e.g. $3000"
             className="w-full bg-transparent text-[var(--theme-text)] focus:outline-none"
             value={form.budget}
             onChange={handleChange}
@@ -105,7 +105,7 @@ export default function EditOrderModal(): React.ReactElement | null {
           <p className="text-lg text-[var(--theme-text)] underline mb-1">Business Name</p>
           <input
             name="businessName"
-            placeholder="Rosey Rides the Legal Train"
+            placeholder="e.g. Acme Corp"
             className="w-full bg-transparent text-[var(--theme-text)] focus:outline-none"
             value={form.businessName}
             onChange={handleChange}
