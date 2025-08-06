@@ -1,8 +1,12 @@
 import { CreateEmailResponse, Resend } from 'resend';
-import '../config/dotenv.js';
-import { ENV } from '../config/env.js';
+import '../config/dotenv.config.js';
+import { EnvConfig } from '../config/env.config.js';
 
-const resend = new Resend(ENV.RESEND_API_KEY);
+const resend = new Resend(EnvConfig.RESEND_API_KEY);
+
+if (!EnvConfig.RESEND_API_KEY) {
+  console.error('❌ Missing RESEND_API_KEY in environment config');
+}
 
 export async function sendEmail(options: {
   from: string;
@@ -10,12 +14,17 @@ export async function sendEmail(options: {
   subject: string;
   html: string;
 }): Promise<CreateEmailResponse> {
-  return await resend.emails.send({
-    from: options.from,
-    to: options.to,
-    subject: options.subject,
-    html: options.html,
-  });
+  try {
+    return await resend.emails.send({
+      from: options.from,
+      to: options.to,
+      subject: options.subject,
+      html: options.html,
+    });
+  } catch (error) {
+    console.error('❌ Failed to send email via Resend:', error);
+    throw error;
+  }
 }
 
 export async function sendOrderEmail(data: {
@@ -28,8 +37,8 @@ export async function sendOrderEmail(data: {
   timeline: string;
 }): Promise<CreateEmailResponse> {
   const html = `
-    <html lang="us-en">
-      <head>
+    <html lang="en-US">
+      <head><meta charset="UTF-8" /></head>
       <body>
         <h2>New Web Project Inquiry</h2>
         <p><strong>Name:</strong> ${data.name}</p>
@@ -40,13 +49,12 @@ export async function sendOrderEmail(data: {
         <p><strong>Timeline:</strong> ${data.timeline}</p>
         <p><strong>Description:</strong><br>${data.description}</p>
       </body>
-      </head>
     </html>
   `;
 
   return await sendEmail({
-    from: ENV.EMAIL_FROM_ORDER ?? '',
-    to: ENV.RESEND_ORDER_RECEIVER_EMAIL ?? ENV.RESEND_TO_ORDER ?? '',
+    from: EnvConfig.EMAIL_FROM_ORDER ?? '',
+    to: EnvConfig.RESEND_ORDER_RECEIVER_EMAIL ?? EnvConfig.RESEND_TO_ORDER ?? '',
     subject: `New Project Inquiry from ${data.name}`,
     html,
   });
@@ -63,22 +71,46 @@ export async function sendContactEmail(data: {
     .replace(/\b([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\b/g, '<a href="mailto:$1">$1</a>');
 
   const html = `
-    <html lang="us-en">
-      <head>
+    <html lang="en-US">
+      <head><meta charset="UTF-8" /></head>
       <body>
         <h2>New Contact Message</h2>
         <p><strong>Name:</strong> ${data.name}</p>
         <p><strong>Email:</strong> <a href="mailto:${data.email}">${data.email}</a></p>
         <p><strong>Message:</strong><br>${autoLinkedMessage}</p>
       </body>
-      </head>
     </html>
   `;
 
   return await sendEmail({
-    from: ENV.RESEND_FROM_EMAIL ?? ENV.EMAIL_FROM_CONTACT ?? '',
-    to: ENV.RESEND_CONTACT_RECEIVER_EMAIL ?? ENV.RESEND_TO_EMAIL ?? '',
+    from: EnvConfig.RESEND_FROM_EMAIL ?? EnvConfig.EMAIL_FROM_CONTACT ?? '',
+    to: EnvConfig.RESEND_CONTACT_RECEIVER_EMAIL ?? EnvConfig.RESEND_TO_EMAIL ?? '',
     subject: `New Contact Message from ${data.name}`,
+    html,
+  });
+}
+
+// ─────────────────────────────────────────────────────────────
+// 🔐 OTP Email Sender
+// ─────────────────────────────────────────────────────────────
+export async function sendOtpEmail(email: string, otp: string): Promise<CreateEmailResponse> {
+  const html = `
+    <html lang="en-US">
+      <head><meta charset="UTF-8" /></head>
+      <body style="font-family: sans-serif; font-size: 16px;">
+        <h2>Your One-Time Password (OTP)</h2>
+        <p>Use the following code to reset your password:</p>
+        <h1 style="letter-spacing: 2px; font-size: 32px;">${otp}</h1>
+        <p>This code will expire in 5 minutes.</p>
+        <p>If you didn't request this, you can safely ignore it.</p>
+      </body>
+    </html>
+  `;
+
+  return await sendEmail({
+    from: EnvConfig.RESEND_FROM_EMAIL ?? 'noreply@oneguyproductions.com',
+    to: email,
+    subject: 'Your OTP Code for One Guy Productions',
     html,
   });
 }
