@@ -7,8 +7,16 @@ import OrderTimelineView from './orderTimelineView';
 export default function CustomerPortalView(): React.ReactElement {
   const { currentView, fetchOrders } = useOrderStore();
 
-  useEffect((): void => {
-    fetchOrders();
+  useEffect(() => {
+    const loadOrders = async (): Promise<void> => {
+      try {
+        await fetchOrders();
+      } catch (error) {
+        console.error('❌ Failed to fetch orders:', error);
+      }
+    };
+
+    void loadOrders();
   }, []);
 
   return (
