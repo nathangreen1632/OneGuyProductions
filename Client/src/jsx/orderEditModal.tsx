@@ -52,31 +52,31 @@ export default function OrderEditModal({
 
         <div className="flex flex-col gap-4">
           <div>
-            <label className="text-sm text-[var(--theme-border)] block mb-1">
+            <label className="text-sm text-[var(--theme-text)] block mb-1">
               Business Name
             </label>
             <input
               name="businessName"
               value={form.businessName}
               onChange={handleChange}
-              className="w-full p-2 rounded bg-white text-black"
+              className="w-full px-4 py-2 rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] placeholder:text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)] cursor-pointer hover:shadow-[0_0_25px_2px_var(--theme-shadow)] overflow-hidden"
             />
           </div>
 
           <div>
-            <label className="text-sm text-[var(--theme-border)] block mb-1">
+            <label className="text-sm text-[var(--theme-text)] block mb-1">
               Project Type
             </label>
             <input
               name="projectType"
               value={form.projectType}
               onChange={handleChange}
-              className="w-full p-2 rounded bg-white text-black"
+              className="w-full px-4 py-2 rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] placeholder:text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)] cursor-pointer hover:shadow-[0_0_25px_2px_var(--theme-shadow)] overflow-hidden"
             />
           </div>
 
           <div>
-            <label className="text-sm text-[var(--theme-border)] block mb-1">
+            <label className="text-sm text-[var(--theme-text)] block mb-1">
               Budget
             </label>
             <input
@@ -84,8 +84,11 @@ export default function OrderEditModal({
               value={form.budget}
               onChange={handleChange}
               disabled={!isEditable}
-              className={`w-full p-2 rounded text-black ${
-                isEditable ? 'bg-white' : 'bg-gray-300 cursor-not-allowed'
+              placeholder="e.g. $3000"
+              className={`w-full px-4 py-2 rounded-2xl text-[var(--theme-text)] placeholder:text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)] cursor-pointer hover:shadow-[0_0_25px_2px_var(--theme-shadow)] overflow-hidden ${
+                isEditable
+                  ? 'bg-[var(--theme-surface)]'
+                  : 'bg-gray-300 cursor-not-allowed opacity-70'
               }`}
             />
             {!isEditable && (
@@ -95,20 +98,21 @@ export default function OrderEditModal({
             )}
           </div>
 
+
           <div>
-            <label className="text-sm text-[var(--theme-border)] block mb-1">
+            <label className="text-sm text-[var(--theme-text)] block mb-1">
               Timeline
             </label>
             <input
               name="timeline"
               value={form.timeline}
               onChange={handleChange}
-              className="w-full p-2 rounded bg-white text-black"
+              className="w-full px-4 py-2 rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] placeholder:text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)] cursor-pointer hover:shadow-[0_0_25px_2px_var(--theme-shadow)] overflow-hidden"
             />
           </div>
 
           <div>
-            <label className="text-sm text-[var(--theme-border)] block mb-1">
+            <label className="text-sm text-[var(--theme-text)] block mb-1">
               Description
             </label>
             <textarea
@@ -116,7 +120,7 @@ export default function OrderEditModal({
               value={form.description}
               onChange={handleChange}
               rows={4}
-              className="w-full p-2 rounded bg-white text-black"
+              className="w-full px-4 py-2 rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] placeholder:text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)] cursor-pointer hover:shadow-[0_0_25px_2px_var(--theme-shadow)] overflow-hidden"
             />
           </div>
         </div>
@@ -124,13 +128,13 @@ export default function OrderEditModal({
         <div className="flex justify-end mt-6 gap-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm rounded bg-gray-600 hover:bg-gray-700 text-white"
+            className="px-4 py-2 text-sm rounded bg-gray-600 hover:bg-gray-700 text-slate-200"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
-            className="px-4 py-2 text-sm rounded bg-[var(--theme-button)] hover:bg-[var(--theme-hover)] text-[var(--theme-text-white)] shadow focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60"
+            className="px-4 py-2 text-sm rounded bg-[var(--theme-button)] hover:bg-[var(--theme-hover)] text-[var(--theme-text-white)] shadow focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60 "
           >
             Save Changes
           </button>
