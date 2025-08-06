@@ -16,6 +16,7 @@ interface OrderState {
   refreshOrders: () => Promise<void>;
   markAsRead: (orderId: number) => void;
   setView: (view: 'card' | 'timeline') => void;
+  updateOrder: (updated: Order) => void;
 }
 
 const orderStoreCreator: StateCreator<OrderState> = (set) => ({
@@ -37,7 +38,8 @@ const orderStoreCreator: StateCreator<OrderState> = (set) => ({
       console.log('🔍 Is Array:', Array.isArray(data));
 
       if (!Array.isArray(data)) {
-        throw new Error('🚨 Expected array but received: ' + JSON.stringify(data));
+        console.error('🚨 Unexpected response format in fetchOrders():', data);
+        return;
       }
 
       set({
@@ -45,7 +47,7 @@ const orderStoreCreator: StateCreator<OrderState> = (set) => ({
         unreadOrderIds: data.map((order: Order) => order.id),
       });
     } catch (err) {
-      console.error('❌ Fetch error in fetchOrders():', err);
+      console.error('❌ Error in fetchOrders():', err);
     }
   },
 
@@ -59,12 +61,13 @@ const orderStoreCreator: StateCreator<OrderState> = (set) => ({
       console.log('🔍 Is Array:', Array.isArray(data));
 
       if (!Array.isArray(data)) {
-        throw new Error('🚨 Expected array but received: ' + JSON.stringify(data));
+        console.error('🚨 Unexpected response format in refreshOrders():', data);
+        return;
       }
 
       set({ orders: data });
     } catch (err) {
-      console.error('❌ Refresh error in refreshOrders():', err);
+      console.error('❌ Error in refreshOrders():', err);
     }
   },
 
@@ -74,6 +77,20 @@ const orderStoreCreator: StateCreator<OrderState> = (set) => ({
     })),
 
   setView: (view) => set({ currentView: view }),
+
+  updateOrder: (updated) =>
+    set((state) => {
+      const updatedOrders = state.orders.map((o) =>
+        o.id === updated.id ? updated : o
+      );
+
+      console.log('🧪 updateOrder triggered');
+      console.log('📌 New orders array:', updatedOrders);
+
+      return {
+        orders: [...updatedOrders], // 🔄 Ensure fresh array identity
+      };
+    }),
 });
 
 export const useOrderStore: UseBoundStore<StoreApi<OrderState>> =
