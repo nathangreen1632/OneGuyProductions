@@ -1,7 +1,7 @@
 // Client/src/components/EditOrderModal.tsx
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import Modal from './Modal';
+import TimelineEditModal from './TimelineEditModal.tsx';
 import { useEditOrderStore } from '../store/useEditOrderStore';
 
 export default function EditOrderModal(): React.ReactElement | null {
@@ -49,7 +49,7 @@ export default function EditOrderModal(): React.ReactElement | null {
       if (res.ok) {
         toast.success('Order updated successfully.');
         closeModal();
-        refreshOrders(); // Trigger store reload or hard refresh
+        refreshOrders();
       } else {
         toast.error(data.error || 'Failed to update order.');
       }
@@ -62,47 +62,73 @@ export default function EditOrderModal(): React.ReactElement | null {
   };
 
   return (
-    <Modal isOpen={modalOpen} onClose={closeModal} title="Edit Order">
+    <TimelineEditModal isOpen={modalOpen} onClose={closeModal} title="Edit Order">
       <div className="flex flex-col gap-4">
-        <input
-          name="projectType"
-          placeholder="Project Type"
-          className="input"
-          value={form.projectType}
-          onChange={handleChange}
-        />
-        <input
-          name="budget"
-          placeholder="Budget"
-          className="input"
-          value={form.budget}
-          onChange={handleChange}
-        />
-        <input
-          name="timeline"
-          placeholder="Timeline"
-          className="input"
-          value={form.timeline}
-          onChange={handleChange}
-        />
-        <input
-          name="businessName"
-          placeholder="Business Name"
-          className="input"
-          value={form.businessName}
-          onChange={handleChange}
-        />
-        <textarea
-          name="description"
-          placeholder="Project Description"
-          className="input h-24 resize-none"
-          value={form.description}
-          onChange={handleChange}
-        />
+        {/* Project Type */}
+        <div className="p-4 rounded-xl bg-[var(--theme-bg)] shadow-[0_0_10px_2px_var(--theme-shadow)] transition cursor-pointer hover:shadow-[0_0_25px_2px_var(--theme-shadow)]">
+          <p className="text-lg text-[var(--theme-text)] underline mb-1">Project Type</p>
+          <input
+            name="projectType"
+            placeholder="e.g. Web App"
+            className="w-full bg-transparent text-[var(--theme-text)] focus:outline-none"
+            value={form.projectType}
+            onChange={handleChange}
+          />
+        </div>
+
+        {/* Budget */}
+        <div className="p-4 rounded-xl bg-[var(--theme-bg)] shadow-[0_0_10px_2px_var(--theme-shadow)] transition cursor-pointer hover:shadow-[0_0_25px_2px_var(--theme-shadow)]">
+          <p className="text-lg text-[var(--theme-text)] underline mb-1">Budget</p>
+          <input
+            name="budget"
+            placeholder="$3000"
+            className="w-full bg-transparent text-[var(--theme-text)] focus:outline-none"
+            value={form.budget}
+            onChange={handleChange}
+          />
+        </div>
+
+        {/* Timeline */}
+        <div className="p-4 rounded-xl bg-[var(--theme-bg)] shadow-[0_0_10px_2px_var(--theme-shadow)] transition cursor-pointer hover:shadow-[0_0_25px_2px_var(--theme-shadow)]">
+          <p className="text-lg text-[var(--theme-text)] underline mb-1">Timeline</p>
+          <input
+            name="timeline"
+            placeholder="e.g. 4 weeks"
+            className="w-full bg-transparent text-[var(--theme-text)] focus:outline-none"
+            value={form.timeline}
+            onChange={handleChange}
+          />
+        </div>
+
+        {/* Business Name */}
+        <div className="p-4 rounded-xl bg-[var(--theme-bg)] shadow-[0_0_10px_2px_var(--theme-shadow)] transition cursor-pointer hover:shadow-[0_0_25px_2px_var(--theme-shadow)]">
+          <p className="text-lg text-[var(--theme-text)] underline mb-1">Business Name</p>
+          <input
+            name="businessName"
+            placeholder="Rosey Rides the Legal Train"
+            className="w-full bg-transparent text-[var(--theme-text)] focus:outline-none"
+            value={form.businessName}
+            onChange={handleChange}
+          />
+        </div>
+
+        {/* Description */}
+        <div className="p-4 rounded-xl bg-[var(--theme-bg)] shadow-[0_0_10px_2px_var(--theme-shadow)] transition cursor-pointer hover:shadow-[0_0_25px_2px_var(--theme-shadow)]">
+          <p className="text-lg text-[var(--theme-text)] underline mb-1">Project Description</p>
+          <textarea
+            name="description"
+            placeholder="Tell me about your project..."
+            className="w-full bg-transparent text-[var(--theme-text)] h-24 resize-y focus:outline-none"
+            value={form.description}
+            onChange={handleChange}
+          />
+        </div>
+
+        {/* Button Row */}
         <div className="mt-4 flex justify-end gap-3">
           <button
             onClick={closeModal}
-            className="px-4 py-2 bg-gray-500 text-white rounded"
+            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
           >
             Cancel
           </button>
@@ -115,6 +141,6 @@ export default function EditOrderModal(): React.ReactElement | null {
           </button>
         </div>
       </div>
-    </Modal>
+    </TimelineEditModal>
   );
 }
