@@ -4,6 +4,8 @@ import { HandleOrderResult } from '../types/FormRequestBodies.js';
 import { Order, OrderUpdate, User } from '../models/index.js';
 import { isWithin72Hours } from '../utils/time.js';
 import { generatePdfBuffer } from '../services/pdf.service.js';
+import type { OrderStatus } from '../types/order.types.js';
+import { validOrderStatuses } from '../types/order.types.js';
 
 // ─────────────────────────────────────────────────────────────
 // 📨 Submit Order (Production-Used)
@@ -116,8 +118,15 @@ export async function cancelOrder(req: Request, res: Response): Promise<void> {
     return;
   }
 
+  if (isNaN(orderId)) {
+    res.status(400).json({ error: 'Invalid order ID.' });
+    return;
+  }
+
   try {
-    const order = await Order.findOne({ where: { id: orderId, customerId: userId } });
+    const order = await Order.findOne({
+      where: { id: orderId, customerId: userId },
+    });
 
     if (!order) {
       res.status(404).json({ error: 'Order not found.' });
@@ -129,11 +138,28 @@ export async function cancelOrder(req: Request, res: Response): Promise<void> {
       return;
     }
 
+    if (order.status === 'cancelled') {
+      res.status(409).json({ error: 'Order already cancelled.' });
+      return;
+    }
 
-    await order.update({ status: 'cancelled' });
-    res.status(200).json({ success: true });
+    const nextStatus: OrderStatus = 'cancelled';
+
+    if (!validOrderStatuses.includes(nextStatus)) {
+      res.status(400).json({ error: 'Invalid order status.' });
+      return;
+    }
+
+    await order.update({ status: nextStatus });
+
+    res.status(200).json({
+      success: true,
+      message: 'Order cancelled successfully.',
+      orderId,
+      status: 'cancelled',
+    });
   } catch (err) {
-    console.error('Cancel Order Error:', err);
+    console.error('❌ Cancel Order Error:', err);
     res.status(500).json({ error: 'Failed to cancel order.' });
   }
 }
