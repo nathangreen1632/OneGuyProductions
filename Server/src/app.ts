@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import router from './routes/index.js';
+import cookieParser from 'cookie-parser';
 
 dotenv.config();
 
@@ -77,6 +78,7 @@ app.use(
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 app.use('/api', router);
 
