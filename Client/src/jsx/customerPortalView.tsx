@@ -7,7 +7,7 @@ import OrderTimelineView from './orderTimelineView';
 export default function CustomerPortalView(): React.ReactElement {
   const { currentView, fetchOrders } = useOrderStore();
 
-  useEffect(() => {
+  useEffect((): void => {
     fetchOrders();
   }, []);
 
