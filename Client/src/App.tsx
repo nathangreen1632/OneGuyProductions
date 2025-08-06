@@ -4,6 +4,8 @@ import { Toaster } from 'react-hot-toast';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import AppRoutes from './AppRoutes';
+import ResetPasswordModal from './components/ResetPasswordModal.tsx';
+import EditOrderModal from './components/EditOrderModal.tsx';
 
 export default function App(): React.ReactElement {
   return (
@@ -14,6 +16,8 @@ export default function App(): React.ReactElement {
           <AppRoutes />
         </main>
         <Footer />
+        <ResetPasswordModal />
+        <EditOrderModal />
         <Toaster
           position="top-center"
           toastOptions={{
