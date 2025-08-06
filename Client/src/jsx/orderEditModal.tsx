@@ -52,10 +52,11 @@ export default function OrderEditModal({
 
         <div className="flex flex-col gap-4">
           <div>
-            <label className="text-sm text-[var(--theme-text)] block mb-1">
+            <label htmlFor="businessName" className="text-sm text-[var(--theme-text)] block mb-1">
               Business Name
             </label>
             <input
+              id="businessName"
               name="businessName"
               value={form.businessName}
               onChange={handleChange}
@@ -64,10 +65,11 @@ export default function OrderEditModal({
           </div>
 
           <div>
-            <label className="text-sm text-[var(--theme-text)] block mb-1">
+            <label htmlFor="projectType" className="text-sm text-[var(--theme-text)] block mb-1">
               Project Type
             </label>
             <input
+              id="projectType"
               name="projectType"
               value={form.projectType}
               onChange={handleChange}
@@ -76,10 +78,11 @@ export default function OrderEditModal({
           </div>
 
           <div>
-            <label className="text-sm text-[var(--theme-text)] block mb-1">
+            <label htmlFor="budget" className="text-sm text-[var(--theme-text)] block mb-1">
               Budget
             </label>
             <input
+              id="budget"
               name="budget"
               value={form.budget}
               onChange={handleChange}
@@ -98,12 +101,12 @@ export default function OrderEditModal({
             )}
           </div>
 
-
           <div>
-            <label className="text-sm text-[var(--theme-text)] block mb-1">
+            <label htmlFor="timeline" className="text-sm text-[var(--theme-text)] block mb-1">
               Timeline
             </label>
             <input
+              id="timeline"
               name="timeline"
               value={form.timeline}
               onChange={handleChange}
@@ -112,10 +115,11 @@ export default function OrderEditModal({
           </div>
 
           <div>
-            <label className="text-sm text-[var(--theme-text)] block mb-1">
+            <label htmlFor="description" className="text-sm text-[var(--theme-text)] block mb-1">
               Description
             </label>
             <textarea
+              id="description"
               name="description"
               value={form.description}
               onChange={handleChange}
@@ -134,7 +138,7 @@ export default function OrderEditModal({
           </button>
           <button
             onClick={handleSubmit}
-            className="px-4 py-2 text-sm rounded bg-[var(--theme-button)] hover:bg-[var(--theme-hover)] text-[var(--theme-text-white)] shadow focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60 "
+            className="px-4 py-2 text-sm rounded bg-[var(--theme-button)] hover:bg-[var(--theme-hover)] text-[var(--theme-text-white)] shadow focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60"
           >
             Save Changes
           </button>
