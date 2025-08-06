@@ -7,7 +7,10 @@ import OrderEditModal from './orderEditModal';
 import type { Order, OrderStatus } from '../types/order';
 
 export default function OrderCardView(): React.ReactElement {
-  const { orders, unreadOrderIds, markAsRead } = useOrderStore();
+  const orders = useOrderStore((state) => state.orders);
+  const unreadOrderIds = useOrderStore((state) => state.unreadOrderIds);
+  const markAsRead = useOrderStore((state) => state.markAsRead);
+  const updateOrder = useOrderStore((state) => state.updateOrder);
 
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -26,23 +29,50 @@ export default function OrderCardView(): React.ReactElement {
 
   const handleSave = async (updatedOrder: Partial<Order>): Promise<void> => {
     try {
-      const res = await fetch(`/api/orders/${updatedOrder.id}`, {
+      console.log('📤 PATCH payload:', updatedOrder);
+
+      const res = await fetch(`/api/order/${updatedOrder.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(updatedOrder),
       });
 
-      if (res.ok) {
-        toast.success('Order updated.');
-        setEditModalOpen(false);
-      } else {
+      if (!res.ok) {
         toast.error('Update failed.');
+        console.error('❌ PATCH response:', res.status, await res.text());
+        return;
       }
+
+      const savedOrder: Order = await res.json();
+      console.log('✅ PATCH success, received updated order:', savedOrder);
+
+      // Before update
+      const currentOrdersBefore = useOrderStore.getState().orders;
+      console.log('🔁 Zustand orders BEFORE update:', currentOrdersBefore);
+
+      updateOrder(savedOrder);
+
+      // After update
+      const currentOrdersAfter = useOrderStore.getState().orders;
+      console.log('🔁 Zustand orders AFTER update:', currentOrdersAfter);
+
+      const found = currentOrdersAfter.find((o) => o.id === savedOrder.id);
+      if (found) {
+        console.log('✅ Order update confirmed in state:', found);
+      } else {
+        console.warn('⚠️ Updated order NOT found in state after update!');
+      }
+
+      setSelectedOrder(savedOrder);
+      toast.success('Order updated.');
+      setEditModalOpen(false);
     } catch (err) {
-      console.error(err);
+      console.error('❌ Error in handleSave():', err);
       toast.error('Server error.');
     }
   };
+
 
   const handleCancel = async (order: Order): Promise<void> => {
     try {
