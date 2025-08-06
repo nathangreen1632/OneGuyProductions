@@ -7,11 +7,27 @@ interface Props {
 }
 
 export default function ProtectedRoute({ children }: Readonly<Props>): React.ReactElement {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, hydrated, user } = useAuthStore();
   const location = useLocation();
 
+  // ✅ Log Zustand state at the moment this component evaluates
+  console.log('🔐 ProtectedRoute auth state:', {
+    isAuthenticated,
+    hydrated,
+    user,
+    currentPath: location.pathname,
+  });
+
+  if (!hydrated) {
+    return (
+      <div className="flex items-center justify-center min-h-[85vh] text-lg text-[var(--theme-text)]">
+        Checking your session...
+      </div>
+    );
+  }
+
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace state={{ from: location }} />;
+    return <Navigate to="/auth" replace state={{ from: location }} />;
   }
 
   return children;
