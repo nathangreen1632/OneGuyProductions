@@ -1,11 +1,31 @@
 import React from 'react';
 import { useOrderStore } from '../store/useOrderStore';
+import { useEditOrderStore } from '../store/useEditOrderStore'; // ✅ added
 import { isWithin72Hours } from '../utils/dateHelpers';
 import { format } from 'date-fns';
-// import type { Order } from '../types/order';
+import toast from 'react-hot-toast';
 
 export default function OrderTimelineView(): React.ReactElement {
   const { orders } = useOrderStore();
+  const { openModal: openEditModal } = useEditOrderStore(); // ✅ extract edit modal handler
+
+  const handleCancel = async (orderId: number): Promise<void> => {
+    try {
+      const res = await fetch(`/api/orders/${orderId}/cancel`, {
+        method: 'POST',
+      });
+
+      if (res.ok) {
+        toast.success('Order canceled.');
+        // You could also call a refetch function here if your store supports it
+      } else {
+        toast.error('Failed to cancel order.');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Server error.');
+    }
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -61,20 +81,14 @@ export default function OrderTimelineView(): React.ReactElement {
             {isEditable && (
               <div className="mt-6 flex gap-3">
                 <button
-                  onClick={() => {
-                    // TODO: open edit modal
-                    console.log('Edit order', order.id);
-                  }}
+                  onClick={() => openEditModal(order)}
                   className="px-4 py-2 bg-[var(--theme-button)] text-[var(--theme-text-white)] text-sm rounded shadow-md hover:bg-[var(--theme-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60"
                 >
                   Edit Order
                 </button>
 
                 <button
-                  onClick={() => {
-                    // TODO: cancel logic
-                    console.log('Cancel order', order.id);
-                  }}
+                  onClick={() => handleCancel(order.id)}
                   className="px-4 py-2 bg-[var(--theme-border-red)] text-[var(--theme-text-white)] text-sm rounded shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60"
                 >
                   Cancel
