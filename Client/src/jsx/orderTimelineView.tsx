@@ -9,7 +9,7 @@ export default function OrderTimelineView(): React.ReactElement {
   const { openModal: openEditModal } = useEditOrderStore();
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
       {orders.map((order) => {
         const isEditable = isWithin72Hours(order.createdAt);
 
