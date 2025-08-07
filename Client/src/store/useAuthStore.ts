@@ -3,6 +3,7 @@ import { create } from 'zustand';
 interface AuthUser {
   id: string;
   email: string;
+  username: string; // ✅ Add this line
 }
 
 interface AuthState {
