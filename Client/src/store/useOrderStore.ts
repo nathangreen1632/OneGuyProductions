@@ -19,13 +19,33 @@ interface OrderState {
   updateOrder: (updated: Order) => void;
 }
 
+// ⬇️ Added for localStorage sync
+const LOCAL_KEY = 'unreadOrderIds';
+
+const loadUnread = (): number[] => {
+  try {
+    const stored = localStorage.getItem(LOCAL_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+};
+
+const saveUnread = (ids: number[]): void => {
+  try {
+    localStorage.setItem(LOCAL_KEY, JSON.stringify(ids));
+  } catch (err) {
+    console.error('❌ Failed to persist unreadOrderIds to localStorage:', err);
+  }
+};
+
 const orderStoreCreator: StateCreator<OrderState> = (set) => ({
   lastOrder: null,
   setLastOrder: (order) => set({ lastOrder: order }),
   clearOrder: () => set({ lastOrder: null }),
 
   orders: [],
-  unreadOrderIds: [],
+  unreadOrderIds: loadUnread(), // ⬅️ Load from localStorage on init
   currentView: 'card',
 
   fetchOrders: async () => {
@@ -42,9 +62,15 @@ const orderStoreCreator: StateCreator<OrderState> = (set) => ({
         return;
       }
 
+      const existing = loadUnread();
+      const incomingIds = data.map((order: Order) => order.id);
+      const finalUnread = existing.length > 0 ? existing : incomingIds;
+
+      saveUnread(finalUnread);
+
       set({
         orders: data,
-        unreadOrderIds: data.map((order: Order) => order.id),
+        unreadOrderIds: finalUnread,
       });
     } catch (err) {
       console.error('❌ Error in fetchOrders():', err);
@@ -72,9 +98,11 @@ const orderStoreCreator: StateCreator<OrderState> = (set) => ({
   },
 
   markAsRead: (orderId) =>
-    set((state) => ({
-      unreadOrderIds: state.unreadOrderIds.filter((id) => id !== orderId),
-    })),
+    set((state) => {
+      const updated = state.unreadOrderIds.filter((id) => id !== orderId);
+      saveUnread(updated); // ⬅️ Persist to localStorage
+      return { unreadOrderIds: updated };
+    }),
 
   setView: (view) => set({ currentView: view }),
 
