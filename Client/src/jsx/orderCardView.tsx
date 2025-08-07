@@ -6,6 +6,23 @@ import NotificationBadge from '../components/NotificationBadge';
 import OrderEditModal from './orderEditModal';
 import type { Order, OrderStatus } from '../types/order';
 
+function getStatusTextClasses(status: string): string {
+  switch (status.toLowerCase()) {
+    case 'complete':
+      return 'text-emerald-600';
+    case 'cancelled':
+      return 'text-red-600';
+    case 'in-progress':
+      return 'text-yellow-500';
+    case 'needs-feedback':
+      return 'text-orange-600';
+    case 'pending':
+      return 'text-sky-600';
+    default:
+      return 'text-gray-600';
+  }
+}
+
 export default function OrderCardView(): React.ReactElement {
   const orders = useOrderStore((state) => state.orders);
   const unreadOrderIds = useOrderStore((state) => state.unreadOrderIds);
@@ -174,15 +191,10 @@ export default function OrderCardView(): React.ReactElement {
                 </div>
                 <div className="sm:col-span-2">
                   <p className="text-lg underline">Status</p>
-                  <p
-                    className={`font-bold capitalize ${
-                      order.status === 'cancelled'
-                        ? 'text-red-500'
-                        : 'text-emerald-600'
-                    }`}
-                  >
+                  <p className={`font-bold capitalize ${getStatusTextClasses(order.status)}`}>
                     {order.status}
                   </p>
+
                 </div>
               </div>
 
