@@ -120,59 +120,59 @@ export default function OrderCardView(): React.ReactElement {
 
   return (
     <>
-      <div className="flex flex-col gap-6">
-        {orders.map((order) => {
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      {orders.map((order) => {
           const isEditable = isWithin72Hours(order.createdAt);
           const isUnread = unreadOrderIds.includes(order.id);
 
           return (
-            <div
+            <button
               key={order.id}
-              className="relative rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] p-4 sm:p-6 shadow-[0_4px_14px_0_var(--theme-shadow)] border border-[var(--theme-border)] transition cursor-pointer hover:shadow-[0_0_25px_2px_var(--theme-shadow)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
-              role="group"
-              aria-label={`Order card for ${order.name}`}
-              tabIndex={0}
+              type="button"
               onClick={() => handleCardClick(order)}
-              onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => {
+              onKeyDown={(e: React.KeyboardEvent<HTMLButtonElement>) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
                   handleCardClick(order);
                 }
               }}
+              aria-label={`Order card for ${order.name}`}
+              className="relative w-full text-left rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] p-4 sm:p-6 shadow-[0_4px_14px_0_var(--theme-shadow)] border border-[var(--theme-border)] transition hover:shadow-[0_0_25px_2px_var(--theme-shadow)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/40"
             >
               {isUnread && <NotificationBadge />}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Order Details */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pointer-events-none">
                 <div>
-                  <p className="text-lg text-[var(--theme-text)] underline">Name</p>
+                  <p className="text-lg underline">Name</p>
                   <p className="font-semibold">{order.name}</p>
                 </div>
                 <div>
-                  <p className="text-lg text-[var(--theme-text)] underline">Email</p>
+                  <p className="text-lg underline">Email</p>
                   <p className="font-semibold">{order.email}</p>
                 </div>
                 <div>
-                  <p className="text-lg text-[var(--theme-text)] underline">Business</p>
+                  <p className="text-lg underline">Business</p>
                   <p className="font-semibold">{order.businessName}</p>
                 </div>
                 <div>
-                  <p className="text-lg text-[var(--theme-text)] underline">Project Type</p>
+                  <p className="text-lg underline">Project Type</p>
                   <p className="font-semibold">{order.projectType}</p>
                 </div>
                 <div>
-                  <p className="text-lg text-[var(--theme-text)] underline">Budget</p>
+                  <p className="text-lg underline">Budget</p>
                   <p className="font-semibold">{order.budget}</p>
                 </div>
                 <div>
-                  <p className="text-lg text-[var(--theme-text)] underline">Timeline</p>
+                  <p className="text-lg underline">Timeline</p>
                   <p className="font-semibold">{order.timeline}</p>
                 </div>
                 <div className="sm:col-span-2">
-                  <p className="text-lg text-[var(--theme-text)] underline">Description</p>
+                  <p className="text-lg underline">Description</p>
                   <p className="font-medium">{order.description}</p>
                 </div>
                 <div className="sm:col-span-2">
-                  <p className="text-lg text-[var(--theme-text)] underline">Status</p>
+                  <p className="text-lg underline">Status</p>
                   <p
                     className={`font-bold capitalize ${
                       order.status === 'cancelled'
@@ -185,11 +185,14 @@ export default function OrderCardView(): React.ReactElement {
                 </div>
               </div>
 
+              {/* Action Buttons */}
               <div
                 className="mt-6 flex flex-wrap gap-3"
                 onClick={(e) => e.stopPropagation()}
+                aria-hidden="true"
               >
                 <button
+                  type="button"
                   onClick={() => handleEdit(order)}
                   className="px-4 py-2 bg-[var(--theme-button)] text-[var(--theme-text-white)] text-sm rounded shadow-md hover:bg-[var(--theme-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60"
                 >
@@ -198,6 +201,7 @@ export default function OrderCardView(): React.ReactElement {
 
                 {isEditable && (
                   <button
+                    type="button"
                     onClick={() => handleCancel(order)}
                     disabled={canceledOrderIds.includes(order.id)}
                     className={`px-4 py-2 text-sm rounded shadow-md focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60 ${
@@ -211,13 +215,14 @@ export default function OrderCardView(): React.ReactElement {
                 )}
 
                 <button
+                  type="button"
                   onClick={() => handleDownload(order.id)}
                   className="px-4 py-2 bg-[var(--theme-card)] text-[var(--theme-text-white)] text-sm rounded shadow-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60"
                 >
                   Download Invoice
                 </button>
               </div>
-            </div>
+            </button>
           );
         })}
       </div>
