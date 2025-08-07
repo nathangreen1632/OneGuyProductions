@@ -16,7 +16,6 @@ import { useAuthStore } from './store/useAuthStore';
 export default function AppRoutes(): React.ReactElement {
   const { setUser, setHydrated, user, isAuthenticated, hydrated } = useAuthStore();
 
-  // ✅ This is what you're looking for:
   console.log('auth:', { isAuthenticated, hydrated, user });
 
   useEffect(() => {
@@ -41,8 +40,11 @@ export default function AppRoutes(): React.ReactElement {
     hydrateSession().catch(console.error);
   }, [setUser, setHydrated]);
 
+  // ✅ Force rerender of all routes when hydration/auth changes
+  const routeKey = `${hydrated}-${isAuthenticated}`;
+
   return (
-    <Routes>
+    <Routes key={routeKey}>
       <Route path="/" element={<HomePage />} />
       <Route path="/about" element={<AboutPage />} />
       <Route path="/products" element={<ProductsPage />} />
