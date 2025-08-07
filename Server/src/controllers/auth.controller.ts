@@ -13,7 +13,7 @@ import { Op } from 'sequelize';
 import { COOKIE_OPTIONS } from '../config/constants.config.js';
 
 export async function register(req: Request, res: Response): Promise<void> {
-  const { username, email, password } = req.body;
+  const { username, email, password, rememberMe } = req.body;
 
   try {
     const existingUser = await User.findOne({ where: { email } });
@@ -26,7 +26,13 @@ export async function register(req: Request, res: Response): Promise<void> {
     const newUser = await User.create({ username, email, password: hashed });
 
     const token = generateJwt({ id: newUser.id });
-    res.cookie('token', token, COOKIE_OPTIONS);
+
+    const options = {
+      ...COOKIE_OPTIONS,
+      ...(rememberMe && { expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) }), // 30 days
+    };
+
+    res.cookie('token', token, options);
     res.status(201).json({
       success: true,
       user: {
@@ -43,7 +49,7 @@ export async function register(req: Request, res: Response): Promise<void> {
 }
 
 export async function login(req: Request, res: Response): Promise<void> {
-  const { email, password } = req.body;
+  const { email, password, rememberMe } = req.body;
 
   try {
     const user = await User.findOne({ where: { email } });
@@ -60,9 +66,14 @@ export async function login(req: Request, res: Response): Promise<void> {
     }
 
     const token = generateJwt({ id: user.id });
-    res.cookie('token', token, COOKIE_OPTIONS);
 
-    // ✅ RETURN THE USER OBJECT!
+    const options = {
+      ...COOKIE_OPTIONS,
+      ...(rememberMe && { expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) }), // 30 days
+    };
+
+    res.cookie('token', token, options);
+
     res.status(200).json({
       success: true,
       user: {
@@ -76,7 +87,6 @@ export async function login(req: Request, res: Response): Promise<void> {
     res.status(500).json({ error: 'Failed to log in.' });
   }
 }
-
 
 // ✅ GET /api/auth/me
 export async function getAuthenticatedUser(req: Request, res: Response): Promise<void> {
@@ -147,7 +157,6 @@ export async function requestOtp(req: Request, res: Response): Promise<void> {
     console.error('OTP Request Error:', err);
     res.status(500).json({ error: 'Failed to send OTP.' });
   }
-
 }
 
 export function logout(_: Request, res: Response): void {
