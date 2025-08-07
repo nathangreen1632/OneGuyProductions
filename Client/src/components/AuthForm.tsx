@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 import { useResetPasswordStore } from '../store/useResetPasswordStore';
+import { useAuthStore } from '../store/useAuthStore';
 
 export default function AuthForm(): React.ReactElement {
   const { openModal } = useResetPasswordStore();
@@ -14,6 +15,17 @@ export default function AuthForm(): React.ReactElement {
     password: '',
   });
   const [loading, setLoading] = useState(false);
+
+  const { isAuthenticated, hydrated } = useAuthStore();
+
+  // 🧠 Debug hydration + auth status on every render
+  useEffect(() => {
+    console.log('👁️ Zustand state check:', { hydrated, isAuthenticated });
+    if (hydrated && isAuthenticated) {
+      console.log('✅ Zustand ready and authenticated. Navigating to /portal...');
+      navigate('/portal');
+    }
+  }, [hydrated, isAuthenticated, navigate]);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -28,6 +40,9 @@ export default function AuthForm(): React.ReactElement {
       ? { email: form.email, password: form.password }
       : form;
 
+    console.log('📨 Submitting to:', endpoint);
+    console.log('📦 Payload:', payload);
+
     try {
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -36,16 +51,27 @@ export default function AuthForm(): React.ReactElement {
         body: JSON.stringify(payload),
       });
 
+      console.log('📥 Raw response:', res);
+
       const data = await res.json();
+      console.log('📤 Parsed response data:', data);
 
       if (res.ok) {
         toast.success(isLogin ? 'Login successful!' : 'Registration complete!');
-        navigate('/portal');
+        if (data.user) {
+          console.log('🧠 Storing user in Zustand store:', data.user);
+          const { setUser, setHydrated } = useAuthStore.getState();
+          setUser(data.user, null);
+          setHydrated(true);
+        } else {
+          console.warn('⚠️ Response OK, but no user object returned.');
+        }
       } else {
         toast.error(data.error || 'Something went wrong.');
+        console.error('❌ API returned an error:', data.error);
       }
     } catch (err) {
-      console.error('Auth error:', err);
+      console.error('🚨 Fetch failed:', err);
       toast.error('Server error. Please try again.');
     } finally {
       setLoading(false);
@@ -110,7 +136,6 @@ export default function AuthForm(): React.ReactElement {
           >
             {buttonText}
           </button>
-
         </form>
 
         {isLogin && (
