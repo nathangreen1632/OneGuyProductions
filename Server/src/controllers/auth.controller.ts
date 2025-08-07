@@ -10,7 +10,7 @@ import {
 } from '../services/auth.service.js';
 import { sendOtpEmail } from '../services/resend.service.js';
 import { Op } from 'sequelize';
-import { COOKIE_OPTIONS } from '../config/constants.js';
+import { COOKIE_OPTIONS } from '../config/constants.config.js';
 
 export async function register(req: Request, res: Response): Promise<void> {
   const { username, email, password } = req.body;
@@ -27,7 +27,15 @@ export async function register(req: Request, res: Response): Promise<void> {
 
     const token = generateJwt({ id: newUser.id });
     res.cookie('token', token, COOKIE_OPTIONS);
-    res.status(201).json({ success: true });
+    res.status(201).json({
+      success: true,
+      user: {
+        id: newUser.id,
+        username: newUser.username,
+        email: newUser.email,
+      },
+    });
+
   } catch (err) {
     console.error('Register Error:', err);
     res.status(500).json({ error: 'Failed to register user.' });
@@ -53,17 +61,22 @@ export async function login(req: Request, res: Response): Promise<void> {
 
     const token = generateJwt({ id: user.id });
     res.cookie('token', token, COOKIE_OPTIONS);
-    res.status(200).json({ success: true });
+
+    // ✅ RETURN THE USER OBJECT!
+    res.status(200).json({
+      success: true,
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+      },
+    });
   } catch (err) {
     console.error('Login Error:', err);
     res.status(500).json({ error: 'Failed to log in.' });
   }
 }
 
-export function logout(_: Request, res: Response): void {
-  res.clearCookie('token', COOKIE_OPTIONS);
-  res.status(200).json({ success: true });
-}
 
 // ✅ GET /api/auth/me
 export async function getAuthenticatedUser(req: Request, res: Response): Promise<void> {
@@ -134,6 +147,12 @@ export async function requestOtp(req: Request, res: Response): Promise<void> {
     console.error('OTP Request Error:', err);
     res.status(500).json({ error: 'Failed to send OTP.' });
   }
+
+}
+
+export function logout(_: Request, res: Response): void {
+  res.clearCookie('token', COOKIE_OPTIONS);
+  res.status(200).json({ success: true });
 }
 
 export async function verifyOtp(req: Request, res: Response): Promise<void> {
