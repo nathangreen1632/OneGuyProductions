@@ -13,7 +13,9 @@ export default function AuthForm(): React.ReactElement {
     username: '',
     email: '',
     password: '',
+    confirmPassword: '', // 👈 Added for registration
   });
+  const [showPassword, setShowPassword] = useState(false); // 👈 Password visibility toggle
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -33,16 +35,19 @@ export default function AuthForm(): React.ReactElement {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
 
+    if (!isLogin && form.password !== form.confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+
+    setLoading(true);
     const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
     const payload = isLogin
       ? { email: form.email, password: form.password, rememberMe }
-      : { ...form, rememberMe };
-
+      : { username: form.username, email: form.email, password: form.password, rememberMe };
     console.log('📨 Submitting to:', endpoint);
     console.log('📦 Payload:', payload);
-
     try {
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -77,6 +82,11 @@ export default function AuthForm(): React.ReactElement {
     }
   }
 
+  const inputClass =
+    'w-full px-4 py-2 rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] placeholder:text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)]';
+
+  const passwordType = showPassword ? 'text' : 'password';
+
   let buttonText: string;
 
   if (loading) {
@@ -86,7 +96,6 @@ export default function AuthForm(): React.ReactElement {
   } else {
     buttonText = 'Register';
   }
-
 
   return (
     <div className="min-h-[85vh] flex items-center justify-center px-8 bg-[var(--theme-bg)] text-[var(--theme-text)]">
@@ -104,7 +113,7 @@ export default function AuthForm(): React.ReactElement {
               value={form.username}
               onChange={handleChange}
               required
-              className="w-full px-4 py-2 rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] placeholder:text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)]"
+              className={inputClass}
             />
           )}
 
@@ -116,21 +125,44 @@ export default function AuthForm(): React.ReactElement {
             onChange={handleChange}
             required
             autoComplete="email"
-            className="w-full px-4 py-2 rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] placeholder:text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)]"
+            className={inputClass}
           />
 
-          <input
-            type="password"
-            name="password"
-            placeholder="Password"
-            value={form.password}
-            onChange={handleChange}
-            required
-            autoComplete={isLogin ? 'current-password' : 'new-password'}
-            className="w-full px-4 py-2 rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] placeholder:text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)]"
-          />
+          {/* 🔒 Password field with show toggle */}
+          <div className="relative">
+            <input
+              type={passwordType}
+              name="password"
+              placeholder="Password"
+              value={form.password}
+              onChange={handleChange}
+              required
+              autoComplete={isLogin ? 'current-password' : 'new-password'}
+              className={`${inputClass} pr-10`} // ⏩ padding for toggle button
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((prev) => !prev)}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-black hover:underline focus:outline-none"
+            >
+              {showPassword ? 'Hide' : 'Show'}
+            </button>
+          </div>
 
-          {/* ✅ Remember Me checkbox */}
+          {/* ✅ Confirm Password */}
+          {!isLogin && (
+            <input
+              type={passwordType}
+              name="confirmPassword"
+              placeholder="Confirm Password"
+              value={form.confirmPassword}
+              onChange={handleChange}
+              required
+              className={inputClass}
+            />
+          )}
+
+          {/* ✅ Remember Me */}
           {isLogin && (
             <label className="flex items-center gap-2 text-sm pl-1">
               <input
