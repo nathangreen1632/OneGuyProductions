@@ -13,6 +13,7 @@ export interface NavLink {
   label: string;
   path: string;
   icon?: React.ElementType;
+  onClick?: () => void | Promise<void>; // ✅ NEW — optional for dynamic links like Logout
 }
 
 export const navLinks: NavLink[] = [
