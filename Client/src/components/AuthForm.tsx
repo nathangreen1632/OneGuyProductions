@@ -163,17 +163,19 @@ export default function AuthForm(): React.ReactElement {
           )}
 
           {/* ✅ Remember Me */}
-          {isLogin && (
-            <label className="flex items-center gap-2 text-sm pl-1">
-              <input
-                type="checkbox"
-                checked={rememberMe}
-                onChange={() => setRememberMe(!rememberMe)}
-                className="accent-[var(--theme-accent)]"
-              />
-              <span>Remember Me</span>
-            </label>
-          )}
+          <p className="flex items-center gap-2 text-sm pl-1">
+            {isLogin && (
+              <label className="flex items-center gap-2 text-sm pl-1">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={() => setRememberMe(!rememberMe)}
+                  className="rounded bg-[var(--theme-button)] text-[var(--theme-text-white)] font-medium hover:bg-[var(--theme-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 transition"
+                />
+                <span>Remember Me</span>
+              </label>
+            )}
+          </p>
 
           <button
             type="submit"
