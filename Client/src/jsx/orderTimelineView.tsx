@@ -21,7 +21,7 @@ export default function OrderTimelineView(): React.ReactElement {
             {/* Header */}
             <div className="mb-4">
               <h3 className="text-lg font-bold">{order.projectType}</h3>
-              <p className="text-sm text-[var(--theme-border)]">
+              <p className="text-sm text-[var(--theme-text)]">
                 {order.name} • {order.businessName}
               </p>
               <p className="text-sm font-medium text-emerald-600 capitalize mt-1">
@@ -34,7 +34,7 @@ export default function OrderTimelineView(): React.ReactElement {
 
             {/* Description */}
             <div className="mb-6">
-              <p className="text-sm text-[var(--theme-border)] mb-1">Description</p>
+              <p className="text-sm text-[var(--theme-text)] mb-1">Description</p>
               <p className="text-sm font-medium">{order.description}</p>
             </div>
 
