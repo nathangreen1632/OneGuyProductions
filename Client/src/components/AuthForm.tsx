@@ -14,11 +14,11 @@ export default function AuthForm(): React.ReactElement {
     email: '',
     password: '',
   });
+  const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const { isAuthenticated, hydrated } = useAuthStore();
 
-  // 🧠 Debug hydration + auth status on every render
   useEffect(() => {
     console.log('👁️ Zustand state check:', { hydrated, isAuthenticated });
     if (hydrated && isAuthenticated) {
@@ -37,8 +37,8 @@ export default function AuthForm(): React.ReactElement {
 
     const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
     const payload = isLogin
-      ? { email: form.email, password: form.password }
-      : form;
+      ? { email: form.email, password: form.password, rememberMe }
+      : { ...form, rememberMe };
 
     console.log('📨 Submitting to:', endpoint);
     console.log('📦 Payload:', payload);
@@ -52,7 +52,6 @@ export default function AuthForm(): React.ReactElement {
       });
 
       console.log('📥 Raw response:', res);
-
       const data = await res.json();
       console.log('📤 Parsed response data:', data);
 
@@ -79,6 +78,7 @@ export default function AuthForm(): React.ReactElement {
   }
 
   let buttonText: string;
+
   if (loading) {
     buttonText = 'Please wait...';
   } else if (isLogin) {
@@ -86,6 +86,7 @@ export default function AuthForm(): React.ReactElement {
   } else {
     buttonText = 'Register';
   }
+
 
   return (
     <div className="min-h-[85vh] flex items-center justify-center px-8 bg-[var(--theme-bg)] text-[var(--theme-text)]">
@@ -128,6 +129,19 @@ export default function AuthForm(): React.ReactElement {
             autoComplete={isLogin ? 'current-password' : 'new-password'}
             className="w-full px-4 py-2 rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] placeholder:text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)]"
           />
+
+          {/* ✅ Remember Me checkbox */}
+          {isLogin && (
+            <label className="flex items-center gap-2 text-sm pl-1">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={() => setRememberMe(!rememberMe)}
+                className="accent-[var(--theme-accent)]"
+              />
+              <span>Remember Me</span>
+            </label>
+          )}
 
           <button
             type="submit"
