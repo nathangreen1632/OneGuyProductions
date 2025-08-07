@@ -31,7 +31,6 @@ export default function OrderCardView(): React.ReactElement {
 
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [canceledOrderIds, setCanceledOrderIds] = useState<number[]>([]);
 
   const handleCardClick = (order: Order): void => {
     if (unreadOrderIds.includes(order.id)) {
@@ -93,8 +92,6 @@ export default function OrderCardView(): React.ReactElement {
 
   const handleCancel = async (order: Order): Promise<void> => {
     try {
-      // Optimistically mark as canceled
-      setCanceledOrderIds((prev) => [...prev, order.id]);
 
       const res = await fetch(`/api/order/${order.id}/cancel`, {
         method: 'PATCH',
@@ -215,16 +212,17 @@ export default function OrderCardView(): React.ReactElement {
                   <button
                     type="button"
                     onClick={() => handleCancel(order)}
-                    disabled={canceledOrderIds.includes(order.id)}
+                    disabled={order.status === 'cancelled'}
                     className={`px-4 py-2 text-sm rounded shadow-md focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60 ${
-                      canceledOrderIds.includes(order.id)
+                      order.status === 'cancelled'
                         ? 'bg-gray-500 cursor-not-allowed text-white'
                         : 'bg-[var(--theme-border-red)] hover:bg-red-700 text-[var(--theme-text-white)]'
                     }`}
                   >
-                    {canceledOrderIds.includes(order.id) ? 'Cancelled' : 'Cancel'}
+                    {order.status === 'cancelled' ? 'Cancelled' : 'Cancel'}
                   </button>
                 )}
+
 
                 <button
                   type="button"
