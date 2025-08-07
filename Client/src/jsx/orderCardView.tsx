@@ -121,16 +121,17 @@ export default function OrderCardView(): React.ReactElement {
   return (
     <>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-      {orders.map((order) => {
+        {orders.map((order) => {
           const isEditable = isWithin72Hours(order.createdAt);
           const isUnread = unreadOrderIds.includes(order.id);
 
           return (
-            <button
+            <div
               key={order.id}
-              type="button"
+              role="button"
+              tabIndex={0}
               onClick={() => handleCardClick(order)}
-              onKeyDown={(e: React.KeyboardEvent<HTMLButtonElement>) => {
+              onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
                   handleCardClick(order);
@@ -189,7 +190,6 @@ export default function OrderCardView(): React.ReactElement {
               <div
                 className="mt-6 flex flex-wrap gap-3"
                 onClick={(e) => e.stopPropagation()}
-                aria-hidden="true"
               >
                 <button
                   type="button"
@@ -222,7 +222,7 @@ export default function OrderCardView(): React.ReactElement {
                   Download Invoice
                 </button>
               </div>
-            </button>
+            </div>
           );
         })}
       </div>
