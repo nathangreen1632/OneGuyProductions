@@ -144,6 +144,7 @@ export default function OrderCardView(): React.ReactElement {
               key={order.id}
               role="button"
               tabIndex={0}
+              aria-label={`Order card for ${order.name}`}
               onClick={() => handleCardClick(order)}
               onKeyDown={(e: React.KeyboardEvent<HTMLDivElement>) => {
                 if (e.key === 'Enter' || e.key === ' ') {
@@ -151,7 +152,6 @@ export default function OrderCardView(): React.ReactElement {
                   handleCardClick(order);
                 }
               }}
-              aria-label={`Order card for ${order.name}`}
               className="relative w-full text-left rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] p-4 sm:p-6 shadow-[0_4px_14px_0_var(--theme-shadow)] border border-[var(--theme-border)] transition hover:shadow-[0_0_25px_2px_var(--theme-shadow)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/40"
             >
               {isUnread && <NotificationBadge />}
