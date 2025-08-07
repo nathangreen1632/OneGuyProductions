@@ -4,6 +4,24 @@ import { useEditOrderStore } from '../store/useEditOrderStore';
 import { isWithin72Hours } from '../utils/dateHelpers';
 import { format } from 'date-fns';
 
+// 🟢 Color-coded badge styling by status
+function getStatusBadgeClasses(status: string): string {
+  switch (status.toLowerCase()) {
+    case 'complete':
+      return ' text-emerald-600';
+    case 'cancelled':
+      return 'text-red-600';
+    case 'in-progress':
+      return 'text-yellow-500';
+    case 'needs-feedback':
+      return 'text-orange-600';
+    case 'pending':
+      return 'text-sky-600';
+    default:
+      return 'text-gray-600';
+  }
+}
+
 export default function OrderTimelineView(): React.ReactElement {
   const { orders } = useOrderStore();
   const { openModal: openEditModal } = useEditOrderStore();
@@ -24,10 +42,10 @@ export default function OrderTimelineView(): React.ReactElement {
               <p className="text-sm text-[var(--theme-text)]">
                 {order.name} • {order.businessName}
               </p>
-              <p className="text-sm font-medium text-emerald-600 capitalize mt-1">
-                Status: {order.status}
+              <p className={`font-bold capitalize ${getStatusBadgeClasses(order.status)}`}>
+                {order.status}
               </p>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 mt-1">
                 Placed: {format(new Date(order.createdAt), 'PPP p')}
               </p>
             </div>
