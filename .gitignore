@@ -278,3 +278,7 @@ fabric.properties
 .gcloud
 # Ignore Google Cloud SDK
 /google-cloud-sdk/
+
+### Misc ###
+.DS_Store
+__MACOSX/
