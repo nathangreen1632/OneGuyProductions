@@ -5,12 +5,15 @@ import { LayoutGrid, List } from 'lucide-react';
 export default function ToggleViewButton(): React.ReactElement {
   const { currentView, setView } = useOrderStore();
 
-  const toggleView = (): void => {
+  const toggleView: () => void = (): void => {
     setView(currentView === 'card' ? 'timeline' : 'card');
   };
 
-  const Icon = currentView === 'card' ? List : LayoutGrid;
-  const nextView = currentView === 'card' ? 'Timeline' : 'Card';
+  const Icon: React.ComponentType<React.SVGProps<SVGSVGElement>> =
+    currentView === 'card' ? List : LayoutGrid;
+
+  const nextView: 'Timeline' | 'Card' =
+    currentView === 'card' ? 'Timeline' : 'Card';
 
   return (
     <button
