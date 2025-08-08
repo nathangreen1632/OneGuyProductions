@@ -1,19 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import type { Order } from '../types/order.types';
 import { isWithin72Hours } from '../helpers/dateHelper';
+import type { FormState } from '../types/formState.types';
 
 interface Props {
   order: Order;
   onClose: () => void;
   onSave: (updatedOrder: Partial<Order>) => void;
 }
-
-export default function OrderEditModalView({
-                                         order,
-                                         onClose,
-                                         onSave,
-                                       }: Readonly<Props>): React.ReactElement {
-  const [form, setForm] = useState({
+/**
+ * OrderEditModalView component allows users to edit order details.
+ * It displays a modal with form fields for business name, project type,
+ * budget, timeline, and description. The budget field is editable only
+ * within 72 hours of order creation.
+ *
+ * @param {Object} props - Component properties
+ * @param {Order} props.order - The order to be edited
+ * @param {Function} props.onClose - Callback to close the modal
+ * @param {Function} props.onSave - Callback to save the updated order
+ */
+export default function OrderEditModalView(
+  { order, onClose, onSave }: Readonly<Props>
+): React.ReactElement {
+  const [form, setForm] = useState<FormState>({
     businessName: order.businessName,
     projectType: order.projectType,
     budget: order.budget,
@@ -21,9 +30,9 @@ export default function OrderEditModalView({
     description: order.description,
   });
 
-  const isEditable = isWithin72Hours(order.createdAt);
+  const isEditable: boolean = isWithin72Hours(order.createdAt);
 
-  useEffect(() => {
+  useEffect((): void => {
     setForm({
       businessName: order.businessName,
       projectType: order.projectType,
@@ -36,8 +45,8 @@ export default function OrderEditModalView({
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ): void => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    const { name, value }: { name: string; value: string } = e.target;
+    setForm((prev: FormState): FormState => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = (): void => {
@@ -48,7 +57,6 @@ export default function OrderEditModalView({
   return (
     <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center px-4">
       <div className="relative bg-[var(--theme-surface)] text-[var(--theme-text)] w-full max-w-lg rounded-2xl shadow-[0_4px_14px_0_var(--theme-shadow)] p-6">
-        {/* Close Button */}
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-[var(--theme-border-red)] cursor-pointer text-xl font-bold hover:text-red-700 focus:outline-none"
