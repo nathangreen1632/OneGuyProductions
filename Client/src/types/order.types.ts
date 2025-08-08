@@ -1,6 +1,16 @@
 // ─────────────────────────────────────────────────────────────
-// 📦 FORM + SUBMISSION TYPES (for OrderForm / POST payload)
+// 📦 FORM & SUBMISSION TYPES (OrderForm → POST payload/response)
 // ─────────────────────────────────────────────────────────────
+
+export interface OrderFormData {
+  name: string;
+  email: string;
+  businessName: string;
+  projectType: string;
+  budget: string;
+  timeline: string;
+  description: string;
+}
 
 export interface OrderPayload {
   name: string;
@@ -13,16 +23,7 @@ export interface OrderPayload {
   captchaToken: string;
 }
 
-export interface OrderFormData {
-  name: string;
-  email: string;
-  businessName: string;
-  projectType: string;
-  budget: string;
-  timeline: string;
-  description: string;
-}
-
+/** Convenience alias: form data with the CAPTCHA token added server-side */
 export type DerivedOrderFormData = Omit<OrderPayload, 'captchaToken'>;
 
 export interface OrderResponse {
@@ -31,7 +32,7 @@ export interface OrderResponse {
 }
 
 // ─────────────────────────────────────────────────────────────
-// 🧠 CUSTOMER PORTAL TYPES (used in Zustand + rendering)
+// 🧠 CUSTOMER PORTAL DOMAIN TYPES (Zustand + rendering)
 // ─────────────────────────────────────────────────────────────
 
 export type OrderStatus =
@@ -42,14 +43,20 @@ export type OrderStatus =
   | 'cancelled';
 
 export interface OrderUpdateEntry {
-  user: string;           // engineer or customer making the change
-  timestamp: string;      // ISO format
-  message: string;        // description of what changed
+  /** Engineer or customer making the change */
+  user: string;
+  /** ISO timestamp */
+  timestamp: string;
+  /** Description of what changed */
+  message: string;
 }
 
 export interface Order {
+  // IDs
   id: number;
   customerId: number;
+
+  // Customer & project info
   name: string;
   email: string;
   businessName: string;
@@ -57,8 +64,17 @@ export interface Order {
   budget: string;
   timeline: string;
   description: string;
+
+  // Status & meta
   status: OrderStatus;
-  createdAt: string;        // ISO format timestamp
-  updatedAt: string;        // ISO format timestamp
+  createdAt: string; // ISO timestamp
+  updatedAt: string; // ISO timestamp
   updates: OrderUpdateEntry[];
 }
+
+export type OrderState = {
+  orders: Order[];
+  unreadOrderIds: number[];
+  markAsRead: (id: number) => void;
+  updateOrder: (order: Order) => void;
+};
