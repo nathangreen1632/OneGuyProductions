@@ -4,13 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { useResetPasswordStore } from '../store/useResetPasswordStore';
 import { useAuthStore } from '../store/useAuthStore';
 import AuthFormView from '../jsx/authFormView';
-
-export interface AuthFormState {
-  username: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-}
+import { passwordsMatch, buildEndpoint, buildPayload, authRequest, persistUserFromResponse, linkPendingOrderIfAny } from '../helpers/authHelper';
+import type {AuthFormState} from "../types/auth.types.ts";
 
 export default function AuthFormLogic(): React.ReactElement {
   const { openModal } = useResetPasswordStore();
@@ -41,11 +36,7 @@ export default function AuthFormLogic(): React.ReactElement {
   const { isAuthenticated, hydrated } = useAuthStore();
 
   useEffect(() => {
-    console.log('👁️ Zustand state check:', { hydrated, isAuthenticated });
-    if (hydrated && isAuthenticated) {
-      console.log('✅ Zustand ready and authenticated. Navigating to /portal...');
-      navigate('/portal');
-    }
+    if (hydrated && isAuthenticated) navigate('/portal');
   }, [hydrated, isAuthenticated, navigate]);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -54,67 +45,23 @@ export default function AuthFormLogic(): React.ReactElement {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-
-    if (!isLogin && form.password !== form.confirmPassword) {
-      toast.error('Passwords do not match');
-      return;
-    }
+    if (!passwordsMatch(isLogin, form)) return;
 
     setLoading(true);
-    const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
-    const payload = isLogin
-      ? { email: form.email, password: form.password, rememberMe }
-      : { username: form.username, email: form.email, password: form.password, rememberMe };
-
-    console.log('📨 Submitting to:', endpoint);
-    console.log('📦 Payload:', payload);
+    const endpoint = buildEndpoint(isLogin);
+    const payload = buildPayload(isLogin, form, rememberMe);
 
     try {
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(payload),
-      });
-
-      console.log('📥 Raw response:', res);
-      const data = await res.json();
-      console.log('📤 Parsed response data:', data);
-
-      if (res.ok) {
-        toast.success(isLogin ? 'Login successful!' : 'Registration complete!');
-        if (data.user) {
-          const { setUser, setHydrated } = useAuthStore.getState();
-          setUser(data.user, null);
-          setHydrated(true);
-
-          // 🔗 Attempt to link order if we came from the signup prompt
-          const linkOrderId = sessionStorage.getItem('linkOrderId');
-          if (linkOrderId) {
-            try {
-              const linkRes = await fetch(`/api/order/${linkOrderId}/link-user`, {
-                method: 'PATCH',
-                credentials: 'include',
-              });
-              const linkData = await linkRes.json().catch(() => null);
-              if (linkRes.ok) {
-                toast.success('Order linked to your new account!');
-              } else {
-                console.warn('⚠️ Failed to link order:', linkData);
-              }
-            } catch (err) {
-              console.error('❌ Link order request failed:', err);
-            } finally {
-              sessionStorage.removeItem('linkOrderId');
-              sessionStorage.removeItem('prefillEmail');
-            }
-          }
-        } else {
-          console.warn('⚠️ Response OK, but no user object returned.');
-          toast.error('Unexpected response. Please try again.');
-        }
+      const { ok, data } = await authRequest(endpoint, payload);
+      if (!ok) {
+        toast.error(data?.error || 'Something went wrong.');
+        return;
       }
 
+      toast.success(isLogin ? 'Login successful!' : 'Registration complete!');
+      if (!persistUserFromResponse(data)) return;
+
+      await linkPendingOrderIfAny();
     } catch (err) {
       console.error('🚨 Fetch failed:', err);
       toast.error('Server error. Please try again.');
@@ -123,19 +70,22 @@ export default function AuthFormLogic(): React.ReactElement {
     }
   }
 
+  function getButtonText(loading: boolean, isLogin: boolean): string {
+    if (loading) {
+      return 'Please wait...';
+    }
+    if (isLogin) {
+      return 'Log In';
+    }
+    return 'Register';
+  }
+
   const inputClass =
     'w-full px-4 py-2 rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] placeholder:text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)]';
 
   const passwordType = showPassword ? 'text' : 'password';
+  const buttonText = getButtonText(loading, isLogin);
 
-  let buttonText: string;
-  if (loading) {
-    buttonText = 'Please wait...';
-  } else if (isLogin) {
-    buttonText = 'Log In';
-  } else {
-    buttonText = 'Register';
-  }
 
   return (
     <AuthFormView
