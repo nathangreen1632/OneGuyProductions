@@ -1,6 +1,6 @@
 import React from "react";
 
-export default function HeroSection(): React.ReactElement {
+export default function HeroSectionView(): React.ReactElement {
   return (
     <section className="text-center py-8 px-4 bg-[var(--theme-bg)] text-[var(--theme-text)]">
       <h2 className="text-4xl sm:text-5xl font-bold mb-4 text-[var(--theme-accent)]">
