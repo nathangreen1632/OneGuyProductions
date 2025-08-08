@@ -86,14 +86,14 @@ export default function EditOrderModalView({
         <div className="mt-4 flex justify-end gap-3">
           <button
             onClick={closeModal}
-            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+            className="px-4 py-2 bg-gray-500 text-white cursor-pointer rounded hover:bg-gray-600"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
             disabled={loading}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+            className="px-4 py-2 bg-blue-600 text-white cursor-pointer rounded hover:bg-blue-700 transition"
           >
             {loading ? 'Saving...' : 'Save Changes'}
           </button>
