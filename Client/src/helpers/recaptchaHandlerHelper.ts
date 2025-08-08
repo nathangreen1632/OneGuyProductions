@@ -1,5 +1,5 @@
 import toast from 'react-hot-toast';
-import {getRecaptchaTokenHelper} from './getRecaptchaTokenHelper.ts';
+import {getRecaptchaTokenHelper} from './getRecaptchaTokenHelper';
 
 const RECAPTCHA_SITE_KEY: string = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
 
