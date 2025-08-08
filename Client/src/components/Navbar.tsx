@@ -6,7 +6,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import NavbarView from '../jsx/navbarView';
 import { LogIn, LogOut, UserSquare2, HelpCircle } from 'lucide-react';
 import { logoutUser } from '../utils/logout';
-import GravatarModal from './GravatarModal';
+import GravatarModal from '../modals/GravatarModal.tsx';
 
 function getGravatarUrl(email?: string): string {
   if (!email) return '';
