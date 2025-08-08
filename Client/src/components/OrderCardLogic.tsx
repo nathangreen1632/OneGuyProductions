@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import toast from 'react-hot-toast';
 import { useOrderStore } from '../store/useOrderStore';
-import { isWithin72Hours } from '../helpers/dateHelper.ts';
-import type { Order, OrderStatus } from '../types/order';
-import OrderEditModalView from '../jsx/orderEditModalView.tsx';
+import { isWithin72Hours } from '../helpers/dateHelper';
+import type { Order, OrderStatus } from '../types/order.types';
+import OrderEditModalView from '../jsx/orderEditModalView';
 import OrderCardView from '../jsx/orderCardView';
 
 function getStatusTextClasses(status: string): string {
