@@ -1,14 +1,14 @@
 import React, { useEffect } from 'react';
 import { useOrderStore } from '../store/useOrderStore';
 import ToggleViewButton from '../common/ToggleViewButton';
-import OrderCardLogic from '../components/OrderCardLogic';              // ✅ container component
+import OrderCardLogic from '../components/OrderCardLogic';
 import OrderTimelineView from './orderTimelineView';
 
 export default function CustomerPortalView(): React.ReactElement {
   const { currentView, fetchOrders } = useOrderStore();
 
-  useEffect(() => {
-    (async () => {
+  useEffect((): void => {
+    (async (): Promise<void> => {
       try {
         await fetchOrders();
       } catch (error) {
