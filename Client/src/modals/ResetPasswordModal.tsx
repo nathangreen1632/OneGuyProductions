@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import TimelineEditModal from './TimelineEditModal.tsx';
-import { useResetPasswordStore } from '../store/useResetPasswordStore.ts';
+import TimelineEditModal from './TimelineEditModal';
+import { useResetPasswordStore } from '../store/useResetPasswordStore';
 
 export default function ResetPasswordModal(): React.ReactElement | null {
   const {
