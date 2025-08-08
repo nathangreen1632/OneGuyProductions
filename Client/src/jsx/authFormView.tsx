@@ -11,11 +11,9 @@ interface AuthFormViewProps {
   passwordType: 'text' | 'password';
   buttonText: string;
   openModal: () => void;
-
   setIsLogin: React.Dispatch<React.SetStateAction<boolean>>;
   setShowPassword: React.Dispatch<React.SetStateAction<boolean>>;
   setRememberMe: React.Dispatch<React.SetStateAction<boolean>>;
-
   handleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleSubmit: (e: React.FormEvent) => Promise<void> | void;
 }
@@ -69,7 +67,6 @@ export default function AuthFormView(props: Readonly<AuthFormViewProps>): React.
             className={inputClass}
           />
 
-          {/* 🔒 Password field with show toggle */}
           <div className="relative">
             <input
               type={passwordType}
@@ -79,18 +76,17 @@ export default function AuthFormView(props: Readonly<AuthFormViewProps>): React.
               onChange={handleChange}
               required
               autoComplete={isLogin ? 'current-password' : 'new-password'}
-              className={`${inputClass} pr-10`} /* ⏩ padding for toggle button */
+              className={`${inputClass} pr-10`}
             />
             <button
               type="button"
-              onClick={() => setShowPassword((prev) => !prev)}
+              onClick={(): void => setShowPassword((prev: boolean): boolean => !prev)}
               className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-black hover:underline focus:outline-none"
             >
               {showPassword ? 'Hide' : 'Show'}
             </button>
           </div>
 
-          {/* ✅ Confirm Password */}
           {!isLogin && (
             <input
               type={passwordType}
@@ -104,20 +100,19 @@ export default function AuthFormView(props: Readonly<AuthFormViewProps>): React.
             />
           )}
 
-          {/* ✅ Remember Me */}
-          <p className="flex items-center gap-2 text-sm pl-1">
-            {isLogin && (
+          {isLogin && (
+            <p className="flex items-center gap-2 text-sm pl-1">
               <label className="flex items-center gap-2 text-sm pl-1">
                 <input
                   type="checkbox"
                   checked={rememberMe}
-                  onChange={() => setRememberMe(!rememberMe)}
+                  onChange={(): void => setRememberMe(!rememberMe)}
                   className="rounded bg-[var(--theme-button)] text-[var(--theme-text-white)] font-medium hover:bg-[var(--theme-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 transition"
                 />
                 <span>Remember Me</span>
               </label>
-            )}
-          </p>
+            </p>
+          )}
 
           <button
             type="submit"
@@ -146,7 +141,7 @@ export default function AuthFormView(props: Readonly<AuthFormViewProps>): React.
           <button
             type="button"
             className="text-blue-500 underline"
-            onClick={() => setIsLogin(!isLogin)}
+            onClick={(): void => setIsLogin(!isLogin)}
           >
             {isLogin ? 'Sign up' : 'Log in'}
           </button>
