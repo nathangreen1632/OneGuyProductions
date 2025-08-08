@@ -11,18 +11,12 @@ interface EditOrderModalViewProps {
   handleSave: () => void;
 }
 
-export default function EditOrderModalView({
-                                             modalOpen,
-                                             closeModal,
-                                             form,
-                                             loading,
-                                             handleChange,
-                                             handleSave,
-                                           }: Readonly<EditOrderModalViewProps>): React.ReactElement {
+export default function EditOrderModalView(
+  { modalOpen, closeModal, form, loading, handleChange, handleSave }: Readonly<EditOrderModalViewProps>
+): React.ReactElement {
   return (
     <TimelineEditModal isOpen={modalOpen} onClose={closeModal} title="Edit Order">
       <div className="flex flex-col gap-4">
-        {/* Project Type */}
         <div className="p-4 rounded-xl bg-[var(--theme-bg)] shadow-[0_0_10px_2px_var(--theme-shadow)] transition cursor-pointer hover:shadow-[0_0_25px_2px_var(--theme-shadow)]">
           <p className="text-lg text-[var(--theme-text)] underline mb-1">Project Type</p>
           <input
@@ -34,7 +28,6 @@ export default function EditOrderModalView({
           />
         </div>
 
-        {/* Budget */}
         <div className="p-4 rounded-xl bg-[var(--theme-bg)] shadow-[0_0_10px_2px_var(--theme-shadow)] transition cursor-pointer hover:shadow-[0_0_25px_2px_var(--theme-shadow)]">
           <p className="text-lg text-[var(--theme-text)] underline mb-1">Budget</p>
           <input
@@ -46,7 +39,6 @@ export default function EditOrderModalView({
           />
         </div>
 
-        {/* Timeline */}
         <div className="p-4 rounded-xl bg-[var(--theme-bg)] shadow-[0_0_10px_2px_var(--theme-shadow)] transition cursor-pointer hover:shadow-[0_0_25px_2px_var(--theme-shadow)]">
           <p className="text-lg text-[var(--theme-text)] underline mb-1">Timeline</p>
           <input
@@ -58,7 +50,6 @@ export default function EditOrderModalView({
           />
         </div>
 
-        {/* Business Name */}
         <div className="p-4 rounded-xl bg-[var(--theme-bg)] shadow-[0_0_10px_2px_var(--theme-shadow)] transition cursor-pointer hover:shadow-[0_0_25px_2px_var(--theme-shadow)]">
           <p className="text-lg text-[var(--theme-text)] underline mb-1">Business Name</p>
           <input
@@ -70,7 +61,6 @@ export default function EditOrderModalView({
           />
         </div>
 
-        {/* Description */}
         <div className="p-4 rounded-xl bg-[var(--theme-bg)] shadow-[0_0_10px_2px_var(--theme-shadow)] transition cursor-pointer hover:shadow-[0_0_25px_2px_var(--theme-shadow)]">
           <p className="text-lg text-[var(--theme-text)] underline mb-1">Project Description</p>
           <textarea
@@ -82,7 +72,6 @@ export default function EditOrderModalView({
           />
         </div>
 
-        {/* Button Row */}
         <div className="mt-4 flex justify-end gap-3">
           <button
             onClick={closeModal}
