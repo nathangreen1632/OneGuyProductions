@@ -4,8 +4,8 @@ import { Toaster } from 'react-hot-toast';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import AppRoutes from './AppRoutes';
-import ResetPasswordModal from './components/ResetPasswordModal.tsx';
-import EditOrderModal from './components/EditOrderModal.tsx';
+import ResetPasswordModal from './modals/ResetPasswordModal.tsx';
+import EditOrderModal from './modals/EditOrderModal.tsx';
 
 export default function App(): React.ReactElement {
   return (
