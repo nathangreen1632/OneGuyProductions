@@ -5,7 +5,7 @@ import { useAppStore } from '../store/useAppStore';
 import { useAuthStore } from '../store/useAuthStore';
 import NavbarView from '../jsx/navbarView';
 import { LogIn, LogOut, UserSquare2, HelpCircle } from 'lucide-react';
-import { logoutUser } from '../utils/logout';
+import { logoutUser } from '../helpers/logoutHelper.ts';
 import GravatarModal from '../modals/GravatarModal.tsx';
 
 function getGravatarUrl(email?: string): string {
@@ -14,7 +14,7 @@ function getGravatarUrl(email?: string): string {
   return `https://www.gravatar.com/avatar/${hash}?d=identicon`;
 }
 
-export default function Navbar(): React.ReactElement {
+export default function NavbarLogic(): React.ReactElement {
   const location: Location = useLocation();
   const navigate = useNavigate();
   const { menuOpen, toggleMenu, closeMenu } = useAppStore();
