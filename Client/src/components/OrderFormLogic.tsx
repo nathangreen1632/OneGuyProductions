@@ -2,7 +2,7 @@ import React, { type ReactElement, type RefObject, useRef, useState } from 'reac
 import toast from 'react-hot-toast';
 import type { DerivedOrderFormData, OrderFormData, OrderPayload, OrderResponse } from '../types/order';
 import { useOrderStore } from '../store/useOrderStore';
-import { executeRecaptchaFlow } from '../utils/recaptchaHandler';
+import { executeRecaptchaFlow } from '../helpers/recaptchaHandlerHelper.ts';
 import OrderFormView from '../jsx/orderFormView';
 
 const initialForm: Omit<DerivedOrderFormData, 'captchaToken'> = {
@@ -15,7 +15,7 @@ const initialForm: Omit<DerivedOrderFormData, 'captchaToken'> = {
   description: '',
 };
 
-export default function OrderForm(): ReactElement {
+export default function OrderFormLogic(): ReactElement {
   const [formData, setFormData] = useState<OrderFormData>(initialForm);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const lockRef: RefObject<boolean> = useRef<boolean>(false);
