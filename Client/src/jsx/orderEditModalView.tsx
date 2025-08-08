@@ -132,13 +132,13 @@ export default function OrderEditModalView({
         <div className="flex justify-end mt-6 gap-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm rounded bg-gray-600 hover:bg-gray-700 text-slate-200"
+            className="px-4 py-2 text-sm rounded cursor-pointer bg-gray-600 hover:bg-gray-700 text-slate-200"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
-            className="px-4 py-2 text-sm rounded bg-[var(--theme-button)] hover:bg-[var(--theme-hover)] text-[var(--theme-text-white)] shadow focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60"
+            className="px-4 py-2 text-sm rounded bg-[var(--theme-button)] cursor-pointer hover:bg-[var(--theme-hover)] text-[var(--theme-text-white)] shadow focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60"
           >
             Save Changes
           </button>
