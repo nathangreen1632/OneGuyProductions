@@ -29,7 +29,7 @@ export default function SignupPromptModal(): React.ReactElement | null {
   };
 
   const button =
-    'block center bg-[var(--theme-button)] hover:bg-[var(--theme-hover)] text-[var(--theme-text-white)] font-semibold py-2 px-6 rounded transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30';
+    'block center bg-[var(--theme-button)] hover:bg-[var(--theme-hover)] text-[var(--theme-text-white)] cursor-pointer font-semibold py-2 px-6 rounded transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30';
 
   return (
     <TimelineEditModal isOpen={open} onClose={skip} title="Save your order?">
