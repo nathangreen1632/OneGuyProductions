@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { useEditOrderStore } from '../store/useEditOrderStore.ts';
-import EditOrderModalView from '../jsx/editOrderModalView.tsx';
+import { useEditOrderStore } from '../store/useEditOrderStore';
+import EditOrderModalView from '../jsx/editOrderModalView';
 
 export interface EditOrderForm {
   description: string;
