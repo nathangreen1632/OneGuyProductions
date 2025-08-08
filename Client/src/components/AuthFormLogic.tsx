@@ -16,6 +16,17 @@ export default function AuthFormLogic(): React.ReactElement {
   const { openModal } = useResetPasswordStore();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const mode = new URLSearchParams(window.location.search).get('mode');
+    const prefill = sessionStorage.getItem('prefillEmail');
+    if (mode === 'register') {
+      setIsLogin(false);
+      if (prefill) {
+        setForm((prev) => ({ ...prev, email: prefill }));
+      }
+    }
+  }, []);
+
   const [isLogin, setIsLogin] = useState(true);
   const [form, setForm] = useState<AuthFormState>({
     username: '',
@@ -73,17 +84,37 @@ export default function AuthFormLogic(): React.ReactElement {
       if (res.ok) {
         toast.success(isLogin ? 'Login successful!' : 'Registration complete!');
         if (data.user) {
-          console.log('🧠 Storing user in Zustand store:', data.user);
           const { setUser, setHydrated } = useAuthStore.getState();
           setUser(data.user, null);
           setHydrated(true);
+
+          // 🔗 Attempt to link order if we came from the signup prompt
+          const linkOrderId = sessionStorage.getItem('linkOrderId');
+          if (linkOrderId) {
+            try {
+              const linkRes = await fetch(`/api/order/${linkOrderId}/link-user`, {
+                method: 'PATCH',
+                credentials: 'include',
+              });
+              const linkData = await linkRes.json().catch(() => null);
+              if (linkRes.ok) {
+                toast.success('Order linked to your new account!');
+              } else {
+                console.warn('⚠️ Failed to link order:', linkData);
+              }
+            } catch (err) {
+              console.error('❌ Link order request failed:', err);
+            } finally {
+              sessionStorage.removeItem('linkOrderId');
+              sessionStorage.removeItem('prefillEmail');
+            }
+          }
         } else {
           console.warn('⚠️ Response OK, but no user object returned.');
+          toast.error('Unexpected response. Please try again.');
         }
-      } else {
-        toast.error(data.error || 'Something went wrong.');
-        console.error('❌ API returned an error:', data.error);
       }
+
     } catch (err) {
       console.error('🚨 Fetch failed:', err);
       toast.error('Server error. Please try again.');
