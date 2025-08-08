@@ -1,7 +1,6 @@
-// Client/src/utils/logout.ts
 export async function logoutUser(): Promise<boolean> {
   try {
-    const res = await fetch('/api/auth/logout', {
+    const res: Response = await fetch('/api/auth/logout', {
       method: 'POST',
       credentials: 'include',
     });
@@ -12,7 +11,7 @@ export async function logoutUser(): Promise<boolean> {
     }
 
     return true;
-  } catch (err) {
+  } catch (err: unknown) {
     console.error('Logout error:', err);
     return false;
   }
