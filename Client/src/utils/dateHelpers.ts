@@ -1,21 +1,22 @@
 /**
- * Checks if a given date string is within the last 72 hours.
+ * Checks if a given date (string or Date) is within the last 72 hours.
  * Returns false if the date is invalid.
  */
-export function isWithin72Hours(dateString: string): boolean {
+export function isWithin72Hours(createdAt: string | Date): boolean {
   try {
-    const date = new Date(dateString);
-    const created = date.getTime();
+    const ts =
+      createdAt instanceof Date
+        ? createdAt.getTime()
+        : new Date(createdAt).getTime();
 
-    if (isNaN(created)) {
-      console.warn(`⚠️ isWithin72Hours: Invalid date string "${dateString}"`);
+    if (Number.isNaN(ts)) {
+      console.warn(`⚠️ isWithin72Hours: Invalid date "${createdAt}"`);
       return false;
     }
 
-    const now = Date.now();
-    const diff = now - created;
-
-    return diff < 72 * 60 * 60 * 1000; // 72 hours in ms
+    const diff = Date.now() - ts;
+    // Ensure it's within the past 72 hours and not in the future
+    return diff >= 0 && diff < 72 * 60 * 60 * 1000;
   } catch (err) {
     console.error('❌ isWithin72Hours: Error processing date', err);
     return false;
