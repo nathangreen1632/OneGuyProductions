@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useOrderStore } from '../store/useOrderStore';
-import ToggleViewButton from '../common/ToggleViewButton.tsx';
-import OrderCardLogic from '../components/OrderCardLogic.tsx';              // ✅ container component
+import ToggleViewButton from '../common/ToggleViewButton';
+import OrderCardLogic from '../components/OrderCardLogic';              // ✅ container component
 import OrderTimelineView from './orderTimelineView';
 
 export default function CustomerPortalView(): React.ReactElement {
