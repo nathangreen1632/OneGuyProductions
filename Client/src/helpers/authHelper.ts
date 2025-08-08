@@ -1,34 +1,53 @@
-// Client/src/helpers/authHelper.ts
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/useAuthStore';
-import type {AuthFormState, LoginPayload, RegisterPayload} from '../types/auth.types';
+import type { AuthFormState, LoginPayload, RegisterPayload } from '../types/auth.types';
 
-export function passwordsMatch(
-  isLogin: boolean,
-  form: Pick<AuthFormState, 'password' | 'confirmPassword'>
-): boolean {
-  if (isLogin) return true;
+// ———————————————————————————————
+// Validation
+// ———————————————————————————————
+export function passwordsMatch(form: Pick<AuthFormState, 'password' | 'confirmPassword'>): boolean {
+  // If confirmPassword isn't present (login mode), treat as valid
+  if (!form.confirmPassword) return true;
   const ok = form.password === form.confirmPassword;
   if (!ok) toast.error('Passwords do not match');
   return ok;
 }
 
-export function buildEndpoint(
-  isLogin: boolean
-): '/api/auth/login' | '/api/auth/register' {
-  return isLogin ? '/api/auth/login' : '/api/auth/register';
+// ———————————————————————————————
+// Endpoints
+// ———————————————————————————————
+export function loginEndpoint(): '/api/auth/login' {
+  return '/api/auth/login';
+}
+export function registerEndpoint(): '/api/auth/register' {
+  return '/api/auth/register';
 }
 
-export function buildPayload(
-  isLogin: boolean,
-  form: AuthFormState,
+// ———————————————————————————————
+// Payloads
+// ———————————————————————————————
+export function buildLoginPayload(
+  form: Pick<AuthFormState, 'email' | 'password'>,
   rememberMe: boolean
-): LoginPayload | RegisterPayload {
-  return isLogin
-    ? { email: form.email, password: form.password, rememberMe }
-    : { username: form.username, email: form.email, password: form.password, rememberMe };
+): LoginPayload {
+  return { email: form.email, password: form.password, rememberMe };
 }
 
+export function buildRegisterPayload(
+  form: Pick<AuthFormState, 'username' | 'email' | 'password'>,
+  rememberMe: boolean
+): RegisterPayload {
+  return {
+    username: form.username,
+    email: form.email,
+    password: form.password,
+    rememberMe,
+  };
+}
+
+// ———————————————————————————————
+// Request + session helpers
+// ———————————————————————————————
 export async function authRequest(
   endpoint: '/api/auth/login' | '/api/auth/register',
   payload: LoginPayload | RegisterPayload
