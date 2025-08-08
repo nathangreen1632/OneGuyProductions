@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import { handleNewOrder } from '../services/order.service.js';
-import { HandleOrderResult } from '../types/FormRequestBodies.js';
+import { HandleOrderResult } from '../types/requestBodies.types.js';
 import { Order, OrderUpdate, User } from '../models/index.js';
 import { isWithin72Hours } from '../utils/time.js';
 import { generatePdfBuffer } from '../services/pdf.service.js';
