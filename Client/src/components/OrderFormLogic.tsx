@@ -1,9 +1,9 @@
 import React, { type ReactElement, type RefObject, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
-import type { DerivedOrderFormData, OrderFormData, OrderPayload, OrderResponse } from '../types/order';
+import type { DerivedOrderFormData, OrderFormData, OrderPayload, OrderResponse } from '../types/order.types';
 import { useSignupPromptStore } from '../store/useSignupPromptStore';
 import { useOrderStore } from '../store/useOrderStore';
-import { executeRecaptchaFlow } from '../helpers/recaptchaHandlerHelper.ts';
+import { executeRecaptchaFlow } from '../helpers/recaptchaHandlerHelper';
 import OrderFormView from '../jsx/orderFormView';
 
 const initialForm: Omit<DerivedOrderFormData, 'captchaToken'> = {
