@@ -85,7 +85,7 @@ export default function OrderTimelineView(): React.ReactElement {
               <div className="mt-6 flex gap-3">
                 <button
                   onClick={() => openEditModal(order)}
-                  className="px-4 py-2 bg-[var(--theme-button)] text-[var(--theme-text-white)] text-sm rounded shadow-md hover:bg-[var(--theme-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60"
+                  className="px-4 py-2 bg-[var(--theme-button)] text-[var(--theme-text-white)] text-sm rounded shadow-md hover:bg-[var(--theme-hover)] cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60"
                 >
                   Edit Order
                 </button>
