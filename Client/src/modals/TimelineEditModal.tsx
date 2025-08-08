@@ -8,12 +8,7 @@ interface ModalProps {
   children: React.ReactNode;
 }
 
-export default function TimelineEditModal({
-                                            isOpen,
-                                            onClose,
-                                            title,
-                                            children,
-                                          }: ModalProps): React.ReactElement | null {
+export default function TimelineEditModal({ isOpen, onClose, title, children }: ModalProps): React.ReactElement | null {
   if (!isOpen) return null;
 
   return createPortal(
