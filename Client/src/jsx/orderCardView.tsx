@@ -73,7 +73,7 @@ export default function OrderCardView({
               <button
                 type="button"
                 onClick={() => onEdit(order)}
-                className="px-4 py-2 bg-[var(--theme-button)] text-[var(--theme-text-white)] text-sm rounded shadow-md hover:bg-[var(--theme-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60"
+                className="px-4 py-2 bg-[var(--theme-button)] text-[var(--theme-text-white)] cursor-pointer text-sm rounded shadow-md hover:bg-[var(--theme-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60"
               >
                 Edit
               </button>
@@ -83,7 +83,7 @@ export default function OrderCardView({
                   type="button"
                   onClick={() => onCancel(order)}
                   disabled={order.status === 'cancelled'}
-                  className={`px-4 py-2 text-sm rounded shadow-md focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60 ${
+                  className={`px-4 py-2 text-sm rounded cursor-pointer shadow-md focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60 ${
                     order.status === 'cancelled'
                       ? 'bg-gray-500 cursor-not-allowed text-white'
                       : 'bg-[var(--theme-border-red)] hover:bg-red-700 text-[var(--theme-text-white)]'
@@ -96,7 +96,7 @@ export default function OrderCardView({
               <button
                 type="button"
                 onClick={() => onDownload(order.id)}
-                className="px-4 py-2 bg-[var(--theme-card)] text-[var(--theme-text-white)] text-sm rounded shadow-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60"
+                className="px-4 py-2 bg-[var(--theme-card)] text-[var(--theme-text-white)] cursor-pointer text-sm rounded shadow-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60"
               >
                 Download Invoice
               </button>
