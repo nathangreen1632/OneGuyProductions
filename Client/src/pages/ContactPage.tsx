@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
-import ContactFormLogic from '../components/ContactFormLogic.tsx';
+import ContactFormLogic from '../components/ContactFormLogic';
 
 export default function ContactPage(): React.ReactElement {
   const { pathname } = useLocation();
