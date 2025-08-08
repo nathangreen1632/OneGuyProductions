@@ -1,13 +1,13 @@
 import React from 'react';
-import HeroSection from '../components/HeroSection';
-import Philosophy from '../components/Philosophy.tsx';
+import HeroSectionView from '../jsx/heroSectionView.tsx';
+import PhilosophyView from '../jsx/philosophyView.tsx';
 
 export default function HomePage(): React.ReactElement {
   return (
     <main className="bg-[var(--theme-bg)] text-[var(--theme-text)] min-h-screen flex flex-col">
       <div className="flex-grow">
-        <HeroSection />
-        <Philosophy />
+        <HeroSectionView />
+        <PhilosophyView />
       </div>
     </main>
   );
