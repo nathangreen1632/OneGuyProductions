@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import type { Order } from '../types/order';
-import { isWithin72Hours } from '../helpers/dateHelper.ts';
+import type { Order } from '../types/order.types';
+import { isWithin72Hours } from '../helpers/dateHelper';
 
 interface Props {
   order: Order;
@@ -47,7 +47,16 @@ export default function OrderEditModalView({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center px-4">
-      <div className="bg-[var(--theme-surface)] text-[var(--theme-text)] w-full max-w-lg rounded-2xl shadow-[0_4px_14px_0_var(--theme-shadow)] p-6">
+      <div className="relative bg-[var(--theme-surface)] text-[var(--theme-text)] w-full max-w-lg rounded-2xl shadow-[0_4px_14px_0_var(--theme-shadow)] p-6">
+        {/* Close Button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-[var(--theme-border-red)] cursor-pointer text-xl font-bold hover:text-red-700 focus:outline-none"
+          aria-label="Close"
+        >
+          &times;
+        </button>
+
         <h2 className="text-xl font-bold mb-4">Edit Order</h2>
 
         <div className="flex flex-col gap-4">
