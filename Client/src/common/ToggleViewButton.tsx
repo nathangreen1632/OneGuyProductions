@@ -1,5 +1,5 @@
 import React from 'react';
-import { useOrderStore } from '../store/useOrderStore';
+import { useOrderStore } from '../store/useOrderStore.ts';
 import { LayoutGrid, List } from 'lucide-react';
 
 export default function ToggleViewButton(): React.ReactElement {
