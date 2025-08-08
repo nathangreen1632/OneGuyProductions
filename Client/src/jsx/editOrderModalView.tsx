@@ -1,6 +1,6 @@
 import React from 'react';
-import TimelineEditModal from '../modals/TimelineEditModal.tsx';
-import type { EditOrderForm } from '../modals/EditOrderModal.tsx';
+import TimelineEditModal from '../modals/TimelineEditModal';
+import type { EditOrderForm } from '../modals/EditOrderModal';
 
 interface EditOrderModalViewProps {
   modalOpen: boolean;
