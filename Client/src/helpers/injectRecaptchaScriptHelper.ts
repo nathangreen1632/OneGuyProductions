@@ -1,4 +1,4 @@
-export function injectRecaptchaScript(siteKey: string): void {
+export function injectRecaptchaScriptHelper(siteKey: string): void {
   if (typeof window === 'undefined') return;
 
   const existingScript = document.getElementById('recaptcha-script');
