@@ -1,5 +1,5 @@
 import type {Location} from "react-router-dom";
-import type {NavLink} from "../constants/navLinks.ts";
+import type {NavLink} from "../constants/navLinks";
 
 export default interface NavbarViewProps {
   location: Location;
