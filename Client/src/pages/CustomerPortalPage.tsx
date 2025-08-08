@@ -1,10 +1,12 @@
 import React from 'react';
 import CustomerPortalView from '../jsx/customerPortalView';
+import OrderLogic from '../components/OrderLogic';
 
 export default function CustomerPortalPage(): React.ReactElement {
   return (
     <div className="min-h-screen px-4 sm:px-6 py-6 bg-[var(--theme-bg)] text-[var(--theme-text)]">
       <CustomerPortalView />
+      <OrderLogic />
     </div>
   );
 }
