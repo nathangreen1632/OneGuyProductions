@@ -49,11 +49,3 @@ export interface RecaptchaVerificationResponse {
   };
 }
 
-export interface HandleOrderResult {
-  dbSuccess: boolean;
-  emailSuccess: boolean;
-}
-
-export interface NewOrderPayload extends OrderFormBody {
-  customerId: number;
-}
