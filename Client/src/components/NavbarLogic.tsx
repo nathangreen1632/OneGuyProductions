@@ -7,11 +7,13 @@ import NavbarView from '../jsx/navbarView';
 import { LogIn, LogOut, UserSquare2, HelpCircle } from 'lucide-react';
 import { logoutUser } from '../helpers/logoutHelper';
 import GravatarModal from '../modals/GravatarModal';
+import md5 from 'blueimp-md5';
 
 function getGravatarUrl(email?: string): string {
   if (!email) return '';
-  const hash = email.trim().toLowerCase();
-  return `https://www.gravatar.com/avatar/${hash}?d=identicon`;
+  const normalized = email.trim().toLowerCase();
+  const hash = md5(normalized);
+  return `https://www.gravatar.com/avatar/${hash}?s=128&d=identicon&r=g`;
 }
 
 export default function NavbarLogic(): React.ReactElement {
@@ -84,7 +86,7 @@ export default function NavbarLogic(): React.ReactElement {
             <img
               src={getGravatarUrl(user.email)}
               alt="User Avatar"
-              className="w-8 h-8 rounded-full"
+              className="w-12 h-12 rounded-full"
             />
 
             {/* Tooltip Icon opens modal instead */}
