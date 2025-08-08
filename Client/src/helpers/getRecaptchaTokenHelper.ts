@@ -1,7 +1,7 @@
 import toast from 'react-hot-toast';
 import type {ReCaptchaEnterpriseV3} from '../types/grecaptcha';
 
-export async function getRecaptchaToken(
+export async function getRecaptchaTokenHelper(
   action: string,
   siteKey: string
 ): Promise<string> {
