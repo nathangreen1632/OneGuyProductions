@@ -1,5 +1,5 @@
 import React from 'react';
-import type { OrderFormData } from '../types/order';
+import type { OrderFormData } from '../types/order.types';
 
 interface OrderFormViewProps {
   formData: OrderFormData;
