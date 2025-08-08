@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { Order } from '../types/order';
-import { isWithin72Hours } from '../utils/dateHelpers';
+import { isWithin72Hours } from '../helpers/dateHelper.ts';
 
 interface Props {
   order: Order;
@@ -8,7 +8,7 @@ interface Props {
   onSave: (updatedOrder: Partial<Order>) => void;
 }
 
-export default function OrderEditModal({
+export default function OrderEditModalView({
                                          order,
                                          onClose,
                                          onSave,
