@@ -1,6 +1,6 @@
 import React from 'react';
-import HeroSectionView from '../jsx/heroSectionView.tsx';
-import PhilosophyView from '../jsx/philosophyView.tsx';
+import HeroSectionView from '../jsx/heroSectionView';
+import PhilosophyView from '../jsx/philosophyView';
 
 export default function HomePage(): React.ReactElement {
   return (
