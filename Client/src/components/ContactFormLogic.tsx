@@ -4,7 +4,7 @@ import type { ContactPayload, ContactResponse } from '../types/contact';
 import type { ContactFormData } from '../types/formData';
 import { useContactStore } from '../store/useContactStore';
 import ContactFormView from '../jsx/contactFormView';
-import { waitForReCaptchaEnterpriseAndExecute } from '../utils/waitForRecaptchaEnterprise';
+import { waitForReCaptchaEnterpriseAndExecute } from '../helpers/waitForRecaptchaEnterpriseHelper.ts';
 
 const initialForm: ContactFormData = {
   name: '',
@@ -12,7 +12,7 @@ const initialForm: ContactFormData = {
   message: '',
 };
 
-export default function ContactForm(): ReactElement {
+export default function ContactFormLogic(): ReactElement {
   const [formData, setFormData] = useState<ContactFormData>(initialForm);
   const [isRecaptchaReady] = useState<boolean>(true);
   const lockRef: RefObject<boolean> = useRef<boolean>(false);
