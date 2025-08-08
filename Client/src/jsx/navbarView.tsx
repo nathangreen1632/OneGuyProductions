@@ -1,23 +1,10 @@
 import React, { type ReactElement } from 'react';
-import { Link, type Location } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import type { NavLink } from '../constants/navLinks';
+import type NavbarViewProps from '../types/navbarProps.types';
 
-interface NavbarViewProps {
-  location: Location;
-  navLinks: NavLink[];
-  menuOpen: boolean;
-  toggleMenu: () => void;
-  closeMenu: () => void;
-}
-
-export default function NavbarView({
-                                     location,
-                                     navLinks,
-                                     menuOpen,
-                                     toggleMenu,
-                                     closeMenu,
-                                   }: Readonly<NavbarViewProps>): React.ReactElement {
+export default function NavbarView({ location, navLinks, menuOpen, toggleMenu, closeMenu }: Readonly<NavbarViewProps>): React.ReactElement {
 
   return (
     <header className="sticky top-0 z-50 bg-[var(--theme-bg)] border-b border-[var(--theme-border-red)] shadow-[0_4px_14px_0_var(--theme-shadow)]">
