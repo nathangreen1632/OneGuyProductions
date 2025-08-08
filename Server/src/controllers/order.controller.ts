@@ -1,11 +1,10 @@
 import type { Request, Response } from 'express';
 import { handleNewOrder } from '../services/order.service.js';
-import { HandleOrderResult } from '../types/requestBodies.types.js';
+import { HandleOrderResult, validOrderStatuses } from '../types/order.types.js';
 import { Order, OrderUpdate, User } from '../models/index.js';
 import { isWithin72Hours } from '../utils/time.js';
 import { generatePdfBuffer } from '../services/pdf.service.js';
 import type { OrderStatus } from '../types/order.types.js';
-import { validOrderStatuses } from '../types/order.types.js';
 
 // ─────────────────────────────────────────────────────────────
 // 📨 Submit Order (Production-Used)
@@ -39,6 +38,7 @@ export async function submitOrder(req: Request, res: Response): Promise<void> {
     // Try to find an existing user — but don't require one
     const user = await User.findOne({ where: { email } });
     const customerId = user?.id || null;
+    const unknownEmail = !user; // ✅ NEW
 
     if (!user) {
       console.warn(`🟡 Proceeding without linked user for email: ${email}`);
@@ -73,12 +73,53 @@ export async function submitOrder(req: Request, res: Response): Promise<void> {
     res.status(200).json({
       success: true,
       message: 'Order submitted and confirmation sent.',
+      orderId: result.orderId ?? null, // ✅ pass back
+      unknownEmail,                    // ✅ pass back
     });
   } catch (err) {
     console.error('🧨 Unexpected error during order submission:', err);
     res.status(500).json({ error: 'Server error while submitting order.' });
   }
 }
+
+// ─────────────────────────────────────────────────────────────
+// 🔗 Link Order to Current User
+// ─────────────────────────────────────────────────────────────
+
+export async function linkOrderToCurrentUser(req: Request, res: Response): Promise<void> {
+  const userId = (req as any).user?.id;
+  const orderId = Number(req.params.id);
+
+  if (!userId) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+  if (!Number.isFinite(orderId)) {
+    res.status(400).json({ error: 'Invalid order ID.' });
+    return;
+  }
+
+  try {
+    const order = await Order.findOne({ where: { id: orderId } });
+    if (!order) {
+      res.status(404).json({ error: 'Order not found.' });
+      return;
+    }
+
+    // Only link if not already linked or linking to same user
+    if (order.customerId && order.customerId !== Number(userId)) {
+      res.status(409).json({ error: 'Order already linked to a different user.' });
+      return;
+    }
+
+    await order.update({ customerId: Number(userId) });
+    res.status(200).json({ success: true, message: 'Order linked to user.', orderId });
+  } catch (err) {
+    console.error('❌ Link Order Error:', err);
+    res.status(500).json({ error: 'Failed to link order to user.' });
+  }
+}
+
 
 // ─────────────────────────────────────────────────────────────
 // ✏️ Update Order (within 72 hours)
