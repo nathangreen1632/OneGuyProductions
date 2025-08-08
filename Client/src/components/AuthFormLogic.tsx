@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useResetPasswordStore } from '../store/useResetPasswordStore';
 import { useAuthStore } from '../store/useAuthStore';
 import AuthFormView from '../jsx/authFormView';
-import { passwordsMatch, buildEndpoint, buildPayload, authRequest, persistUserFromResponse, linkPendingOrderIfAny } from '../helpers/authHelper';
+import { passwordsMatch, loginEndpoint, registerEndpoint, buildLoginPayload, buildRegisterPayload, authRequest, persistUserFromResponse, linkPendingOrderIfAny } from '../helpers/authHelper';
 import type {AuthFormState} from "../types/auth.types.ts";
 
 export default function AuthFormLogic(): React.ReactElement {
@@ -45,11 +45,13 @@ export default function AuthFormLogic(): React.ReactElement {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!passwordsMatch(isLogin, form)) return;
+    if (!passwordsMatch(form)) return;
 
     setLoading(true);
-    const endpoint = buildEndpoint(isLogin);
-    const payload = buildPayload(isLogin, form, rememberMe);
+    const endpoint = isLogin ? loginEndpoint() : registerEndpoint();
+    const payload = isLogin
+      ? buildLoginPayload(form, rememberMe)
+      : buildRegisterPayload(form, rememberMe);
 
     try {
       const { ok, data } = await authRequest(endpoint, payload);
