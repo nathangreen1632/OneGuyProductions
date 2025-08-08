@@ -1,5 +1,5 @@
 import React from "react";
-import AboutSectionView from '../jsx/aboutSectionView.tsx';
+import AboutSectionView from '../jsx/aboutSectionView';
 
 export default function AboutPage(): React.ReactElement {
   return (
