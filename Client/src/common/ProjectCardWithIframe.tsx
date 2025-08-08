@@ -1,6 +1,6 @@
 import React from 'react';
-import type { Project } from '../types/project.ts';
-import ProjectCardWithIframeView from '../jsx/projectCardWithIframeView.tsx';
+import type { Project } from '../types/project.types';
+import ProjectCardWithIframeView from '../jsx/projectCardWithIframeView';
 
 interface Props {
   project: Project;
