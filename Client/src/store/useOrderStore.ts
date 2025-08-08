@@ -1,5 +1,5 @@
 import { create, type StateCreator, type StoreApi, type UseBoundStore } from 'zustand';
-import type { Order, OrderPayload } from '../types/order';
+import type { Order, OrderPayload } from '../types/order.types';
 
 interface OrderState {
   // From order form
