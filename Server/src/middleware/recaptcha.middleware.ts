@@ -4,7 +4,7 @@ import type {
   ContactFormBody,
   OrderFormBody,
   RecaptchaVerificationResult,
-} from '../types/FormRequestBodies.js';
+} from '../types/requestBodies.types.js';
 
 type BodyWithCaptcha = ContactFormBody | OrderFormBody;
 
