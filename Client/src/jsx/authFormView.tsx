@@ -96,6 +96,7 @@ export default function AuthFormView(props: Readonly<AuthFormViewProps>): React.
               type={passwordType}
               name="confirmPassword"
               placeholder="Confirm Password"
+              autoComplete="new-password"
               value={form.confirmPassword}
               onChange={handleChange}
               required
