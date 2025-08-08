@@ -1,5 +1,5 @@
 import React from 'react';
-import NotificationBadge from '../components/NotificationBadge';
+import NotificationBadge from '../common/NotificationBadge.tsx';
 import type { Order } from '../types/order';
 
 interface Props {
