@@ -1,5 +1,5 @@
 import React from "react";
-import ProjectCardWithIframe from './ProjectCardWithIframe';
+import ProjectCardWithIframe from '../common/ProjectCardWithIframe.tsx';
 import type { Project } from '../types/project';
 
 const projects: Project[] = [
