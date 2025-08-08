@@ -14,17 +14,15 @@ interface Props {
 }
 
 export default function OrderCardView({
-                                            // defensive defaults so .map/.includes never crash during store hydration
-                                            orders = [],
-                                            unreadOrderIds = [],
-                                            onCardClick,
-                                            onEdit,
-                                            onCancel,
-                                            onDownload,
-                                            getStatusTextClasses,
-                                            isWithin72Hours,
-                                          }: Readonly<Props>): React.ReactElement {
-  // Friendly empty state
+                                        orders = [],
+                                        unreadOrderIds = [],
+                                        onCardClick,
+                                        onEdit,
+                                        onCancel,
+                                        onDownload,
+                                        getStatusTextClasses,
+                                        isWithin72Hours,
+                                      }: Readonly<Props>): React.ReactElement {
   if (orders.length === 0) {
     return (
       <div className="p-6 text-center text-gray-500">
@@ -46,7 +44,6 @@ export default function OrderCardView({
           >
             {isUnread && <NotificationBadge />}
 
-            {/* Card "open" area as a real button (no nesting inside other buttons) */}
             <button
               type="button"
               aria-label={`Open order for ${order.name}`}
@@ -54,21 +51,43 @@ export default function OrderCardView({
               className="w-full text-left rounded-2xl"
             >
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div><p className="text-lg underline">Name</p><p className="font-semibold">{order.name}</p></div>
-                <div><p className="text-lg underline">Email</p><p className="font-semibold">{order.email}</p></div>
-                <div><p className="text-lg underline">Business</p><p className="font-semibold">{order.businessName}</p></div>
-                <div><p className="text-lg underline">Project Type</p><p className="font-semibold">{order.projectType}</p></div>
-                <div><p className="text-lg underline">Budget</p><p className="font-semibold">{order.budget}</p></div>
-                <div><p className="text-lg underline">Timeline</p><p className="font-semibold">{order.timeline}</p></div>
-                <div className="sm:col-span-2"><p className="text-lg underline">Description</p><p className="font-medium">{order.description}</p></div>
+                <div>
+                  <p className="text-lg underline">Name</p>
+                  <p className="font-semibold">{order.name}</p>
+                </div>
+                <div>
+                  <p className="text-lg underline">Email</p>
+                  <p className="font-semibold">{order.email}</p>
+                </div>
+                <div>
+                  <p className="text-lg underline">Business</p>
+                  <p className="font-semibold">{order.businessName}</p>
+                </div>
+                <div>
+                  <p className="text-lg underline">Project Type</p>
+                  <p className="font-semibold">{order.projectType}</p>
+                </div>
+                <div>
+                  <p className="text-lg underline">Budget</p>
+                  <p className="font-semibold">{order.budget}</p>
+                </div>
+                <div>
+                  <p className="text-lg underline">Timeline</p>
+                  <p className="font-semibold">{order.timeline}</p>
+                </div>
+                <div className="sm:col-span-2">
+                  <p className="text-lg underline">Description</p>
+                  <p className="font-medium">{order.description}</p>
+                </div>
                 <div className="sm:col-span-2">
                   <p className="text-lg underline">Status</p>
-                  <p className={`font-bold capitalize ${getStatusTextClasses(order.status)}`}>{order.status}</p>
+                  <p className={`font-bold capitalize ${getStatusTextClasses(order.status)}`}>
+                    {order.status}
+                  </p>
                 </div>
               </div>
             </button>
 
-            {/* Actions row */}
             <div className="mt-6 flex flex-wrap gap-3">
               <button
                 type="button"
