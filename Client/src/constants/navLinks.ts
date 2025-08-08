@@ -5,7 +5,7 @@ export interface NavLink {
   label: string;
   path: string;
   icon?: React.ElementType;
-  onClick?: () => void | Promise<void>; // ✅ NEW — optional for dynamic links like Logout
+  onClick?: () => void | Promise<void>;
 }
 
 export const navLinks: NavLink[] = [
