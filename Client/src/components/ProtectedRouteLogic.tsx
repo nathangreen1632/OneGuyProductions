@@ -7,16 +7,8 @@ interface Props {
 }
 
 export default function ProtectedRouteLogic({ children }: Readonly<Props>): React.ReactElement {
-  const { isAuthenticated, hydrated, user } = useAuthStore();
+  const { isAuthenticated, hydrated } = useAuthStore();
   const location = useLocation();
-
-  // ✅ Log Zustand state at the moment this component evaluates
-  console.log('🔐 ProtectedRoute auth state:', {
-    isAuthenticated,
-    hydrated,
-    user,
-    currentPath: location.pathname,
-  });
 
   if (!hydrated) {
     return (
