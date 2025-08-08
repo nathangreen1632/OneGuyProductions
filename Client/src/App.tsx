@@ -1,12 +1,12 @@
 import React from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import NavbarLogic from './components/NavbarLogic.tsx';
-import Footer from './common/Footer.tsx';
+import NavbarLogic from './components/NavbarLogic';
+import Footer from './common/Footer';
 import AppRoutes from './AppRoutes';
-import ResetPasswordModal from './modals/ResetPasswordModal.tsx';
-import EditOrderModal from './modals/EditOrderModal.tsx';
-import SignupPromptModal from "./modals/SignupPromptModal.tsx";
+import ResetPasswordModal from './modals/ResetPasswordModal';
+import EditOrderModal from './modals/EditOrderModal';
+import SignupPromptModal from './modals/SignupPromptModal';
 
 export default function App(): React.ReactElement {
   return (
