@@ -69,10 +69,15 @@ export default function NavbarLogic(): React.ReactElement {
 
       {/* ✅ User profile display */}
       {hydrated && isAuthenticated && user && (
-        <div className="flex justify-end px-6 pt-4 text-xs text-[var(--theme-text)] relative">
+        <div className="flex justify-end px-6 pt-4 pb-2 text-xs text-[var(--theme-text)] relative">
           <div className="flex items-center gap-3">
-            <span className="font-semibold">
-              Logged In: {user.username || user.email}
+            <span
+              className="relative text-[var(--theme-text)] "
+            >
+              Logged In As:{' '}
+              <span className="font-semibold text-base text-[var(--theme-border-red)]">
+                {user.username || user.email}
+              </span>
             </span>
 
             {/* Gravatar */}
@@ -86,7 +91,7 @@ export default function NavbarLogic(): React.ReactElement {
             <button
               type="button"
               onClick={() => setIsGravatarModalOpen(true)}
-              className="text-[var(--theme-accent)] hover:opacity-80"
+              className="text-[var(--theme-accent)] cursor-pointer hover:opacity-80"
               aria-label="Learn how to change your Gravatar"
             >
               <HelpCircle size={16} />
