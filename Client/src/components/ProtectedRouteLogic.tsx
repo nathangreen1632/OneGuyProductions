@@ -6,7 +6,7 @@ interface Props {
   children: React.ReactElement;
 }
 
-export default function ProtectedRoute({ children }: Readonly<Props>): React.ReactElement {
+export default function ProtectedRouteLogic({ children }: Readonly<Props>): React.ReactElement {
   const { isAuthenticated, hydrated, user } = useAuthStore();
   const location = useLocation();
 
