@@ -1,10 +1,10 @@
 import React, { type ReactElement, type RefObject, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
-import type { ContactPayload, ContactResponse } from '../types/contact';
-import type { ContactFormData } from '../types/formData';
+import type { ContactPayload, ContactResponse } from '../types/contact.types';
+import type { ContactFormData } from '../types/formData.types';
 import { useContactStore } from '../store/useContactStore';
 import ContactFormView from '../jsx/contactFormView';
-import { waitForReCaptchaEnterpriseAndExecute } from '../helpers/waitForRecaptchaEnterpriseHelper.ts';
+import { waitForReCaptchaEnterpriseAndExecute } from '../helpers/waitForRecaptchaEnterpriseHelper';
 
 const initialForm: ContactFormData = {
   name: '',
