@@ -1,6 +1,7 @@
 import React, { type ReactElement, type RefObject, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import type { DerivedOrderFormData, OrderFormData, OrderPayload, OrderResponse } from '../types/order';
+import { useSignupPromptStore } from '../store/useSignupPromptStore';
 import { useOrderStore } from '../store/useOrderStore';
 import { executeRecaptchaFlow } from '../helpers/recaptchaHandlerHelper.ts';
 import OrderFormView from '../jsx/orderFormView';
@@ -63,8 +64,14 @@ export default function OrderFormLogic(): ReactElement {
       }
 
       if (res.ok) {
+        const result = await res.json().catch(() => null); // ✅ parse success body
         toast.success('Your request was submitted successfully!');
         setLastOrder(payload);
+
+        // 🚀 NEW: Only prompt if backend says this is an unknown email AND we haven't asked before
+        if (result?.unknownEmail && result?.orderId && !useSignupPromptStore.getState().wasPrompted(formData.email)) {
+          useSignupPromptStore.getState().openPrompt(formData.email, result.orderId);
+        }
         clearOrder();
         setFormData(initialForm);
       } else {
