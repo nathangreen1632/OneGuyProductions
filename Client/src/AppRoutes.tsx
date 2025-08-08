@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
-
 import HomePage from './pages/HomePage';
 import ProductsPage from './pages/ProductsPage';
 import OrderPage from './pages/OrderPage';
@@ -8,9 +7,8 @@ import ContactPage from './pages/ContactPage';
 import AboutPage from './pages/AboutPage';
 import CustomerPortalPage from './pages/CustomerPortalPage';
 import NotFoundPage from './pages/NotFoundPage';
-import AuthPage from './pages/AuthPage.tsx';
-
-import ProtectedRouteLogic from './components/ProtectedRouteLogic.tsx';
+import AuthPage from './pages/AuthPage';
+import ProtectedRouteLogic from './components/ProtectedRouteLogic';
 import { useAuthStore } from './store/useAuthStore';
 
 export default function AppRoutes(): React.ReactElement {
