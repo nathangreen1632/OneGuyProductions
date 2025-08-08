@@ -1,6 +1,6 @@
 // Client/src/store/useEditOrderStore.ts
 import { create } from 'zustand';
-import type { Order } from '../types/order';
+import type { Order } from '../types/order.types';
 
 interface EditOrderState {
   modalOpen: boolean;
