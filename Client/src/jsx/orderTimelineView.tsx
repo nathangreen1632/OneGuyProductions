@@ -1,7 +1,7 @@
 import React from 'react';
 import { useOrderStore } from '../store/useOrderStore';
 import { useEditOrderStore } from '../store/useEditOrderStore';
-import { isWithin72Hours } from '../helpers/dateHelper.ts';
+import { isWithin72Hours } from '../helpers/dateHelper';
 import { format } from 'date-fns';
 
 // 🟢 Color-coded badge styling by status
