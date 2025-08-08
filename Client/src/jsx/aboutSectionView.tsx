@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import type { ReactElement } from 'react';
 
-export default function AboutSection(): ReactElement {
+export default function AboutSectionView(): ReactElement {
   return (
     <section className="max-w-3xl mx-auto px-6 py-15 text-[var(--theme-text)] space-y-16">
       <div>
