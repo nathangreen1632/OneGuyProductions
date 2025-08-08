@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useOrderStore } from '../store/useOrderStore';
-import ToggleViewButton from '../components/ToggleViewButton';
+import ToggleViewButton from '../common/ToggleViewButton.tsx';
 import OrderLogic from '../components/OrderLogic';              // ✅ container component
 import OrderTimelineView from './orderTimelineView';
 
