@@ -1,5 +1,5 @@
 import toast from 'react-hot-toast';
-import {getRecaptchaToken} from './getRecaptchaToken';
+import {getRecaptchaTokenHelper} from './getRecaptchaTokenHelper.ts';
 
 const RECAPTCHA_SITE_KEY: string = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
 
@@ -14,7 +14,7 @@ export async function executeRecaptchaFlow(action: string): Promise<string | nul
   }
 
   try {
-    return await getRecaptchaToken(action, RECAPTCHA_SITE_KEY);
+    return await getRecaptchaTokenHelper(action, RECAPTCHA_SITE_KEY);
   } catch {
     toast.error('CAPTCHA token failed. Please refresh and try again.');
     return null;
