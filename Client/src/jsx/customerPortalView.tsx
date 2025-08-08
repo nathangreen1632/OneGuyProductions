@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useOrderStore } from '../store/useOrderStore';
 import ToggleViewButton from '../common/ToggleViewButton.tsx';
-import OrderLogic from '../components/OrderLogic';              // ✅ container component
+import OrderCardLogic from '../components/OrderCardLogic.tsx';              // ✅ container component
 import OrderTimelineView from './orderTimelineView';
 
 export default function CustomerPortalView(): React.ReactElement {
@@ -23,7 +23,7 @@ export default function CustomerPortalView(): React.ReactElement {
         <h2 className="text-xl font-bold">My Orders</h2>
         <ToggleViewButton />
       </div>
-      {currentView === 'card' ? <OrderLogic /> : <OrderTimelineView />}
+      {currentView === 'card' ? <OrderCardLogic /> : <OrderTimelineView />}
     </div>
   );
 }
