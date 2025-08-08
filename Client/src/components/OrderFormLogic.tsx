@@ -64,11 +64,10 @@ export default function OrderFormLogic(): ReactElement {
       }
 
       if (res.ok) {
-        const result = await res.json().catch(() => null); // ✅ parse success body
+        const result = await res.json().catch(() => null);
         toast.success('Your request was submitted successfully!');
         setLastOrder(payload);
 
-        // 🚀 NEW: Only prompt if backend says this is an unknown email AND we haven't asked before
         if (result?.unknownEmail && result?.orderId && !useSignupPromptStore.getState().wasPrompted(formData.email)) {
           useSignupPromptStore.getState().openPrompt(formData.email, result.orderId);
         }
