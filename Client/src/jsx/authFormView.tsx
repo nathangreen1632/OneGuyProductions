@@ -1,5 +1,5 @@
 import React from 'react';
-import type { AuthFormState } from '../components/AuthFormLogic.tsx';
+import type { AuthFormState } from '../types/auth.types';
 
 interface AuthFormViewProps {
   isLogin: boolean;
