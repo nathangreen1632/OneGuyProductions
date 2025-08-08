@@ -1,6 +1,6 @@
 import React from "react";
 
-export default function Philosophy(): React.ReactElement {
+export default function PhilosophyView(): React.ReactElement {
   return (
     <section className="py-16 px-4 sm:px-6 max-w-6xl mx-auto text-center text-[var(--theme-text)]">
       <div className="rounded-3xl overflow-hidden shadow-[0_4px_14px_0_var(--theme-shadow)] bg-[var(--theme-surface)]">
