@@ -2,6 +2,8 @@
 // 📦 Order Types
 // ─────────────────────────────────────────────────────────────
 
+import {OrderFormBody} from "./requestBodies.types.js";
+
 export type OrderStatus =
   | 'pending'
   | 'in-progress'
@@ -36,4 +38,20 @@ export interface OrderAttributes {
 export interface OrderCreationAttributes
   extends Omit<OrderAttributes, 'id' | 'createdAt' | 'updatedAt' | 'status'> {
   status?: OrderStatus;
+}
+
+export interface OrderHandlingResult {
+  dbSuccess: boolean;
+  emailSuccess: boolean;
+  orderId?: number; // ✅ NEW
+}
+
+export interface HandleOrderResult {
+  dbSuccess: boolean;
+  emailSuccess: boolean;
+  orderId?: number; // Optional, as it may not be available if DB save fails
+}
+
+export interface NewOrderPayload extends OrderFormBody {
+  customerId: number;
 }
