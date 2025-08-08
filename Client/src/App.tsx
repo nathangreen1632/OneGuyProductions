@@ -6,6 +6,7 @@ import Footer from './common/Footer.tsx';
 import AppRoutes from './AppRoutes';
 import ResetPasswordModal from './modals/ResetPasswordModal.tsx';
 import EditOrderModal from './modals/EditOrderModal.tsx';
+import SignupPromptModal from "./modals/SignupPromptModal.tsx";
 
 export default function App(): React.ReactElement {
   return (
@@ -18,6 +19,7 @@ export default function App(): React.ReactElement {
         <Footer />
         <ResetPasswordModal />
         <EditOrderModal />
+        <SignupPromptModal />
         <Toaster
           position="top-center"
           toastOptions={{
