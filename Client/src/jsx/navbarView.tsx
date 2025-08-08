@@ -4,8 +4,13 @@ import { Menu, X } from 'lucide-react';
 import type { NavLink } from '../constants/navLinks';
 import type NavbarViewProps from '../types/navbarProps.types';
 
-export default function NavbarView({ location, navLinks, menuOpen, toggleMenu, closeMenu }: Readonly<NavbarViewProps>): React.ReactElement {
-
+export default function NavbarView({
+                                     location,
+                                     navLinks,
+                                     menuOpen,
+                                     toggleMenu,
+                                     closeMenu,
+                                   }: Readonly<NavbarViewProps>): React.ReactElement {
   return (
     <header className="sticky top-0 z-50 bg-[var(--theme-bg)] border-b border-[var(--theme-border-red)] shadow-[0_4px_14px_0_var(--theme-shadow)]">
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
