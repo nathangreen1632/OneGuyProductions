@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import toast from 'react-hot-toast';
 import { useOrderStore } from '../store/useOrderStore';
-import { isWithin72Hours } from '../utils/dateHelpers';
+import { isWithin72Hours } from '../helpers/dateHelper.ts';
 import type { Order, OrderStatus } from '../types/order';
-import OrderEditModal from '../jsx/orderEditModal';
+import OrderEditModalView from '../jsx/orderEditModalView.tsx';
 import OrderCardView from '../jsx/orderCardView';
 
 function getStatusTextClasses(status: string): string {
@@ -18,7 +18,7 @@ function getStatusTextClasses(status: string): string {
 }
 
 // ✅ renamed to reflect purpose; this is the component your route should render
-export default function OrderLogic(): React.ReactElement {
+export default function OrderCardLogic(): React.ReactElement {
   // Always provide arrays so the view never crashes during hydration
   const orders = useOrderStore((s) => s.orders) ?? [];
   const unreadOrderIds = useOrderStore((s) => s.unreadOrderIds) ?? [];
@@ -107,7 +107,7 @@ export default function OrderLogic(): React.ReactElement {
       />
 
       {editModalOpen && selectedOrder && (
-        <OrderEditModal
+        <OrderEditModalView
           order={selectedOrder}
           onClose={() => setEditModalOpen(false)}
           onSave={handleSave}
