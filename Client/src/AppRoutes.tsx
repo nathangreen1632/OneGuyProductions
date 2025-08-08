@@ -8,9 +8,9 @@ import ContactPage from './pages/ContactPage';
 import AboutPage from './pages/AboutPage';
 import CustomerPortalPage from './pages/CustomerPortalPage';
 import NotFoundPage from './pages/NotFoundPage';
-import AuthPage from './pages/Auth';
+import AuthPage from './pages/AuthPage.tsx';
 
-import ProtectedRoute from './components/ProtectedRoute';
+import ProtectedRouteLogic from './components/ProtectedRouteLogic.tsx';
 import { useAuthStore } from './store/useAuthStore';
 
 export default function AppRoutes(): React.ReactElement {
@@ -55,9 +55,9 @@ export default function AppRoutes(): React.ReactElement {
       <Route
         path="/portal"
         element={
-          <ProtectedRoute>
+          <ProtectedRouteLogic>
             <CustomerPortalPage />
-          </ProtectedRoute>
+          </ProtectedRouteLogic>
         }
       />
 
