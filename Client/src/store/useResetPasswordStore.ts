@@ -1,5 +1,4 @@
-// Client/src/store/useResetPasswordStore.ts
-import { create } from 'zustand';
+import {create, type StoreApi, type UseBoundStore} from 'zustand';
 
 interface ResetPasswordState {
   modalOpen: boolean;
@@ -14,17 +13,17 @@ interface ResetPasswordState {
   reset: () => void;
 }
 
-export const useResetPasswordStore = create<ResetPasswordState>((set) => ({
+export const useResetPasswordStore: UseBoundStore<StoreApi<ResetPasswordState>> = create<ResetPasswordState>((set) => ({
   modalOpen: false,
   step: 'request',
   loading: false,
   email: '',
-  setEmail: (email) => set({ email }),
-  openModal: () => set({ modalOpen: true }),
-  closeModal: () => set({ modalOpen: false }),
-  setStep: (step) => set({ step }),
-  setLoading: (value) => set({ loading: value }),
-  reset: () =>
+  setEmail: (email: string): void => set({ email }),
+  openModal: (): void => set({ modalOpen: true }),
+  closeModal: (): void => set({ modalOpen: false }),
+  setStep: (step: 'request' | 'verify'): void => set({ step }),
+  setLoading: (value: boolean): void => set({ loading: value }),
+  reset: (): void =>
     set({
       modalOpen: false,
       step: 'request',
