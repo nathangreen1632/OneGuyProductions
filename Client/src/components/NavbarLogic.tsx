@@ -4,11 +4,12 @@ import { type NavLink, navLinks } from '../constants/navLinks';
 import { useAppStore } from '../store/useAppStore';
 import { useAuthStore } from '../store/useAuthStore';
 import NavbarView from '../jsx/navbarView';
-import { LogIn, LogOut, UserSquare2, HelpCircle } from 'lucide-react';
+import { LogIn, LogOut, UserSquare2 } from 'lucide-react';
 import { logoutUser } from '../helpers/logoutHelper';
 import GravatarModal from '../modals/GravatarModal';
 import md5 from 'blueimp-md5';
 import type { AuthState } from '../types/authState.types';
+import RedInfoIcon from './RedInfoIcon.tsx';
 
 function getGravatarUrl(email?: string): string {
   if (!email) return '';
@@ -29,8 +30,8 @@ export default function NavbarLogic(): React.ReactElement {
 
   const isAuthenticated: boolean = useAuthStore((state: AuthState): boolean => state.isAuthenticated);
   const hydrated: boolean = useAuthStore((state: AuthState): boolean => state.hydrated);
-  const user: { username?: string; email?: string } | null = useAuthStore((state) => state.user);
-  const logout: () => void = useAuthStore((state: AuthState): () => void => state.logout);
+  const user: { username?: string; email?: string } | null = useAuthStore((state: AuthState) => state.user);
+  const logout: () => void = useAuthStore((state: AuthState): (() => void) => state.logout);
 
   const [isGravatarModalOpen, setIsGravatarModalOpen] = useState<boolean>(false);
 
@@ -75,35 +76,31 @@ export default function NavbarLogic(): React.ReactElement {
         closeMenu={closeMenu}
       />
 
-      {/* ✅ User profile display */}
       {hydrated && isAuthenticated && user && (
         <div className="flex justify-end px-6 pt-4 pb-2 text-xs text-[var(--theme-text)] relative">
           <div className="flex items-center gap-3">
-            <span className="relative text-lg font-semibold text-[var(--theme-text)] ">
+            <span className="relative text-lg font-semibold text-[var(--theme-text)]">
               Logged In As:{' '}
               <span className="font-semibold text-[var(--theme-border-red)]">
                 {user.username || user.email}
               </span>
             </span>
 
-            {/* Gravatar */}
             <img
               src={getGravatarUrl(user.email)}
               alt="User Avatar"
               className="w-12 h-12 rounded-full"
             />
 
-            {/* Tooltip Icon opens modal instead */}
             <button
               type="button"
               onClick={(): void => setIsGravatarModalOpen(true)}
-              className="text-[var(--theme-accent)] cursor-pointer hover:opacity-80"
+              className="cursor-pointer hover:opacity-80"
               aria-label="Learn how to change your Gravatar"
             >
-              <HelpCircle size={16} />
+              <RedInfoIcon size={16} strokeWidth={2.5} />
             </button>
 
-            {/* Gravatar Modal */}
             <GravatarModal
               isOpen={isGravatarModalOpen}
               onClose={(): void => setIsGravatarModalOpen(false)}
