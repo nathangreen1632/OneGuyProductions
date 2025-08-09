@@ -37,12 +37,19 @@ const getStore: () => Storage | null = (): Storage | null => {
   return null;
 };
 
+const normalizeIds: (ids: unknown[]) => number[] = (ids: unknown[]): number[] =>
+  (ids ?? [])
+    .map((v: unknown): number => Number(v))
+    .filter((n: number): boolean => Number.isInteger(n) && n >= 0);
+
 const loadUnread: () => number[] = (): number[] => {
   const store: Storage | null = getStore();
   if (!store) return [];
   try {
     const raw: string | null = store.getItem(LOCAL_KEY);
-    return raw ? (JSON.parse(raw) as number[]) : [];
+    if (!raw) return [];
+    const parsed: unknown[] = JSON.parse(raw) as unknown[];
+    return normalizeIds(parsed);
   } catch {
     return [];
   }
@@ -88,9 +95,11 @@ const orderStoreCreator: StateCreator<TOrderStateType> = (
         return;
       }
 
-      const incomingIds: number[] = (data as Order[]).map((order: Order): number => order.id);
+      const incomingIds: number[] = normalizeIds(
+        (data as Order[]).map((order: Order): unknown => (order as unknown as { id: unknown }).id)
+      );
       const stored: number[] = loadUnread();
-      const inMemory: number[] = get().unreadOrderIds;
+      const inMemory: number[] = normalizeIds(get().unreadOrderIds as unknown as unknown[]);
       const baseline: number[] = getBaselineUnread(stored, inMemory, incomingIds);
       const finalUnread: number[] = baseline.filter((id: number): boolean => incomingIds.includes(id));
 
@@ -115,8 +124,11 @@ const orderStoreCreator: StateCreator<TOrderStateType> = (
         return;
       }
 
-      const incomingIds: number[] = (data as Order[]).map((order: Order): number => order.id);
-      const trimmedUnread: number[] = get().unreadOrderIds.filter((id: number): boolean =>
+      const incomingIds: number[] = normalizeIds(
+        (data as Order[]).map((order: Order): unknown => (order as unknown as { id: unknown }).id)
+      );
+      const currentUnread: number[] = normalizeIds(get().unreadOrderIds as unknown as unknown[]);
+      const trimmedUnread: number[] = currentUnread.filter((id: number): boolean =>
         incomingIds.includes(id)
       );
       saveUnread(trimmedUnread);
@@ -129,7 +141,9 @@ const orderStoreCreator: StateCreator<TOrderStateType> = (
 
   markAsRead: (orderId: number): void =>
     set((state: TOrderStateType): Partial<TOrderStateType> => {
-      const updated: number[] = state.unreadOrderIds.filter((id: number): boolean => id !== orderId);
+      const target: number = Number(orderId);
+      const current: number[] = normalizeIds(state.unreadOrderIds as unknown as unknown[]);
+      const updated: number[] = current.filter((id: number): boolean => id !== target);
       saveUnread(updated);
       return { unreadOrderIds: updated };
     }),
