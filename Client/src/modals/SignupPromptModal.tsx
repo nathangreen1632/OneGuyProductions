@@ -9,10 +9,8 @@ export default function SignupPromptModal(): React.ReactElement | null {
 
   if (!open) return null;
 
-  const goSignup = () => {
+  const goSignup: () => void = (): void => {
     if (email) markPrompted(email);
-    // Navigate to /auth (or wherever your AuthFormLogic renders) in register mode
-    // We'll stash orderId in sessionStorage to link post-signup.
     if (orderId != null) {
       sessionStorage.setItem('linkOrderId', String(orderId));
     }
@@ -20,15 +18,15 @@ export default function SignupPromptModal(): React.ReactElement | null {
       sessionStorage.setItem('prefillEmail', email);
     }
     closePrompt();
-    navigate('/auth?mode=register'); // adjust if your route differs
+    navigate('/auth?mode=register');
   };
 
-  const skip = () => {
+  const skip: () => void = (): void => {
     if (email) markPrompted(email);
     closePrompt();
   };
 
-  const button =
+  const buttonClass: string =
     'block center bg-[var(--theme-button)] hover:bg-[var(--theme-hover)] text-[var(--theme-text-white)] cursor-pointer font-semibold py-2 px-6 rounded transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30';
 
   return (
@@ -37,8 +35,15 @@ export default function SignupPromptModal(): React.ReactElement | null {
         Create a free account so you can view this order in your customer portal.
       </p>
       <div className="flex gap-3 justify-center mt-2">
-        <button className={button} onClick={goSignup}>Yes, create my account</button>
-        <button className={`${button} bg-gray-500 hover:bg-gray-600`} onClick={skip}>No thanks</button>
+        <button className={buttonClass} onClick={goSignup}>
+          Yes, create my account
+        </button>
+        <button
+          className={`${buttonClass} bg-gray-500 hover:bg-gray-600`}
+          onClick={skip}
+        >
+          No thanks
+        </button>
       </div>
     </TimelineEditModal>
   );
