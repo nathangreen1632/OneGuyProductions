@@ -1,13 +1,11 @@
 import { create, type StateCreator, type StoreApi, type UseBoundStore } from 'zustand';
 import type { Order, OrderPayload } from '../types/order.types';
 
-interface OrderState {
-  // From order form
+export interface TOrderStateType {
   lastOrder: OrderPayload | null;
   setLastOrder: (order: OrderPayload) => void;
   clearOrder: () => void;
 
-  // Customer portal
   orders: Order[];
   unreadOrderIds: number[];
   currentView: 'card' | 'timeline';
@@ -19,107 +17,93 @@ interface OrderState {
   updateOrder: (updated: Order) => void;
 }
 
-// ⬇️ Added for localStorage sync
-const LOCAL_KEY = 'unreadOrderIds';
+const LOCAL_KEY: string = 'unreadOrderIds';
 
-const loadUnread = (): number[] => {
+const loadUnread: () => number[] = (): number[] => {
   try {
-    const stored = localStorage.getItem(LOCAL_KEY);
-    return stored ? JSON.parse(stored) : [];
+    const stored: string | null = localStorage.getItem(LOCAL_KEY);
+    return stored ? (JSON.parse(stored) as number[]) : [];
   } catch {
     return [];
   }
 };
 
-const saveUnread = (ids: number[]): void => {
+const saveUnread: (ids: number[]) => void = (ids: number[]): void => {
   try {
     localStorage.setItem(LOCAL_KEY, JSON.stringify(ids));
-  } catch (err) {
+  } catch (err: unknown) {
     console.error('❌ Failed to persist unreadOrderIds to localStorage:', err);
   }
 };
 
-const orderStoreCreator: StateCreator<OrderState> = (set) => ({
+const orderStoreCreator: StateCreator<TOrderStateType> = (set) => ({
   lastOrder: null,
-  setLastOrder: (order) => set({ lastOrder: order }),
-  clearOrder: () => set({ lastOrder: null }),
+  setLastOrder: (order: OrderPayload): void => set({ lastOrder: order }),
+  clearOrder: (): void => set({ lastOrder: null }),
 
   orders: [],
-  unreadOrderIds: loadUnread(), // ⬅️ Load from localStorage on init
+  unreadOrderIds: loadUnread(),
   currentView: 'card',
 
-  fetchOrders: async () => {
+  fetchOrders: async (): Promise<void> => {
     try {
-      const res = await fetch('/api/order/my-orders');
-      const data = await res.json();
-
-      console.log('📦 Raw /my-orders response:', data);
-      console.log('🔍 Type of data:', typeof data);
-      console.log('🔍 Is Array:', Array.isArray(data));
+      const res: Response = await fetch('/api/order/my-orders');
+      const data: unknown = await res.json();
 
       if (!Array.isArray(data)) {
         console.error('🚨 Unexpected response format in fetchOrders():', data);
         return;
       }
 
-      const existing = loadUnread();
-      const incomingIds = data.map((order: Order) => order.id);
-      const finalUnread = existing.length > 0 ? existing : incomingIds;
+      const existing: number[] = loadUnread();
+      const incomingIds: number[] = (data as Order[]).map((order: Order): number => order.id);
+      const finalUnread: number[] = existing.length > 0 ? existing : incomingIds;
 
       saveUnread(finalUnread);
 
       set({
-        orders: data,
+        orders: data as Order[],
         unreadOrderIds: finalUnread,
       });
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('❌ Error in fetchOrders():', err);
     }
   },
 
-  refreshOrders: async () => {
+  refreshOrders: async (): Promise<void> => {
     try {
-      const res = await fetch('/api/order/my-orders');
-      const data = await res.json();
-
-      console.log('📦 Raw refresh /my-orders response:', data);
-      console.log('🔍 Type of data:', typeof data);
-      console.log('🔍 Is Array:', Array.isArray(data));
+      const res: Response = await fetch('/api/order/my-orders');
+      const data: unknown = await res.json();
 
       if (!Array.isArray(data)) {
         console.error('🚨 Unexpected response format in refreshOrders():', data);
         return;
       }
 
-      set({ orders: data });
-    } catch (err) {
+      set({ orders: data as Order[] });
+    } catch (err: unknown) {
       console.error('❌ Error in refreshOrders():', err);
     }
   },
 
-  markAsRead: (orderId) =>
-    set((state) => {
-      const updated = state.unreadOrderIds.filter((id) => id !== orderId);
-      saveUnread(updated); // ⬅️ Persist to localStorage
+  markAsRead: (orderId: number): void =>
+    set((state: TOrderStateType): Partial<TOrderStateType> => {
+      const updated: number[] = state.unreadOrderIds.filter((id: number): boolean => id !== orderId);
+      saveUnread(updated);
       return { unreadOrderIds: updated };
     }),
 
-  setView: (view) => set({ currentView: view }),
+  setView: (view: 'card' | 'timeline'): void => set({ currentView: view }),
 
-  updateOrder: (updated) =>
-    set((state) => {
-      const updatedOrders = state.orders.map((o) =>
+  updateOrder: (updated: Order): void =>
+    set((state: TOrderStateType): Partial<TOrderStateType> => {
+      const updatedOrders: Order[] = state.orders.map((o: Order): Order =>
         o.id === updated.id ? updated : o
       );
 
-      console.log('🧪 updateOrder triggered');
-      console.log('📌 New orders array:', updatedOrders);
-
-      return {
-        orders: [...updatedOrders], // 🔄 Ensure fresh array identity
-      };
+      return { orders: [...updatedOrders] };
     }),
 });
 
-export const useOrderStore: UseBoundStore<StoreApi<OrderState>> =
-  create<OrderState>(orderStoreCreator);
+export const useOrderStore: UseBoundStore<StoreApi<TOrderStateType>> =
+  create<TOrderStateType>(orderStoreCreator);
