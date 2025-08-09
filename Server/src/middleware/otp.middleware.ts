@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import { OtpToken } from '../models/index.js';
 import { Op } from 'sequelize';
+import {OtpTokenInstance} from "../models/otpToken.model.js";
 
 export async function otpRateLimitMiddleware(
   req: Request,
@@ -17,7 +18,7 @@ export async function otpRateLimitMiddleware(
   try {
     const oneMinuteAgo = new Date(Date.now() - 60 * 1000);
 
-    const recentOtp = await OtpToken.findOne({
+    const recentOtp: OtpTokenInstance | null = await OtpToken.findOne({
       where: {
         email,
         createdAt: { [Op.gt]: oneMinuteAgo },
