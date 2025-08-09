@@ -4,7 +4,7 @@ import { sequelize } from '../config/db.config.js';
 export interface OrderUpdateAttributes {
   id: number;
   orderId: number;
-  user: string; // e.g., "admin", "engineer: dev@one.com", "customer: user@abc.com"
+  user: string;
   message: string;
   createdAt?: Date;
   updatedAt?: Date;
