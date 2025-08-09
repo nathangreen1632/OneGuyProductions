@@ -7,7 +7,7 @@ interface ContactState {
 
 const contactStoreCreator: StateCreator<ContactState> = (set) => ({
   submitting: false,
-  setSubmitting: (value: boolean) => {
+  setSubmitting: (value: boolean): void => {
     set({ submitting: value });
   },
 });
