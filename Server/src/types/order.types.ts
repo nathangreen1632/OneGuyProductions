@@ -1,7 +1,3 @@
-// ─────────────────────────────────────────────────────────────
-// 📦 Order Types
-// ─────────────────────────────────────────────────────────────
-
 import {OrderFormBody} from "./requestBodies.types.js";
 
 export type OrderStatus =
@@ -43,13 +39,13 @@ export interface OrderCreationAttributes
 export interface OrderHandlingResult {
   dbSuccess: boolean;
   emailSuccess: boolean;
-  orderId?: number; // ✅ NEW
+  orderId?: number;
 }
 
 export interface HandleOrderResult {
   dbSuccess: boolean;
   emailSuccess: boolean;
-  orderId?: number; // Optional, as it may not be available if DB save fails
+  orderId?: number;
 }
 
 export interface NewOrderPayload extends OrderFormBody {
