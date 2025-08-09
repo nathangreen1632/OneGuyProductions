@@ -1,6 +1,6 @@
-import { create } from 'zustand';
+import {create, type StoreApi, type UseBoundStore} from 'zustand';
 
-interface SignupPromptState {
+export interface TSignupPromptStateType {
   open: boolean;
   email: string | null;
   orderId: number | null;
@@ -10,25 +10,42 @@ interface SignupPromptState {
   markPrompted: (email: string) => void;
 }
 
-const KEY = 'promptedEmails';
+const KEY: string = 'promptedEmails';
 
-const read = (): string[] => {
-  try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch { return []; }
-};
-const write = (arr: string[]) => {
-  try { localStorage.setItem(KEY, JSON.stringify(arr)); } catch {}
+const read: () => string[] = (): string[] => {
+  try {
+    const raw: string | null = localStorage.getItem(KEY);
+    return raw ? (JSON.parse(raw) as string[]) : [];
+  } catch {
+    return [];
+  }
 };
 
-export const useSignupPromptStore = create<SignupPromptState>((set, _get) => ({
+const write: (arr: string[]) => void = (arr: string[]): void => {
+  try {
+    localStorage.setItem(KEY, JSON.stringify(arr));
+  } catch (err) {
+    console.error(`❌ Failed to write to localStorage key "${KEY}":`, err);
+  }
+};
+
+export const useSignupPromptStore: UseBoundStore<StoreApi<TSignupPromptStateType>> = create<TSignupPromptStateType>((set) => ({
   open: false,
   email: null,
   orderId: null,
-  openPrompt: (email, orderId) => set({ open: true, email, orderId }),
-  closePrompt: () => set({ open: false, email: null, orderId: null }),
-  wasPrompted: (email) => read().includes(email.toLowerCase()),
-  markPrompted: (email) => {
-    const list = read();
-    const lower = email.toLowerCase();
+
+  openPrompt: (email: string, orderId: number): void =>
+    set({ open: true, email, orderId }),
+
+  closePrompt: (): void =>
+    set({ open: false, email: null, orderId: null }),
+
+  wasPrompted: (email: string): boolean =>
+    read().includes(email.toLowerCase()),
+
+  markPrompted: (email: string): void => {
+    const list: string[] = read();
+    const lower: string = email.toLowerCase();
     if (!list.includes(lower)) {
       list.push(lower);
       write(list);
