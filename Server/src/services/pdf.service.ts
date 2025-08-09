@@ -1,4 +1,4 @@
-import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import {PDFDocument, PDFFont, rgb, StandardFonts} from 'pdf-lib';
 import type { OrderInstance } from '../models/order.model.js';
 
 /**
@@ -15,12 +15,12 @@ export async function generatePdfBuffer(order: OrderInstance): Promise<Buffer> {
   const lineHeight = 18;
 
   const margin = 50;
-  let cursorY = height - margin;
+  let cursorY: number = height - margin;
 
-  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const font: PDFFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-  const drawText = (text: string, opts: { bold?: boolean; yOffset?: number; size?: number; color?: [number, number, number] } = {}) => {
+  const drawText = (text: string, opts: { bold?: boolean; yOffset?: number; size?: number; color?: [number, number, number] } = {}): void => {
     const {
       bold = false,
       yOffset = lineHeight,
