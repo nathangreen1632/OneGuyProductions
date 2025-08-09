@@ -1,5 +1,4 @@
-// Client/src/store/useEditOrderStore.ts
-import { create } from 'zustand';
+import {create, type StoreApi, type UseBoundStore} from 'zustand';
 import type { Order } from '../types/order.types';
 
 interface EditOrderState {
@@ -10,24 +9,23 @@ interface EditOrderState {
   refreshOrders: () => void;
 }
 
-export const useEditOrderStore = create<EditOrderState>((set) => ({
+export const useEditOrderStore: UseBoundStore<StoreApi<EditOrderState>> = create<EditOrderState>((set) => ({
   modalOpen: false,
   targetOrder: null,
 
-  openModal: (order) =>
+  openModal: (order: Order): void =>
     set({
       modalOpen: true,
       targetOrder: order,
     }),
 
-  closeModal: () =>
+  closeModal: (): void =>
     set({
       modalOpen: false,
       targetOrder: null,
     }),
 
-  refreshOrders: () => {
-    // Temporary hard reload, replace with SWR/React Query refetch later
+  refreshOrders: (): void => {
     window.location.reload();
   },
 }));
