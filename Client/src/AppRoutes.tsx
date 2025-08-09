@@ -12,14 +12,13 @@ import ProtectedRouteLogic from './components/ProtectedRouteLogic';
 import { useAuthStore } from './store/useAuthStore';
 
 export default function AppRoutes(): React.ReactElement {
-  const { setUser, setHydrated, user, isAuthenticated, hydrated } = useAuthStore();
+  const { setUser, setHydrated, isAuthenticated, hydrated } = useAuthStore();
 
-  console.log('auth:', { isAuthenticated, hydrated, user });
 
-  useEffect(() => {
-    async function hydrateSession() {
+  useEffect((): void => {
+    async function hydrateSession(): Promise<void> {
       try {
-        const res = await fetch('/api/auth/me', {
+        const res: Response = await fetch('/api/auth/me', {
           credentials: 'include',
         });
 
@@ -38,7 +37,6 @@ export default function AppRoutes(): React.ReactElement {
     hydrateSession().catch(console.error);
   }, [setUser, setHydrated]);
 
-  // ✅ Force rerender of all routes when hydration/auth changes
   const routeKey = `${hydrated}-${isAuthenticated}`;
 
   return (
