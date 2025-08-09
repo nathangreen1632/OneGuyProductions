@@ -16,7 +16,7 @@ async function startServer(): Promise<void> {
   try {
     if (ENABLE_DB_SYNC) {
       loggerConfig.warn('⚠️ DB sync ENABLED: Running sequelize.sync({ alter: true })…');
-      await sequelize.sync({ alter: true });
+      await sequelize.sync({ alter: false });
       loggerConfig.info('✅ DB sync complete.');
     } else {
       loggerConfig.info('✅ DB sync skipped. Using migrations / existing schema.');
