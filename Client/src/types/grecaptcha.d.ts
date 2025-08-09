@@ -1,5 +1,3 @@
-// Client/src/types/grecaptcha.d.ts
-
 export interface ReCaptchaEnterpriseV3 {
   ready(callback: () => void): void;
   execute(siteKey: string, options: { action: string }): Promise<string>;
