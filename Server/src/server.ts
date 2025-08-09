@@ -5,7 +5,7 @@ import { loggerConfig } from './config/logger.config.js';
 import './models/index.js';
 import './models/order.model.js';
 import './models/user.model.js';
-import './models/update.model.js';
+import './models/orderUpdate.model.js';
 import './models/otpToken.model.js';
 
 const PORT: number = parseInt(process.env.PORT ?? '3001', 10);
