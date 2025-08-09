@@ -1,8 +1,8 @@
-import React from 'react';
+import React, {type ReactElement} from 'react';
 import NotificationBadge from '../common/NotificationBadge';
 import type { Order } from '../types/order.types';
 
-interface Props {
+interface IOrderCardViewProps {
   orders: Order[];
   unreadOrderIds: number[];
   onCardClick: (order: Order) => void;
@@ -22,20 +22,16 @@ export default function OrderCardView({
                                         onDownload,
                                         getStatusTextClasses,
                                         isWithin72Hours,
-                                      }: Readonly<Props>): React.ReactElement {
+                                      }: Readonly<IOrderCardViewProps>): React.ReactElement {
   if (orders.length === 0) {
-    return (
-      <div className="p-6 text-center text-gray-500">
-        No orders found.
-      </div>
-    );
+    return <div className="p-6 text-center text-gray-500">No orders found.</div>;
   }
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-      {orders.map((order) => {
-        const isEditable = isWithin72Hours(order.createdAt);
-        const isUnread = unreadOrderIds.includes(order.id);
+      {orders.map((order: Order): ReactElement => {
+        const isEditable: boolean = isWithin72Hours(order.createdAt);
+        const isUnread: boolean = unreadOrderIds.includes(order.id);
 
         return (
           <article
@@ -47,7 +43,7 @@ export default function OrderCardView({
             <button
               type="button"
               aria-label={`Open order for ${order.name}`}
-              onClick={() => onCardClick(order)}
+              onClick={(): void => onCardClick(order)}
               className="w-full text-left rounded-2xl"
             >
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -91,7 +87,7 @@ export default function OrderCardView({
             <div className="mt-6 flex flex-wrap gap-3">
               <button
                 type="button"
-                onClick={() => onEdit(order)}
+                onClick={(): void => onEdit(order)}
                 className="px-4 py-2 bg-[var(--theme-button)] text-[var(--theme-text-white)] cursor-pointer text-sm rounded shadow-md hover:bg-[var(--theme-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60"
               >
                 Edit
@@ -100,12 +96,12 @@ export default function OrderCardView({
               {isEditable && (
                 <button
                   type="button"
-                  onClick={() => onCancel(order)}
+                  onClick={(): void => onCancel(order)}
                   disabled={order.status === 'cancelled'}
                   className={`px-4 py-2 text-sm rounded cursor-pointer shadow-md focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60 ${
                     order.status === 'cancelled'
-                      ? 'bg-gray-500 cursor-not-allowed text-white'
-                      : 'bg-[var(--theme-border-red)] hover:bg-red-700 text-[var(--theme-text-white)]'
+                      ? 'bg-[var(--theme-button-gray)] cursor-not-allowed text-white'
+                      : 'bg-[var(--theme-border-red)] hover:bg-[var(--theme-button-red)] text-[var(--theme-text-white)]'
                   }`}
                 >
                   {order.status === 'cancelled' ? 'Cancelled' : 'Cancel'}
@@ -114,8 +110,8 @@ export default function OrderCardView({
 
               <button
                 type="button"
-                onClick={() => onDownload(order.id)}
-                className="px-4 py-2 bg-[var(--theme-card)] text-[var(--theme-text-white)] cursor-pointer text-sm rounded shadow-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60"
+                onClick={(): void => onDownload(order.id)}
+                className="px-4 py-2 bg-[var(--theme-card)] text-[var(--theme-text-white)] cursor-pointer text-sm rounded shadow-md hover:bg-[var(--theme-card-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60"
               >
                 Download Invoice
               </button>
