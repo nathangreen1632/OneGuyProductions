@@ -1,6 +1,5 @@
 import { DataTypes, Model, Sequelize, Optional } from 'sequelize';
 
-// 1. All user attributes
 export interface UserAttributes {
   id: number;
   username: string;
@@ -10,10 +9,8 @@ export interface UserAttributes {
   updatedAt: Date;
 }
 
-// 2. Fields optional when creating
 export interface UserCreationAttributes extends Optional<UserAttributes, 'id' | 'createdAt' | 'updatedAt'> {}
 
-// 3. Declare fields to avoid Sequelize shadowing warning
 export class User extends Model<UserAttributes, UserCreationAttributes> implements UserAttributes {
   declare id: number;
   declare username: string;
