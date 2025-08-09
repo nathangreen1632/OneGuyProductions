@@ -9,6 +9,7 @@ export interface TOrderStateType {
   orders: Order[];
   unreadOrderIds: number[];
   currentView: 'card' | 'timeline';
+  initialized: boolean;
 
   fetchOrders: () => Promise<void>;
   refreshOrders: () => Promise<void>;
@@ -63,16 +64,6 @@ const saveUnread: (ids: number[]) => void = (ids: number[]): void => {
   } catch {}
 };
 
-const getBaselineUnread: (stored: number[], inMemory: number[], incoming: number[]) => number[] = (
-  stored: number[],
-  inMemory: number[],
-  incoming: number[]
-): number[] => {
-  if (stored.length) return stored;
-  if (inMemory.length) return inMemory;
-  return incoming;
-};
-
 const orderStoreCreator: StateCreator<TOrderStateType> = (
   set: StoreApi<TOrderStateType>['setState'],
   get: () => TOrderStateType
@@ -84,6 +75,7 @@ const orderStoreCreator: StateCreator<TOrderStateType> = (
   orders: [],
   unreadOrderIds: loadUnread(),
   currentView: 'card',
+  initialized: false,
 
   fetchOrders: async (): Promise<void> => {
     try {
@@ -98,16 +90,21 @@ const orderStoreCreator: StateCreator<TOrderStateType> = (
       const incomingIds: number[] = normalizeIds(
         (data as Order[]).map((order: Order): unknown => (order as unknown as { id: unknown }).id)
       );
-      const stored: number[] = loadUnread();
-      const inMemory: number[] = normalizeIds(get().unreadOrderIds as unknown as unknown[]);
-      const baseline: number[] = getBaselineUnread(stored, inMemory, incomingIds);
-      const finalUnread: number[] = baseline.filter((id: number): boolean => incomingIds.includes(id));
 
-      saveUnread(finalUnread);
+      let unread: number[] = loadUnread();
+
+      if (!get().initialized) {
+        if (unread.length === 0) unread = incomingIds;
+        set({ initialized: true });
+      } else {
+        unread = unread.filter((id: number): boolean => incomingIds.includes(id));
+      }
+
+      saveUnread(unread);
 
       set({
         orders: data as Order[],
-        unreadOrderIds: finalUnread,
+        unreadOrderIds: unread,
       });
     } catch (err: unknown) {
       console.error('❌ Error in fetchOrders():', err);
