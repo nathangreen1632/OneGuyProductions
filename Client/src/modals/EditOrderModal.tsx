@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { useEditOrderStore } from '../store/useEditOrderStore';
 import EditOrderModalView from '../jsx/editOrderModalView';
+import type { EditOrderForm } from '../types/editOrderForm.types';
 
 export interface TEditOrderFormType {
   description: string;
@@ -15,7 +16,7 @@ export default function EditOrderModal(): React.ReactElement | null {
   const { modalOpen, targetOrder, closeModal, refreshOrders } = useEditOrderStore();
   const [loading, setLoading] = useState<boolean>(false);
 
-  const [form, setForm] = useState<TEditOrderFormType>({
+  const [form, setForm] = useState<EditOrderForm>({
     description: '',
     timeline: '',
     budget: '',
