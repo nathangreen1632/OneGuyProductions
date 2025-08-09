@@ -1,5 +1,6 @@
+import type {ReactElement} from "react";
 
-export default function RedInfoIcon({ size = 16, strokeWidth = 2 }: Readonly<{ size?: number; strokeWidth?: number }>) {
+export default function RedInfoIcon({ size = 16, strokeWidth = 2 }: Readonly<{ size?: number; strokeWidth?: number }>): ReactElement {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
