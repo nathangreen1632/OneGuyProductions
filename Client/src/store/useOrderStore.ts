@@ -9,6 +9,7 @@ export interface TOrderStateType {
   orders: Order[];
   unreadOrderIds: number[];
   currentView: 'card' | 'timeline';
+  initialized: boolean;
 
   fetchOrders: () => Promise<void>;
   refreshOrders: () => Promise<void>;
@@ -19,52 +20,62 @@ export interface TOrderStateType {
 
 const LOCAL_KEY: string = 'unreadOrderIds';
 
-const storageAvailable: () => boolean = (): boolean => {
+const storageWritable: (s: Storage) => boolean = (s: Storage): boolean => {
   try {
     const t = '__test__';
-    localStorage.setItem(t, '1');
-    localStorage.removeItem(t);
+    s.setItem(t, '1');
+    s.removeItem(t);
     return true;
   } catch {
     return false;
   }
 };
 
-const loadUnread: () => number[] = (): number[] => {
-  if (!storageAvailable()) return [];
+const getStore: () => Storage | null = (): Storage | null => {
+  if (typeof window === 'undefined') return null;
+  if (storageWritable(localStorage)) return localStorage;
+  if (storageWritable(sessionStorage)) return sessionStorage;
+  return null;
+};
+
+const normalizeIds: (ids: unknown[]) => number[] = (ids: unknown[]): number[] =>
+  (ids ?? [])
+    .map((v: unknown): number => Number(v))
+    .filter((n: number): boolean => Number.isInteger(n) && n >= 0);
+
+const readUnread: () => { exists: boolean; ids: number[] } = (): { exists: boolean; ids: number[] } => {
+  const store: Storage | null = getStore();
+  if (!store) return { exists: false, ids: [] };
   try {
-    const stored: string | null = localStorage.getItem(LOCAL_KEY);
-    return stored ? (JSON.parse(stored) as number[]) : [];
+    const raw: string | null = store.getItem(LOCAL_KEY);
+    if (raw === null) return { exists: false, ids: [] };
+    const parsed: unknown[] = JSON.parse(raw) as unknown[];
+    return { exists: true, ids: normalizeIds(parsed) };
   } catch {
-    return [];
+    return { exists: true, ids: [] };
   }
 };
 
 const saveUnread: (ids: number[]) => void = (ids: number[]): void => {
-  if (!storageAvailable()) return;
+  const store: Storage | null = getStore();
+  if (!store) return;
   try {
-    localStorage.setItem(LOCAL_KEY, JSON.stringify(ids));
+    store.setItem(LOCAL_KEY, JSON.stringify(ids));
   } catch {}
 };
 
-const getBaselineUnread: (stored: number[], inMemory: number[], incoming: number[]) => number[] = (
-  stored: number[],
-  inMemory: number[],
-  incoming: number[]
-): number[] => {
-  if (stored.length) return stored;
-  if (inMemory.length) return inMemory;
-  return incoming;
-};
-
-const orderStoreCreator: StateCreator<TOrderStateType> = (set, get: () => TOrderStateType) => ({
+const orderStoreCreator: StateCreator<TOrderStateType> = (
+  set: StoreApi<TOrderStateType>['setState'],
+  get: () => TOrderStateType
+): TOrderStateType => ({
   lastOrder: null,
   setLastOrder: (order: OrderPayload): void => set({ lastOrder: order }),
   clearOrder: (): void => set({ lastOrder: null }),
 
   orders: [],
-  unreadOrderIds: loadUnread(),
+  unreadOrderIds: readUnread().ids,
   currentView: 'card',
+  initialized: false,
 
   fetchOrders: async (): Promise<void> => {
     try {
@@ -76,17 +87,25 @@ const orderStoreCreator: StateCreator<TOrderStateType> = (set, get: () => TOrder
         return;
       }
 
-      const incomingIds: number[] = (data as Order[]).map((order: Order): number => order.id);
-      const stored: number[] = loadUnread();
-      const inMemory: number[] = get().unreadOrderIds;
-      const baseline: number[] = getBaselineUnread(stored, inMemory, incomingIds);
-      const finalUnread: number[] = baseline.filter((id: number): boolean => incomingIds.includes(id));
+      const incomingIds: number[] = normalizeIds(
+        (data as Order[]).map((order: Order): unknown => (order as unknown as { id: unknown }).id)
+      );
 
-      saveUnread(finalUnread);
+      const storedRead: {exists: boolean; ids: number[]} = readUnread();
+      let unread: number[] = storedRead.ids;
+
+      if (!get().initialized) {
+        if (!storedRead.exists) unread = incomingIds;
+        set({ initialized: true });
+      } else {
+        unread = unread.filter((id: number): boolean => incomingIds.includes(id));
+      }
+
+      saveUnread(unread);
 
       set({
         orders: data as Order[],
-        unreadOrderIds: finalUnread,
+        unreadOrderIds: unread,
       });
     } catch (err: unknown) {
       console.error('❌ Error in fetchOrders():', err);
@@ -103,8 +122,11 @@ const orderStoreCreator: StateCreator<TOrderStateType> = (set, get: () => TOrder
         return;
       }
 
-      const incomingIds: number[] = (data as Order[]).map((order: Order): number => order.id);
-      const trimmedUnread: number[] = get().unreadOrderIds.filter((id: number): boolean =>
+      const incomingIds: number[] = normalizeIds(
+        (data as Order[]).map((order: Order): unknown => (order as unknown as { id: unknown }).id)
+      );
+      const currentUnread: number[] = readUnread().ids;
+      const trimmedUnread: number[] = currentUnread.filter((id: number): boolean =>
         incomingIds.includes(id)
       );
       saveUnread(trimmedUnread);
@@ -115,12 +137,13 @@ const orderStoreCreator: StateCreator<TOrderStateType> = (set, get: () => TOrder
     }
   },
 
-  markAsRead: (orderId: number): void =>
-    set((state: TOrderStateType): Partial<TOrderStateType> => {
-      const updated: number[] = state.unreadOrderIds.filter((id: number): boolean => id !== orderId);
-      saveUnread(updated);
-      return { unreadOrderIds: updated };
-    }),
+  markAsRead: (orderId: number): void => {
+    const target: number = Number(orderId);
+    const currentStored: number[] = readUnread().ids;
+    const updated: number[] = currentStored.filter((id: number): boolean => id !== target);
+    saveUnread(updated);
+    set({ unreadOrderIds: updated });
+  },
 
   setView: (view: 'card' | 'timeline'): void => set({ currentView: view }),
 
