@@ -60,6 +60,39 @@ export async function sendOrderEmail(data: {
   });
 }
 
+export async function sendOrderUpdateNotificationEmail(options: {
+  to: string;
+  orderId: number;
+  actorLabel: string;
+  bodyPreview: string;
+  orderUrl: string;
+  from?: string;
+}): Promise<CreateEmailResponse | null> {
+  try {
+    const fromEmail = options.from ?? EnvConfig.RESEND_FROM_EMAIL ?? 'noreply@oneguyproductions.com';
+    const subject = `Order #${options.orderId} — New update`;
+    const html = `
+      <html lang="en-US">
+        <head><meta charset="UTF-8" /></head>
+        <body style="font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;">
+          <h2>New update on your order</h2>
+          <p><strong>Order:</strong> #${options.orderId}</p>
+          <p><strong>From:</strong> ${options.actorLabel}</p>
+          <p><strong>Message preview:</strong></p>
+          <blockquote style="background:#f6f6f6; padding:12px 16px; border-left:4px solid #999; white-space:pre-wrap;">
+            ${options.bodyPreview}
+          </blockquote>
+          <p><a href="${options.orderUrl}">Open Order #${options.orderId}</a></p>
+        </body>
+      </html>
+    `;
+    return await sendEmail({ from: fromEmail, to: options.to, subject, html });
+  } catch (err) {
+    console.error('❌ Failed to send order update notification email:', err);
+    return null;
+  }
+}
+
 export async function sendContactEmail(data: {
   name: string;
   email: string;
