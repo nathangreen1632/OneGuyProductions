@@ -51,7 +51,7 @@ export async function authRequest<T = unknown>(
     credentials: 'include',
     body: JSON.stringify(payload),
   });
-  const data: T | null = (await res.json().catch(() => null)) as T | null;
+  const data: T | null = (await res.json().catch((): null => null)) as T | null;
   return { ok: res.ok, data };
 }
 
