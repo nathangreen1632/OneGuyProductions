@@ -44,7 +44,6 @@ export function generateJwt(payload: object): string {
   });
 }
 
-// ✅ NEW: verifyJwt for decoding token
 export function verifyJwt(token: string): string | jwt.JwtPayload {
   if (!jwtSecret) {
     console.error('❌ Cannot verify JWT: missing secret.');
