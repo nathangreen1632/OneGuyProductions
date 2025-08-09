@@ -19,7 +19,7 @@ export default function ToggleViewButton(): React.ReactElement {
     <button
       onClick={toggleView}
       aria-label={`Switch to ${nextView} view`}
-      className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--theme-button)] text-[var(--theme-text-white)] shadow-md hover:bg-[var(--theme-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60 transition"
+      className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--theme-button)] text-[var(--theme-text-white)] shadow-md hover:bg-[var(--theme-hover)] transition"
     >
       <Icon className="w-5 h-5" />
       <span className="text-sm font-medium hidden sm:inline cursor-pointer">
