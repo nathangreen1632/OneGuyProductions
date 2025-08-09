@@ -54,8 +54,6 @@ export const OrderModel = sequelize.define<OrderInstance>(
       allowNull: false,
       defaultValue: 'pending',
     },
-
-    // 👇 Add these two fields just to satisfy TypeScript
     createdAt: {
       type: DataTypes.DATE,
       allowNull: false,
