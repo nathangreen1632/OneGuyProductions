@@ -11,6 +11,7 @@ export interface OrderAttributes {
   timeline: string;
   description: string;
   customerId: number | null;
+  assignedAdminId?: number | null;
   status?: 'pending' | 'in-progress' | 'needs-feedback' | 'complete' | 'cancelled';
   createdAt: Date;
   updatedAt?: Date;
@@ -61,6 +62,12 @@ export const OrderModel = sequelize.define<OrderInstance>(
     updatedAt: {
       type: DataTypes.DATE,
       allowNull: false,
+    },
+    assignedAdminId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: { model: 'users', key: 'id' },
+      onDelete: 'SET NULL',
     },
   },
   {
