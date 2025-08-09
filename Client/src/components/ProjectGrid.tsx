@@ -1,6 +1,6 @@
 import React from "react";
-import ProjectCardWithIframe from './ProjectCardWithIframe';
-import type { Project } from '../types/project';
+import ProjectCardWithIframe from '../common/ProjectCardWithIframe';
+import type { Project } from '../types/project.types';
 
 const projects: Project[] = [
   {

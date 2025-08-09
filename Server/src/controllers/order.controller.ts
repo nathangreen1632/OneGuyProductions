@@ -1,9 +1,16 @@
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import { handleNewOrder } from '../services/order.service.js';
-import {HandleOrderResult} from "../types/FormRequestBodies.js";
+import { HandleOrderResult, validOrderStatuses } from '../types/order.types.js';
+import { Order, OrderUpdate, User } from '../models/index.js';
+import { isWithin72Hours } from '../utils/time.js';
+import { generatePdfBuffer } from '../services/pdf.service.js';
+import type { OrderStatus } from '../types/order.types.js';
+import {OrderInstance} from "../models/order.model.js";
 
+// ─────────────────────────────────────────────────────────────
+// Submit Order (Production-Used)
+// ─────────────────────────────────────────────────────────────
 export async function submitOrder(req: Request, res: Response): Promise<void> {
-
   const {
     name,
     email,
@@ -28,33 +35,245 @@ export async function submitOrder(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  const result: HandleOrderResult = await handleNewOrder({
-    name,
-    email,
-    businessName,
-    projectType,
-    budget,
-    timeline,
-    description,
-  });
+  try {
+    const user: User | null = await User.findOne({ where: { email } });
+    const customerId: number | null = user?.id || null;
+    const unknownEmail: boolean = !user;
 
-  if (!result.dbSuccess) {
-    console.error('❌ Order was not saved to database.');
-    res.status(500).json({ error: 'Order could not be saved to the database.' });
-    return;
-  }
+    if (!user) {
+      console.warn(`🟡 Proceeding without linked user for email: ${email}`);
+    }
 
-  if (!result.emailSuccess) {
-    console.warn('⚠️ Order saved but email failed.');
+    const result: HandleOrderResult = await handleNewOrder({
+      name,
+      email,
+      businessName,
+      projectType,
+      budget,
+      timeline,
+      description,
+      customerId,
+    });
+
+    if (!result.dbSuccess) {
+      console.error('❌ Order was not saved to database.');
+      res.status(500).json({ error: 'Order could not be saved to the database.' });
+      return;
+    }
+
+    if (!result.emailSuccess) {
+      console.warn('⚠️ Order saved but email failed.');
+      res.status(200).json({
+        success: true,
+        warning: 'Order was saved, but confirmation email failed to send.',
+      });
+      return;
+    }
+
     res.status(200).json({
       success: true,
-      warning: 'Order was saved, but confirmation email failed to send.',
+      message: 'Order submitted and confirmation sent.',
+      orderId: result.orderId ?? null,
+      unknownEmail,
     });
+  } catch (err) {
+    console.error('🧨 Unexpected error during order submission:', err);
+    res.status(500).json({ error: 'Server error while submitting order.' });
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Link Order to Current User
+// ─────────────────────────────────────────────────────────────
+export async function linkOrderToCurrentUser(req: Request, res: Response): Promise<void> {
+  const userId = (req as any).user?.id;
+  const orderId: number = Number(req.params.id);
+
+  if (!userId) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+  if (!Number.isFinite(orderId)) {
+    res.status(400).json({ error: 'Invalid order ID.' });
     return;
   }
 
-  res.status(200).json({
-    success: true,
-    message: 'Order submitted and confirmation sent.',
-  });
+  try {
+    const order: OrderInstance | null = await Order.findOne({ where: { id: orderId } });
+    if (!order) {
+      res.status(404).json({ error: 'Order not found.' });
+      return;
+    }
+
+    if (order.customerId && order.customerId !== Number(userId)) {
+      res.status(409).json({ error: 'Order already linked to a different user.' });
+      return;
+    }
+
+    await order.update({ customerId: Number(userId) });
+    res.status(200).json({ success: true, message: 'Order linked to user.', orderId });
+  } catch (err) {
+    console.error('❌ Link Order Error:', err);
+    res.status(500).json({ error: 'Failed to link order to user.' });
+  }
+}
+
+
+// ─────────────────────────────────────────────────────────────
+// ✏Update Order (within 72 hours)
+// ─────────────────────────────────────────────────────────────
+export async function updateOrder(req: Request, res: Response): Promise<void> {
+  const userId = (req as any).user?.id;
+  const orderId: number = parseInt(req.params.id, 10);
+  const { businessName, projectType, budget, timeline, description } = req.body;
+
+  if (!userId) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+
+  if (isNaN(orderId)) {
+    res.status(400).json({ error: 'Invalid order ID.' });
+    return;
+  }
+
+  try {
+    const order: OrderInstance | null = await Order.findOne({ where: { id: orderId, customerId: userId } });
+
+    if (!order) {
+      res.status(404).json({ error: 'Order not found.' });
+      return;
+    }
+
+    if (!isWithin72Hours(order.createdAt.toISOString())) {
+      res.status(403).json({ error: 'Order can no longer be edited.' });
+      return;
+    }
+
+    await order.update({
+      businessName,
+      projectType,
+      budget,
+      timeline,
+      description,
+    });
+
+    res.status(200).json({ success: true, message: 'Order updated.', orderId });
+  } catch (err) {
+    console.error('❌ Update Order Error:', err);
+    res.status(500).json({ error: 'Failed to update order.' });
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Get Orders for Logged-In Customer
+// ─────────────────────────────────────────────────────────────
+export async function getUserOrders(req: Request, res: Response): Promise<void> {
+  try {
+    const userId = (req as any).user?.id;
+
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    const orders: OrderInstance[] = await Order.findAll({
+      where: { customerId: userId },
+      include: [{ model: OrderUpdate, as: 'updates' }],
+      order: [['createdAt', 'DESC']],
+    });
+
+    res.status(200).json(orders);
+  } catch (err) {
+    console.error('Fetch Orders Error:', err);
+    res.status(500).json({ error: 'Failed to fetch orders.' });
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Cancel Order (within 72 hours)
+// ─────────────────────────────────────────────────────────────
+export async function cancelOrder(req: Request, res: Response): Promise<void> {
+  const userId = (req as any).user?.id;
+  const orderId: number = parseInt(req.params.id, 10);
+
+  if (!userId) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+
+  if (isNaN(orderId)) {
+    res.status(400).json({ error: 'Invalid order ID.' });
+    return;
+  }
+
+  try {
+    const order: OrderInstance | null = await Order.findOne({
+      where: { id: orderId, customerId: userId },
+    });
+
+    if (!order) {
+      res.status(404).json({ error: 'Order not found.' });
+      return;
+    }
+
+    if (!order.createdAt || !isWithin72Hours(order.createdAt.toISOString())) {
+      res.status(403).json({ error: 'Order can no longer be cancelled.' });
+      return;
+    }
+
+    if (order.status === 'cancelled') {
+      res.status(409).json({ error: 'Order already cancelled.' });
+      return;
+    }
+
+    const nextStatus: OrderStatus = 'cancelled';
+
+    if (!validOrderStatuses.includes(nextStatus)) {
+      res.status(400).json({ error: 'Invalid order status.' });
+      return;
+    }
+
+    await order.update({ status: nextStatus });
+
+    res.status(200).json({
+      success: true,
+      message: 'Order cancelled successfully.',
+      orderId,
+      status: 'cancelled',
+    });
+  } catch (err) {
+    console.error('❌ Cancel Order Error:', err);
+    res.status(500).json({ error: 'Failed to cancel order.' });
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+//  Download PDF Invoice for Order
+// ─────────────────────────────────────────────────────────────
+export async function downloadInvoice(req: Request, res: Response): Promise<void> {
+  const userId = (req as any).user?.id;
+  const orderId = parseInt(req.params.id, 10);
+
+  if (!userId) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+
+  try {
+    const order = await Order.findOne({ where: { id: orderId, customerId: userId } });
+
+    if (!order) {
+      res.status(404).json({ error: 'Order not found.' });
+      return;
+    }
+
+    const pdfBuffer = await generatePdfBuffer(order);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=invoice-${order.id}.pdf`);
+    res.send(pdfBuffer);
+  } catch (err) {
+    console.error('Invoice Generation Error:', err);
+    res.status(500).json({ error: 'Failed to generate invoice.' });
+  }
 }

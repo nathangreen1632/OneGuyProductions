@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
-import ContactForm from '../components/ContactForm';
+import ContactFormLogic from '../components/ContactFormLogic';
 
 export default function ContactPage(): React.ReactElement {
   const { pathname } = useLocation();
@@ -10,7 +10,7 @@ export default function ContactPage(): React.ReactElement {
       <h2 className="text-3xl font-bold text-center mb-10 text-[var(--theme-accent)]">
         Let's Chat
       </h2>
-      <ContactForm key={pathname} />
+      <ContactFormLogic key={pathname} />
     </main>
   );
 }

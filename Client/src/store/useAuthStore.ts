@@ -1,15 +1,40 @@
-import { create } from 'zustand';
+import {create, type StoreApi, type UseBoundStore} from 'zustand';
 
-interface AuthState {
-  user: { id: string; email: string } | null;
-  token: string | null;
-  setUser: (user: AuthState['user'], token: string) => void;
-  logout: () => void;
+export interface TAuthUserType {
+  id: string;
+  email: string;
+  username: string;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export interface TAuthStateType {
+  user: TAuthUserType | null;
+  token: string | null;
+  isAuthenticated: boolean;
+  hydrated: boolean;
+  setUser: (user: TAuthUserType, token: string | null) => void;
+  logout: () => void;
+  setHydrated: (val: boolean) => void;
+}
+
+export const useAuthStore: UseBoundStore<StoreApi<TAuthStateType>> = create<TAuthStateType>((set) => ({
   user: null,
   token: null,
-  setUser: (user, token) => set({ user, token }),
-  logout: () => set({ user: null, token: null }),
+  isAuthenticated: false,
+  hydrated: false,
+
+  setUser: (user: TAuthUserType, token: string | null): void =>
+    set({
+      user,
+      token,
+      isAuthenticated: !!user,
+    }),
+
+  logout: (): void =>
+    set({
+      user: null,
+      token: null,
+      isAuthenticated: false,
+    }),
+
+  setHydrated: (val: boolean): void => set({ hydrated: val }),
 }));

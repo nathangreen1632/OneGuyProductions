@@ -1,5 +1,5 @@
 import {create} from 'zustand';
-import type {BoundStore} from "./useBoundStore.ts";
+import type {BoundStore} from "./useBoundStore";
 
 interface AppState {
   menuOpen: boolean;

@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Project } from '../types/project';
+import type { Project } from '../types/project.types';
 
 interface ProjectCardWithIframeViewProps {
   project: Project;

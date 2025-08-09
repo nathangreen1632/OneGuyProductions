@@ -1,7 +1,7 @@
 import {GoogleAuth} from 'google-auth-library';
 import fs from 'fs/promises';
-import type {RecaptchaVerificationResponse, RecaptchaVerificationResult,} from '../types/FormRequestBodies.js';
-import '../config/dotenv.js';
+import type {RecaptchaVerificationResponse, RecaptchaVerificationResult,} from '../types/requestBodies.types.js';
+import '../config/dotenv.config.js';
 
 const PROJECT_ID: string = process.env.RECAPTCHA_PROJECT_ID || '';
 const SITE_KEY: string = process.env.RECAPTCHA_SITE_KEY || '';

@@ -1,5 +1,5 @@
 import { DataTypes, Model, Optional } from 'sequelize';
-import { sequelize } from '../config/db.js';
+import { sequelize } from '../config/db.config.js';
 
 export interface OrderAttributes {
   id: number;
@@ -10,9 +10,14 @@ export interface OrderAttributes {
   budget: string;
   timeline: string;
   description: string;
+  customerId: number | null;
+  status?: 'pending' | 'in-progress' | 'needs-feedback' | 'complete' | 'cancelled';
+  createdAt: Date;
+  updatedAt?: Date;
 }
 
-export interface OrderCreationAttributes extends Optional<OrderAttributes, 'id'> {}
+export interface OrderCreationAttributes
+  extends Optional<OrderAttributes, 'id' | 'status' | 'createdAt' | 'updatedAt'> {}
 
 export interface OrderInstance
   extends Model<OrderAttributes, OrderCreationAttributes>,
@@ -31,7 +36,37 @@ export const OrderModel = sequelize.define<OrderInstance>(
     businessName: { type: DataTypes.STRING },
     projectType: { type: DataTypes.STRING, allowNull: false },
     budget: { type: DataTypes.STRING, allowNull: false },
-    timeline: { type: DataTypes.STRING, allowNull: false},
+    timeline: { type: DataTypes.STRING, allowNull: false },
     description: { type: DataTypes.TEXT, allowNull: false },
+    customerId: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      allowNull: true,
+      field: 'customerId',
+    },
+    status: {
+      type: DataTypes.ENUM(
+        'pending',
+        'in-progress',
+        'needs-feedback',
+        'complete',
+        'cancelled'
+      ),
+      allowNull: false,
+      defaultValue: 'pending',
+    },
+    createdAt: {
+      type: DataTypes.DATE,
+      allowNull: false,
+    },
+    updatedAt: {
+      type: DataTypes.DATE,
+      allowNull: false,
+    },
+  },
+  {
+    modelName: 'Order',
+    tableName: 'orders',
+    timestamps: true,
   }
 );
+

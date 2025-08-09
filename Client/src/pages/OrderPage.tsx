@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
-import OrderForm from '../components/OrderForm';
+import OrderFormLogic from '../components/OrderFormLogic';
 
 export default function OrderPage(): React.ReactElement {
   const { pathname } = useLocation();
@@ -13,7 +13,7 @@ export default function OrderPage(): React.ReactElement {
       <h2 className="text-3xl font-bold text-center mb-10 text-[var(--theme-accent)]">
         Start Your Project
       </h2>
-      <OrderForm key={pathname} />
+      <OrderFormLogic key={pathname} />
     </main>
   );
 }

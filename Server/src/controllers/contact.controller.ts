@@ -16,7 +16,7 @@ export async function submitContactForm(req: Request, res: Response): Promise<vo
     return;
   }
 
-  let emailSuccess = false;
+  let emailSuccess: boolean = false;
 
   try {
     await sendContactEmail({ name, email, message });
