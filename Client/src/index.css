@@ -14,7 +14,7 @@
     --theme-border-blue: #3b82f6; /* blue‑500 unchanged */
     --theme-button: #000000;
     --theme-card: #555555;
-    --theme-hover: #047857;
+    --theme-hover: #10B981;
     --theme-focus: #ef4444;
     --theme-shadow: rgba(59, 130, 246, 0.9);
   }
@@ -30,7 +30,7 @@
       --theme-border-red: #ef4444;
       --theme-button: #e7dfcf;
       --theme-button-text: #000000;
-      --theme-hover: #047857;
+      --theme-hover: #10B981;
       --theme-focus: #ef4444;
       --theme-shadow: rgba(239,68,68,0.6);
     }
