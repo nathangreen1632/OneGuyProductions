@@ -29,6 +29,7 @@ const REQUIRED_ENV: string[] = [
   'EMAIL_TO_ORDER',
   'EMAIL_FROM_CONTACT',
   'EMAIL_TO_CONTACT',
+  'PUBLIC_BASE_URL',
 
 ];
 
