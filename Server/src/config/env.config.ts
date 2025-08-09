@@ -4,6 +4,7 @@ export const EnvConfig = {
   NODE_ENV: process.env.NODE_ENV ?? 'development',
 
   PORT: process.env.PORT ?? '3000',
+  PUBLIC_BASE_URL: process.env.PUBLIC_BASE_URL ?? 'http://localhost:3000',
 
   DATABASE_URL: process.env.DATABASE_URL,
 
