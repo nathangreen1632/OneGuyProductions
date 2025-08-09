@@ -13,12 +13,12 @@ export default function NavbarView({
                                    }: Readonly<NavbarViewProps>): React.ReactElement {
   return (
     <header className="sticky top-0 z-50 bg-[var(--theme-bg)] border-b border-[var(--theme-border-red)] shadow-[0_4px_14px_0_var(--theme-shadow)]">
-      <nav className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
+      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
         <Link to="/" className="text-xl font-bold text-[var(--theme-accent)]">
           One Guy Productions
         </Link>
 
-        <ul className="hidden sm:flex gap-6 text-sm font-medium">
+        <ul className="hidden lg:flex gap-6 text-sm font-medium">
           {navLinks.map(({ label, path, icon: Icon, onClick }: NavLink): ReactElement => (
             <li key={path}>
               {onClick ? (
@@ -51,13 +51,13 @@ export default function NavbarView({
           ))}
         </ul>
 
-        <button onClick={toggleMenu} className="sm:hidden" aria-label="Toggle menu">
+        <button onClick={toggleMenu} className="lg:hidden" aria-label="Toggle menu" aria-expanded={menuOpen}>
           {menuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
       </nav>
 
       {menuOpen && (
-        <ul className="sm:hidden flex flex-col gap-4 px-6 pb-6 text-sm font-medium border-t border-[var(--theme-border)] bg-[var(--theme-bg)]">
+        <ul className="lg:hidden flex flex-col gap-4 px-6 pb-6 text-sm font-medium border-t border-[var(--theme-border)] bg-[var(--theme-bg)]">
           {navLinks.map(({ label, path, icon: Icon, onClick }: NavLink): ReactElement => (
             <li key={path}>
               {onClick ? (
