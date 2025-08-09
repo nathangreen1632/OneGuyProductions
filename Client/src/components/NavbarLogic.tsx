@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useLocation, useNavigate, type Location } from 'react-router-dom';
 import { type NavLink, navLinks } from '../constants/navLinks';
 import { useAppStore } from '../store/useAppStore';
@@ -27,6 +27,8 @@ export default function NavbarLogic(): React.ReactElement {
     toggleMenu,
     closeMenu,
   }: { menuOpen: boolean; toggleMenu: () => void; closeMenu: () => void } = useAppStore();
+
+  useEffect((): void => { closeMenu(); }, [location.pathname, closeMenu]);
 
   const isAuthenticated: boolean = useAuthStore((state: AuthState): boolean => state.isAuthenticated);
   const hydrated: boolean = useAuthStore((state: AuthState): boolean => state.hydrated);
