@@ -5,9 +5,10 @@ import { Order, OrderUpdate, User } from '../models/index.js';
 import { isWithin72Hours } from '../utils/time.js';
 import { generatePdfBuffer } from '../services/pdf.service.js';
 import type { OrderStatus } from '../types/order.types.js';
+import {OrderInstance} from "../models/order.model.js";
 
 // ─────────────────────────────────────────────────────────────
-// 📨 Submit Order (Production-Used)
+// Submit Order (Production-Used)
 // ─────────────────────────────────────────────────────────────
 export async function submitOrder(req: Request, res: Response): Promise<void> {
   const {
@@ -35,10 +36,9 @@ export async function submitOrder(req: Request, res: Response): Promise<void> {
   }
 
   try {
-    // Try to find an existing user — but don't require one
-    const user = await User.findOne({ where: { email } });
-    const customerId = user?.id || null;
-    const unknownEmail = !user; // ✅ NEW
+    const user: User | null = await User.findOne({ where: { email } });
+    const customerId: number | null = user?.id || null;
+    const unknownEmail: boolean = !user;
 
     if (!user) {
       console.warn(`🟡 Proceeding without linked user for email: ${email}`);
@@ -52,7 +52,7 @@ export async function submitOrder(req: Request, res: Response): Promise<void> {
       budget,
       timeline,
       description,
-      customerId, // ✅ null-safe
+      customerId,
     });
 
     if (!result.dbSuccess) {
@@ -73,8 +73,8 @@ export async function submitOrder(req: Request, res: Response): Promise<void> {
     res.status(200).json({
       success: true,
       message: 'Order submitted and confirmation sent.',
-      orderId: result.orderId ?? null, // ✅ pass back
-      unknownEmail,                    // ✅ pass back
+      orderId: result.orderId ?? null,
+      unknownEmail,
     });
   } catch (err) {
     console.error('🧨 Unexpected error during order submission:', err);
@@ -83,12 +83,11 @@ export async function submitOrder(req: Request, res: Response): Promise<void> {
 }
 
 // ─────────────────────────────────────────────────────────────
-// 🔗 Link Order to Current User
+// Link Order to Current User
 // ─────────────────────────────────────────────────────────────
-
 export async function linkOrderToCurrentUser(req: Request, res: Response): Promise<void> {
   const userId = (req as any).user?.id;
-  const orderId = Number(req.params.id);
+  const orderId: number = Number(req.params.id);
 
   if (!userId) {
     res.status(401).json({ error: 'Unauthorized' });
@@ -100,13 +99,12 @@ export async function linkOrderToCurrentUser(req: Request, res: Response): Promi
   }
 
   try {
-    const order = await Order.findOne({ where: { id: orderId } });
+    const order: OrderInstance | null = await Order.findOne({ where: { id: orderId } });
     if (!order) {
       res.status(404).json({ error: 'Order not found.' });
       return;
     }
 
-    // Only link if not already linked or linking to same user
     if (order.customerId && order.customerId !== Number(userId)) {
       res.status(409).json({ error: 'Order already linked to a different user.' });
       return;
@@ -122,11 +120,11 @@ export async function linkOrderToCurrentUser(req: Request, res: Response): Promi
 
 
 // ─────────────────────────────────────────────────────────────
-// ✏️ Update Order (within 72 hours)
+// ✏Update Order (within 72 hours)
 // ─────────────────────────────────────────────────────────────
 export async function updateOrder(req: Request, res: Response): Promise<void> {
   const userId = (req as any).user?.id;
-  const orderId = parseInt(req.params.id, 10);
+  const orderId: number = parseInt(req.params.id, 10);
   const { businessName, projectType, budget, timeline, description } = req.body;
 
   if (!userId) {
@@ -140,7 +138,7 @@ export async function updateOrder(req: Request, res: Response): Promise<void> {
   }
 
   try {
-    const order = await Order.findOne({ where: { id: orderId, customerId: userId } });
+    const order: OrderInstance | null = await Order.findOne({ where: { id: orderId, customerId: userId } });
 
     if (!order) {
       res.status(404).json({ error: 'Order not found.' });
@@ -167,10 +165,8 @@ export async function updateOrder(req: Request, res: Response): Promise<void> {
   }
 }
 
-
-
 // ─────────────────────────────────────────────────────────────
-// 📦 Get Orders for Logged-In Customer
+// Get Orders for Logged-In Customer
 // ─────────────────────────────────────────────────────────────
 export async function getUserOrders(req: Request, res: Response): Promise<void> {
   try {
@@ -181,13 +177,13 @@ export async function getUserOrders(req: Request, res: Response): Promise<void> 
       return;
     }
 
-    const orders = await Order.findAll({
+    const orders: OrderInstance[] = await Order.findAll({
       where: { customerId: userId },
       include: [{ model: OrderUpdate, as: 'updates' }],
       order: [['createdAt', 'DESC']],
     });
 
-    res.status(200).json(orders); // ✅ Fixed: return raw array
+    res.status(200).json(orders);
   } catch (err) {
     console.error('Fetch Orders Error:', err);
     res.status(500).json({ error: 'Failed to fetch orders.' });
@@ -195,11 +191,11 @@ export async function getUserOrders(req: Request, res: Response): Promise<void> 
 }
 
 // ─────────────────────────────────────────────────────────────
-// ❌ Cancel Order (within 72 hours)
+// Cancel Order (within 72 hours)
 // ─────────────────────────────────────────────────────────────
 export async function cancelOrder(req: Request, res: Response): Promise<void> {
   const userId = (req as any).user?.id;
-  const orderId = parseInt(req.params.id, 10);
+  const orderId: number = parseInt(req.params.id, 10);
 
   if (!userId) {
     res.status(401).json({ error: 'Unauthorized' });
@@ -212,7 +208,7 @@ export async function cancelOrder(req: Request, res: Response): Promise<void> {
   }
 
   try {
-    const order = await Order.findOne({
+    const order: OrderInstance | null = await Order.findOne({
       where: { id: orderId, customerId: userId },
     });
 
@@ -253,7 +249,7 @@ export async function cancelOrder(req: Request, res: Response): Promise<void> {
 }
 
 // ─────────────────────────────────────────────────────────────
-// 🧾 Download PDF Invoice for Order
+//  Download PDF Invoice for Order
 // ─────────────────────────────────────────────────────────────
 export async function downloadInvoice(req: Request, res: Response): Promise<void> {
   const userId = (req as any).user?.id;
