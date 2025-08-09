@@ -4,14 +4,6 @@ import { useEditOrderStore } from '../store/useEditOrderStore';
 import EditOrderModalView from '../jsx/editOrderModalView';
 import type { EditOrderForm } from '../types/editOrderForm.types';
 
-export interface TEditOrderFormType {
-  description: string;
-  timeline: string;
-  budget: string;
-  projectType: string;
-  businessName: string;
-}
-
 export default function EditOrderModal(): React.ReactElement | null {
   const { modalOpen, targetOrder, closeModal, refreshOrders } = useEditOrderStore();
   const [loading, setLoading] = useState<boolean>(false);
@@ -42,26 +34,26 @@ export default function EditOrderModal(): React.ReactElement | null {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSave = async (): Promise<void> => {
+  const handleSave: () => Promise<void> = async (): Promise<void> => {
     if (!targetOrder) return;
 
     setLoading(true);
     try {
-      const res = await fetch(`/api/order/${targetOrder.id}`, {
+      const res: Response = await fetch(`/api/order/${targetOrder.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify(form),
       });
 
-      const data = await res.json();
+      const data: unknown = await res.json();
 
       if (res.ok) {
         toast.success('Order updated successfully.');
         closeModal();
         refreshOrders();
       } else {
-        toast.error(data.error || 'Failed to update order.');
+        toast.error((data as { error?: string })?.error || 'Failed to update order.');
       }
     } catch {
       toast.error('Server error.');
