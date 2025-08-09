@@ -19,7 +19,19 @@ export interface TOrderStateType {
 
 const LOCAL_KEY: string = 'unreadOrderIds';
 
+const storageAvailable: () => boolean = (): boolean => {
+  try {
+    const t = '__test__';
+    localStorage.setItem(t, '1');
+    localStorage.removeItem(t);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 const loadUnread: () => number[] = (): number[] => {
+  if (!storageAvailable()) return [];
   try {
     const stored: string | null = localStorage.getItem(LOCAL_KEY);
     return stored ? (JSON.parse(stored) as number[]) : [];
@@ -29,14 +41,23 @@ const loadUnread: () => number[] = (): number[] => {
 };
 
 const saveUnread: (ids: number[]) => void = (ids: number[]): void => {
+  if (!storageAvailable()) return;
   try {
     localStorage.setItem(LOCAL_KEY, JSON.stringify(ids));
-  } catch (err: unknown) {
-    console.error('❌ Failed to persist unreadOrderIds to localStorage:', err);
-  }
+  } catch {}
 };
 
-const orderStoreCreator: StateCreator<TOrderStateType> = (set) => ({
+const getBaselineUnread: (stored: number[], inMemory: number[], incoming: number[]) => number[] = (
+  stored: number[],
+  inMemory: number[],
+  incoming: number[]
+): number[] => {
+  if (stored.length) return stored;
+  if (inMemory.length) return inMemory;
+  return incoming;
+};
+
+const orderStoreCreator: StateCreator<TOrderStateType> = (set, get: () => TOrderStateType) => ({
   lastOrder: null,
   setLastOrder: (order: OrderPayload): void => set({ lastOrder: order }),
   clearOrder: (): void => set({ lastOrder: null }),
@@ -55,9 +76,11 @@ const orderStoreCreator: StateCreator<TOrderStateType> = (set) => ({
         return;
       }
 
-      const existing: number[] = loadUnread();
       const incomingIds: number[] = (data as Order[]).map((order: Order): number => order.id);
-      const finalUnread: number[] = existing.length > 0 ? existing : incomingIds;
+      const stored: number[] = loadUnread();
+      const inMemory: number[] = get().unreadOrderIds;
+      const baseline: number[] = getBaselineUnread(stored, inMemory, incomingIds);
+      const finalUnread: number[] = baseline.filter((id: number): boolean => incomingIds.includes(id));
 
       saveUnread(finalUnread);
 
@@ -80,7 +103,13 @@ const orderStoreCreator: StateCreator<TOrderStateType> = (set) => ({
         return;
       }
 
-      set({ orders: data as Order[] });
+      const incomingIds: number[] = (data as Order[]).map((order: Order): number => order.id);
+      const trimmedUnread: number[] = get().unreadOrderIds.filter((id: number): boolean =>
+        incomingIds.includes(id)
+      );
+      saveUnread(trimmedUnread);
+
+      set({ orders: data as Order[], unreadOrderIds: trimmedUnread });
     } catch (err: unknown) {
       console.error('❌ Error in refreshOrders():', err);
     }
@@ -100,7 +129,6 @@ const orderStoreCreator: StateCreator<TOrderStateType> = (set) => ({
       const updatedOrders: Order[] = state.orders.map((o: Order): Order =>
         o.id === updated.id ? updated : o
       );
-
       return { orders: [...updatedOrders] };
     }),
 });
