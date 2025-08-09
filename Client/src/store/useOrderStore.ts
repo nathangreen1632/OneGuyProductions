@@ -19,31 +19,40 @@ export interface TOrderStateType {
 
 const LOCAL_KEY: string = 'unreadOrderIds';
 
-const storageAvailable: () => boolean = (): boolean => {
+const storageWritable: (s: Storage) => boolean = (s: Storage): boolean => {
   try {
     const t = '__test__';
-    localStorage.setItem(t, '1');
-    localStorage.removeItem(t);
+    s.setItem(t, '1');
+    s.removeItem(t);
     return true;
   } catch {
     return false;
   }
 };
 
+const getStore: () => Storage | null = (): Storage | null => {
+  if (typeof window === 'undefined') return null;
+  if (storageWritable(localStorage)) return localStorage;
+  if (storageWritable(sessionStorage)) return sessionStorage;
+  return null;
+};
+
 const loadUnread: () => number[] = (): number[] => {
-  if (!storageAvailable()) return [];
+  const store: Storage | null = getStore();
+  if (!store) return [];
   try {
-    const stored: string | null = localStorage.getItem(LOCAL_KEY);
-    return stored ? (JSON.parse(stored) as number[]) : [];
+    const raw: string | null = store.getItem(LOCAL_KEY);
+    return raw ? (JSON.parse(raw) as number[]) : [];
   } catch {
     return [];
   }
 };
 
 const saveUnread: (ids: number[]) => void = (ids: number[]): void => {
-  if (!storageAvailable()) return;
+  const store: Storage | null = getStore();
+  if (!store) return;
   try {
-    localStorage.setItem(LOCAL_KEY, JSON.stringify(ids));
+    store.setItem(LOCAL_KEY, JSON.stringify(ids));
   } catch {}
 };
 
@@ -57,7 +66,10 @@ const getBaselineUnread: (stored: number[], inMemory: number[], incoming: number
   return incoming;
 };
 
-const orderStoreCreator: StateCreator<TOrderStateType> = (set, get: () => TOrderStateType) => ({
+const orderStoreCreator: StateCreator<TOrderStateType> = (
+  set: StoreApi<TOrderStateType>['setState'],
+  get: () => TOrderStateType
+): TOrderStateType => ({
   lastOrder: null,
   setLastOrder: (order: OrderPayload): void => set({ lastOrder: order }),
   clearOrder: (): void => set({ lastOrder: null }),
