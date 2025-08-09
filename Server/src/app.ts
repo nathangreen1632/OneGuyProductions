@@ -53,6 +53,12 @@ app.use(
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'", 'https://www.google.com', 'https://www.gstatic.com'],
       objectSrc: ["'none'"],
+      imgSrc: [
+        "'self'",
+        'data:',
+        'https://www.gravatar.com',
+        'https://secure.gravatar.com'
+      ],
       frameSrc: [
         "'self'",
         'https://www.google.com',
