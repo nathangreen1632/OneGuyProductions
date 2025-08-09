@@ -1,5 +1,3 @@
-// Server/src/server.ts
-
 import './config/dotenv.config.js';
 import app from './app.js';
 import { sequelize } from './config/db.config.js';
@@ -12,25 +10,26 @@ import './models/otpToken.model.js';
 
 const PORT: number = parseInt(process.env.PORT ?? '3001', 10);
 
+const ENABLE_DB_SYNC: boolean = process.env.ENABLE_DB_SYNC === 'true';
+
 async function startServer(): Promise<void> {
   try {
-    if (process.env.NODE_ENV !== 'production') {
-      // Only for dev emergencies:
+    if (ENABLE_DB_SYNC) {
+      loggerConfig.warn('⚠️ DB sync ENABLED: Running sequelize.sync({ alter: true })…');
       await sequelize.sync({ alter: true });
-      loggerConfig.info('✅ Skipping sync: models assumed to be up-to-date.');
+      loggerConfig.info('✅ DB sync complete.');
     } else {
-      // Use migrations in production
-      loggerConfig.info('✅ Skipping sync: running in production.');
+      loggerConfig.info('✅ DB sync skipped. Using migrations / existing schema.');
     }
 
-
-    app.listen(PORT, () => {
+    app.listen(PORT, (): void => {
       loggerConfig.info(`🚀 Server running at http://localhost:${PORT}`);
     });
   } catch (error) {
-    loggerConfig.error('❌ Failed to sync database or start server:', error);
+    loggerConfig.error('❌ Failed to start server:', error);
     process.exit(1);
   }
 }
+
 
 await startServer();
