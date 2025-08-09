@@ -1,4 +1,4 @@
-import type { Request, Response } from 'express';
+import type { Request, Response, CookieOptions } from 'express';
 import { User, OtpToken } from '../models/index.js';
 import {
   hashPassword,
@@ -12,7 +12,39 @@ import { sendOtpEmail } from '../services/resend.service.js';
 import { Op } from 'sequelize';
 import { COOKIE_OPTIONS } from '../config/constants.config.js';
 
-export async function register(req: Request, res: Response): Promise<void> {
+type TRegisterBodyType = {
+  username: string;
+  email: string;
+  password: string;
+  rememberMe?: boolean;
+};
+
+type TLoginBodyType = {
+  email: string;
+  password: string;
+  rememberMe?: boolean;
+};
+
+type TJwtPayloadType = {
+  id: string;
+};
+
+type TRequestOtpBodyType = {
+  email: string;
+};
+
+type TVerifyOtpBodyType = {
+  email: string;
+  otp: string;
+  newPassword: string;
+};
+
+type TCookieOptionsType = CookieOptions;
+
+export async function register(
+  req: Request<unknown, unknown, TRegisterBodyType>,
+  res: Response
+): Promise<void> {
   const { username, email, password, rememberMe } = req.body;
 
   try {
@@ -22,14 +54,13 @@ export async function register(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const hashed = await hashPassword(password);
+    const hashed: string = await hashPassword(password);
     const newUser = await User.create({ username, email, password: hashed });
 
-    const token = generateJwt({ id: newUser.id });
-
-    const options = {
+    const token: string = generateJwt({ id: newUser.id });
+    const options: TCookieOptionsType = {
       ...COOKIE_OPTIONS,
-      ...(rememberMe && { expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) }), // 30 days
+      ...(rememberMe && { expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) }),
     };
 
     res.cookie('token', token, options);
@@ -41,39 +72,38 @@ export async function register(req: Request, res: Response): Promise<void> {
         email: newUser.email,
       },
     });
-
   } catch (err) {
     console.error('Register Error:', err);
     res.status(500).json({ error: 'Failed to register user.' });
   }
 }
 
-export async function login(req: Request, res: Response): Promise<void> {
+export async function login(
+  req: Request<unknown, unknown, TLoginBodyType>,
+  res: Response
+): Promise<void> {
   const { email, password, rememberMe } = req.body;
 
   try {
     const user = await User.findOne({ where: { email } });
-
     if (!user) {
       res.status(401).json({ error: 'Invalid email or password.' });
       return;
     }
 
-    const isPasswordValid = await verifyPassword(password, user.password);
+    const isPasswordValid: boolean = await verifyPassword(password, user.password);
     if (!isPasswordValid) {
       res.status(401).json({ error: 'Invalid email or password.' });
       return;
     }
 
-    const token = generateJwt({ id: user.id });
-
-    const options = {
+    const token: string = generateJwt({ id: user.id });
+    const options: TCookieOptionsType = {
       ...COOKIE_OPTIONS,
-      ...(rememberMe && { expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) }), // 30 days
+      ...(rememberMe && { expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) }),
     };
 
     res.cookie('token', token, options);
-
     res.status(200).json({
       success: true,
       user: {
@@ -88,19 +118,16 @@ export async function login(req: Request, res: Response): Promise<void> {
   }
 }
 
-// ✅ GET /api/auth/me
 export async function getAuthenticatedUser(req: Request, res: Response): Promise<void> {
-  const token = req.cookies?.token;
-
+  const token: string | undefined = req.cookies?.token;
   if (!token) {
     res.status(401).json({ error: 'Not authenticated' });
     return;
   }
 
   try {
-    const decoded = verifyJwt(token) as { id: string };
+    const decoded = verifyJwt(token) as TJwtPayloadType;
     const user = await User.findByPk(decoded.id);
-
     if (!user) {
       res.status(404).json({ error: 'User not found' });
       return;
@@ -118,7 +145,10 @@ export async function getAuthenticatedUser(req: Request, res: Response): Promise
   }
 }
 
-export async function requestOtp(req: Request, res: Response): Promise<void> {
+export async function requestOtp(
+  req: Request<unknown, unknown, TRequestOtpBodyType>,
+  res: Response
+): Promise<void> {
   const { email } = req.body;
 
   try {
@@ -131,9 +161,7 @@ export async function requestOtp(req: Request, res: Response): Promise<void> {
     const recentOtp = await OtpToken.findOne({
       where: {
         email,
-        createdAt: {
-          [Op.gt]: new Date(Date.now() - 60 * 1000),
-        },
+        createdAt: { [Op.gt]: new Date(Date.now() - 60 * 1000) },
       },
     });
 
@@ -142,8 +170,8 @@ export async function requestOtp(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const otp = generateOtp();
-    const hashed = await hashOtp(otp);
+    const otp: string = generateOtp();
+    const hashed: string = await hashOtp(otp);
 
     await OtpToken.create({
       email,
@@ -164,7 +192,10 @@ export function logout(_: Request, res: Response): void {
   res.status(200).json({ success: true });
 }
 
-export async function verifyOtp(req: Request, res: Response): Promise<void> {
+export async function verifyOtp(
+  req: Request<unknown, unknown, TVerifyOtpBodyType>,
+  res: Response
+): Promise<void> {
   const { email, otp, newPassword } = req.body;
 
   try {
@@ -178,9 +209,8 @@ export async function verifyOtp(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const isValid = await verifyPassword(otp, token.otpHash);
-    const notExpired = token.expiresAt.getTime() > Date.now();
-
+    const isValid: boolean = await verifyPassword(otp, token.otpHash);
+    const notExpired: boolean = token.expiresAt.getTime() > Date.now();
     if (!isValid || !notExpired) {
       res.status(401).json({ error: 'OTP is invalid or expired.' });
       return;
@@ -192,7 +222,7 @@ export async function verifyOtp(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const hashed = await hashPassword(newPassword);
+    const hashed: string = await hashPassword(newPassword);
     await user.update({ password: hashed });
     await OtpToken.destroy({ where: { email } });
 
