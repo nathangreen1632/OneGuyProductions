@@ -3,7 +3,7 @@ import toast from 'react-hot-toast';
 import { useEditOrderStore } from '../store/useEditOrderStore';
 import EditOrderModalView from '../jsx/editOrderModalView';
 
-export interface EditOrderForm {
+export interface TEditOrderFormType {
   description: string;
   timeline: string;
   budget: string;
@@ -13,9 +13,9 @@ export interface EditOrderForm {
 
 export default function EditOrderModal(): React.ReactElement | null {
   const { modalOpen, targetOrder, closeModal, refreshOrders } = useEditOrderStore();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
 
-  const [form, setForm] = useState<EditOrderForm>({
+  const [form, setForm] = useState<TEditOrderFormType>({
     description: '',
     timeline: '',
     budget: '',
@@ -23,7 +23,7 @@ export default function EditOrderModal(): React.ReactElement | null {
     businessName: '',
   });
 
-  useEffect(() => {
+  useEffect((): void => {
     if (targetOrder) {
       setForm({
         description: targetOrder.description ?? '',
@@ -37,7 +37,7 @@ export default function EditOrderModal(): React.ReactElement | null {
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
+  ): void => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
@@ -62,8 +62,7 @@ export default function EditOrderModal(): React.ReactElement | null {
       } else {
         toast.error(data.error || 'Failed to update order.');
       }
-    } catch (err) {
-      console.error('❌ Edit failed:', err);
+    } catch {
       toast.error('Server error.');
     } finally {
       setLoading(false);
