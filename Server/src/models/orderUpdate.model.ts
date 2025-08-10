@@ -6,15 +6,11 @@ export interface OrderUpdateAttributes {
   orderId: number;
 
   authorUserId: number | null;
-  body: string | null;
-  source: 'web' | 'email' | 'system';          // VARCHAR(20) in DB
-  eventType: 'comment' | 'status' | 'email';    // VARCHAR(20) in DB
+  body: string; // now non-null in the DB + model
+  source: 'web' | 'email' | 'system';
+  eventType: 'comment' | 'status' | 'email';
   requiresCustomerResponse: boolean;
   editedAt: Date | null;
-
-  // legacy columns still in table
-  user?: string | null;
-  message?: string | null;
 
   createdAt: Date;
   updatedAt: Date;
@@ -22,7 +18,7 @@ export interface OrderUpdateAttributes {
 
 export type OrderUpdateCreationAttributes = Optional<
   OrderUpdateAttributes,
-  'id' | 'authorUserId' | 'body' | 'editedAt' | 'user' | 'message' | 'createdAt' | 'updatedAt'
+  'id' | 'authorUserId' | 'editedAt' | 'createdAt' | 'updatedAt'
 >;
 
 export class OrderUpdateModel
@@ -31,19 +27,13 @@ export class OrderUpdateModel
   declare id: number;
   declare orderId: number;
   declare authorUserId: number | null;
-  declare body: string | null;
+  declare body: string;
   declare source: 'web' | 'email' | 'system';
   declare eventType: 'comment' | 'status' | 'email';
   declare requiresCustomerResponse: boolean;
   declare editedAt: Date | null;
-  declare user?: string | null;
-  declare message?: string | null;
   declare createdAt: Date;
   declare updatedAt: Date;
-
-  get displayBody(): string {
-    return (this.getDataValue('body') ?? this.getDataValue('message') ?? '').trim();
-  }
 }
 
 OrderUpdateModel.init(
@@ -57,20 +47,15 @@ OrderUpdateModel.init(
     },
     authorUserId: {
       type: DataTypes.INTEGER,
-      allowNull: true,
+      allowNull: true, // keep nullable for 'system' events if you use them
       references: { model: 'users', key: 'id' },
       onDelete: 'SET NULL',
     },
-    body: { type: DataTypes.TEXT, allowNull: true },
-    source: { type: DataTypes.STRING(20), allowNull: false, defaultValue: 'web' },       // ✅ STRING(20)
-    eventType: { type: DataTypes.STRING(20), allowNull: false, defaultValue: 'comment' },// ✅ STRING(20)
+    body: { type: DataTypes.TEXT, allowNull: false }, // ⬅ aligned with migration
+    source: { type: DataTypes.STRING(20), allowNull: false, defaultValue: 'web' },
+    eventType: { type: DataTypes.STRING(20), allowNull: false, defaultValue: 'comment' },
     requiresCustomerResponse: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
     editedAt: { type: DataTypes.DATE, allowNull: true },
-
-    // legacy
-    user: { type: DataTypes.STRING, allowNull: true },
-    message: { type: DataTypes.TEXT, allowNull: true },
-
     createdAt: { type: DataTypes.DATE, allowNull: false },
     updatedAt: { type: DataTypes.DATE, allowNull: false },
   },
@@ -79,14 +64,5 @@ OrderUpdateModel.init(
     modelName: 'OrderUpdate',
     tableName: 'orderUpdates',
     timestamps: true,
-    hooks: {
-      beforeCreate(instance: OrderUpdateModel) {
-        if (!instance.getDataValue('body') && instance.getDataValue('message')) {
-          instance.setDataValue('body', instance.getDataValue('message')!);
-        }
-        if (!instance.getDataValue('source')) instance.setDataValue('source', 'web');
-        if (!instance.getDataValue('eventType')) instance.setDataValue('eventType', 'comment');
-      },
-    },
   }
 );
