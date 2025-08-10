@@ -1,7 +1,6 @@
 import { Op, QueryTypes } from 'sequelize';
 import { Order, OrderReadReceipt, sequelize, User } from '../models/index.js';
 
-
 export async function getCustomerOrdersWithUnread(userId: number) {
   const orders = await Order.findAll({
     where: { customerId: userId },
@@ -13,24 +12,31 @@ export async function getCustomerOrdersWithUnread(userId: number) {
   const recs = await OrderReadReceipt.findAll({ where: { userId, orderId: { [Op.in]: ids } } });
   const lastByOrder = new Map<number, Date>(recs.map(r => [r.orderId, r.lastReadAt]));
 
+  // NOTE: Use IN (:ids). Sequelize expands :ids into a comma-list; PG's ANY() expects an array literal.
   const maxRows = await sequelize.query<{ orderId: number; latest: string }>(
-    `SELECT "orderId", MAX("createdAt") AS latest
-     FROM "orderUpdates" WHERE "orderId" = ANY(:ids) GROUP BY "orderId"`,
+    `
+        SELECT "orderId", MAX("createdAt") AS latest
+        FROM "orderUpdates"
+        WHERE "orderId" IN (:ids)
+        GROUP BY "orderId"
+    `,
     { replacements: { ids }, type: QueryTypes.SELECT }
   );
-  const latestMap = new Map(maxRows.map(r => [r.orderId, new Date(r.latest).toISOString()]));
+  const latestMap = new Map<number, string>(maxRows.map(r => [r.orderId, new Date(r.latest).toISOString()]));
 
   const countRows = await sequelize.query<{ orderId: number; cnt: number }>(
-    `SELECT ou."orderId", COUNT(*)::int AS cnt
-     FROM "orderUpdates" ou
-     LEFT JOIN "orderReadReceipts" rr
-       ON rr."orderId" = ou."orderId" AND rr."userId" = :userId
-     WHERE ou."orderId" = ANY(:ids)
-       AND (rr."lastReadAt" IS NULL OR ou."createdAt" > rr."lastReadAt")
-     GROUP BY ou."orderId"`,
+    `
+        SELECT ou."orderId", COUNT(*)::int AS cnt
+        FROM "orderUpdates" ou
+                 LEFT JOIN "orderReadReceipts" rr
+                           ON rr."orderId" = ou."orderId" AND rr."userId" = :userId
+        WHERE ou."orderId" IN (:ids)
+          AND (rr."lastReadAt" IS NULL OR ou."createdAt" > rr."lastReadAt")
+        GROUP BY ou."orderId"
+    `,
     { replacements: { userId, ids }, type: QueryTypes.SELECT }
   );
-  const countMap = new Map(countRows.map(r => [r.orderId, r.cnt]));
+  const countMap = new Map<number, number>(countRows.map(r => [r.orderId, r.cnt]));
 
   const payload = orders.map(o => {
     const lastReadAt = lastByOrder.get(o.id) ?? null;
@@ -69,26 +75,42 @@ export async function getAdminOrdersWithUnread(
   });
 
   const ids = orders.map(o => o.id);
-  if (ids.length === 0) return { rows: [], total };
+  if (ids.length === 0) {
+    return {
+      orders: [],
+      total,
+      latestMap: new Map<number, string>(),
+      countMap: new Map<number, number>(),
+    };
+  }
 
+  // >>> changed ANY(:ids) -> IN (:ids)
   const maxRows = await sequelize.query<{ orderId: number; latest: string }>(
-    `SELECT "orderId", MAX("createdAt") AS latest
-     FROM "orderUpdates" WHERE "orderId" = ANY(:ids) GROUP BY "orderId"`,
+    `
+        SELECT "orderId", MAX("createdAt") AS latest
+        FROM "orderUpdates"
+        WHERE "orderId" IN (:ids)
+        GROUP BY "orderId"
+    `,
     { replacements: { ids }, type: QueryTypes.SELECT }
   );
-  const latestMap = new Map(maxRows.map(r => [r.orderId, new Date(r.latest).toISOString()]));
+  const latestMap = new Map<number, string>(maxRows.map(r => [r.orderId, new Date(r.latest).toISOString()]));
 
+  // >>> changed ANY(:ids) -> IN (:ids)
   const countRows = await sequelize.query<{ orderId: number; cnt: number }>(
-    `SELECT ou."orderId", COUNT(*)::int AS cnt
-     FROM "orderUpdates" ou
-     LEFT JOIN "orderReadReceipts" rr
-       ON rr."orderId" = ou."orderId" AND rr."userId" = :viewerId
-     WHERE ou."orderId" = ANY(:ids)
-       AND (rr."lastReadAt" IS NULL OR ou."createdAt" > rr."lastReadAt")
-     GROUP BY ou."orderId"`,
+    `
+        SELECT ou."orderId", COUNT(*)::int AS cnt
+        FROM "orderUpdates" ou
+                 LEFT JOIN "orderReadReceipts" rr
+                           ON rr."orderId" = ou."orderId" AND rr."userId" = :viewerId
+        WHERE ou."orderId" IN (:ids)
+          AND (rr."lastReadAt" IS NULL OR ou."createdAt" > rr."lastReadAt")
+        GROUP BY ou."orderId"
+    `,
     { replacements: { viewerId, ids }, type: QueryTypes.SELECT }
   );
-  const countMap = new Map(countRows.map(r => [r.orderId, r.cnt]));
+  const countMap = new Map<number, number>(countRows.map(r => [r.orderId, r.cnt]));
 
+  // Preserve your original contract (orders array + maps + total)
   return { orders, total, latestMap, countMap };
 }
