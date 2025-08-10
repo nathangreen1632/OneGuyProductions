@@ -137,28 +137,46 @@ export async function getOrderThread(req: Request, res: Response): Promise<void>
       where: { orderId: orderIdNum },
       order: [['createdAt', 'ASC']],
       attributes: [
-        'id', 'orderId', 'authorUserId', 'body', 'source', 'eventType',
-        'requiresCustomerResponse', 'createdAt', 'updatedAt', 'message', 'user'
+        'id',
+        'orderId',
+        'authorUserId',
+        'body',
+        'source',
+        'eventType',
+        'requiresCustomerResponse',
+        'createdAt',
+        'updatedAt',
       ],
-      include: [{ model: User, as: 'author', attributes: ['id', 'email'] }],
+      include: [
+        {
+          model: User,
+          as: 'author',                // <- matches your association
+          attributes: ['id', 'email'],
+          required: false,
+        },
+      ],
     });
 
-    res.json(updates.map(u => ({
-      id: u.id,
-      orderId: u.orderId,
-      authorUserId: u.authorUserId,
-      authorEmail: (u as any).author?.email ?? null,
-      body: (u as any).body ?? (u as any).message ?? '',
-      source: (u as any).source ?? 'web',
-      eventType: (u as any).eventType ?? 'comment',
-      requiresCustomerResponse: !!(u as any).requiresCustomerResponse,
-      createdAt: u.createdAt.toISOString(),
-    })));
+    // Keep the response shape your UI expects (no legacy `message`/`user` fields).
+    res.json(
+      updates.map(u => ({
+        id: u.id,
+        orderId: u.orderId,
+        authorUserId: u.authorUserId ?? null,
+        authorEmail: (u as any).author?.email ?? null,
+        body: (u as any).body ?? '',                 // canonical text field
+        source: (u as any).source ?? 'web',
+        eventType: (u as any).eventType ?? 'comment',
+        requiresCustomerResponse: Boolean((u as any).requiresCustomerResponse),
+        createdAt: (u.createdAt ?? new Date()).toISOString(),
+      }))
+    );
   } catch (err) {
     console.error('getOrderThread failed', err);
     res.status(500).json({ error: 'Failed to load thread.' });
   }
 }
+
 
 /**
  * POST /api/admin/orders/:orderId/status  { status }
