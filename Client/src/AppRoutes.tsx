@@ -18,29 +18,58 @@ import AdminOrderDetailPage from './pages/admin/AdminOrderDetailPage';
 export default function AppRoutes(): React.ReactElement {
   const { setUser, setHydrated, isAuthenticated, hydrated } = useAuthStore();
 
-  useEffect((): void => {
-    async function hydrateSession(): Promise<void> {
+  useEffect(() => {
+    if (hydrated) return;
+
+    let cancelled = false;
+    const controller = new AbortController();
+
+    (async () => {
       try {
-        const res: Response = await fetch('/api/auth/me', {
+        const res = await fetch('/api/auth/me', {
           credentials: 'include',
+          signal: controller.signal,
         });
 
-        const data = await res.json();
-
-        if (res.ok && data.user) {
-          setUser(data.user, null); // token is handled via HttpOnly cookie
+        // Non-OK or No Content → just mark hydrated and exit quietly
+        if (!res.ok || res.status === 204) {
+          if (!cancelled) setHydrated(true);
+          return;
         }
-      } catch (err) {
-        console.error('Session hydration failed:', err);
-      } finally {
-        setHydrated(true);
-      }
-    }
 
-    hydrateSession().catch(console.error);
-  }, [setUser, setHydrated]);
+        // Must be JSON to parse
+        const ct = res.headers.get('content-type') || '';
+        if (!ct.includes('application/json')) {
+          if (!cancelled) setHydrated(true);
+          return;
+        }
+
+        // Defensive: avoid JSON parse error on empty body
+        const text = await res.text();
+        if (!text) {
+          if (!cancelled) setHydrated(true);
+          return;
+        }
+
+        const data = JSON.parse(text);
+        if (res.ok && data?.user && !cancelled) {
+          setUser(data.user, null); // token via HttpOnly cookie
+        }
+      } catch {
+        // Swallow errors; we only hydrate state, not block the UI
+      } finally {
+        if (!cancelled) setHydrated(true);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [setUser, setHydrated, hydrated]);
 
   const routeKey = `${hydrated}-${isAuthenticated}`;
+
   return (
     <Routes key={routeKey}>
       <Route path="/" element={<HomePage />} />
