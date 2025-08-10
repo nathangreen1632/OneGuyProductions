@@ -1,0 +1,35 @@
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import AdminFilters from '../../components/admin/AdminFilters';
+import AdminOrdersTable from '../../components/admin/AdminOrdersTable';
+import { useAdminStore } from '../../store/useAdminStore.ts';
+import { useAdminUiStore } from '../../store/useAdminUiStore.ts';
+
+export default function AdminOrdersPage(): React.ReactElement {
+  const nav = useNavigate();
+  const { rows, total, loading, fetchList } = useAdminStore();
+  const ui = useAdminUiStore();
+
+  useEffect((): void => {
+    void fetchList({
+      q: ui.q,
+      status: ui.status,
+      assigned: ui.assigned,
+      updatedWithin: ui.updatedWithin,
+      page: ui.page,
+      pageSize: ui.pageSize,
+    });
+  }, [ui.q, ui.status, ui.assigned, ui.updatedWithin, ui.page, ui.pageSize, fetchList]);
+
+  return (
+    <div className="space-y-4">
+      <AdminFilters />
+      <AdminOrdersTable
+        rows={rows}
+        loading={loading}
+        total={total}
+        onRowClick={(id: number): void | Promise<void> => nav(`/admin/orders/${id}`)}
+      />
+    </div>
+  );
+}
