@@ -1,20 +1,15 @@
 import React, { type ReactElement } from 'react';
 import type { AdminOrderRowDto } from '../../types/admin.types.ts';
+import Spinner from '../../common/Spinner.tsx';
 
 function getStatusTextClasses(status: string): string {
   switch (status?.toLowerCase()) {
-    case 'complete':
-      return 'text-emerald-600';
-    case 'cancelled':
-      return 'text-red-600';
-    case 'in-progress':
-      return 'text-yellow-500';
-    case 'needs-feedback':
-      return 'text-orange-600';
-    case 'pending':
-      return 'text-sky-600';
-    default:
-      return 'text-gray-600';
+    case 'complete': return 'text-emerald-600';
+    case 'cancelled': return 'text-red-600';
+    case 'in-progress': return 'text-yellow-500';
+    case 'needs-feedback': return 'text-orange-600';
+    case 'pending': return 'text-sky-600';
+    default: return 'text-gray-600';
   }
 }
 
@@ -27,17 +22,24 @@ function formatDate(value?: string | null): string {
 export default function AdminOrdersTable({
                                            rows, loading, total, onRowClick,
                                          }: Readonly<{ rows: AdminOrderRowDto[]; loading: boolean; total: number; onRowClick: (id: number) => void }>): React.ReactElement {
-  if (loading) {
+  const firstLoad = loading && rows.length === 0;
+
+  if (firstLoad) {
     return (
-      <div className="p-4 text-sm">
-        <div className="h-3 w-24 animate-pulse rounded bg-black/10" />
-        <div className="mt-2 h-3 w-40 animate-pulse rounded bg-black/10" />
-      </div>
-    );
+      <Spinner size={32} color="#3b82f6" className="mx-auto my-6" />);
   }
 
   return (
-    <div>
+    <>
+      {/* Mobile refreshing badge (no extra wrapper) */}
+      {loading && rows.length > 0 && (
+        <div className="md:hidden mb-1 flex justify-end">
+          <span className="rounded-md bg-[var(--theme-card)]/40 px-2 py-0.5 text-[10px] text-[var(--theme-text)]">
+            Refreshing…
+          </span>
+        </div>
+      )}
+
       {/* Mobile cards */}
       <div className="space-y-2 md:hidden">
         {rows.map((r): ReactElement => {
@@ -53,7 +55,9 @@ export default function AdminOrdersTable({
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <div className="font-semibold text-[var(--theme-text)]">#{r.id} • {r.name}</div>
-                  <div className="mt-0.5 text-xs text-gray-600">{r.projectType} · <span className={`${getStatusTextClasses(r.status)} capitalize`}>{r.status}</span></div>
+                  <div className="mt-0.5 text-xs text-gray-600">
+                    {r.projectType} · <span className={`${getStatusTextClasses(r.status)} capitalize`}>{r.status}</span>
+                  </div>
                 </div>
 
                 {hasUnread && (
@@ -136,11 +140,18 @@ export default function AdminOrdersTable({
             </tbody>
           </table>
         </div>
+
+        {/* Footer with inline refreshing badge */}
         <div className="flex items-center justify-between px-3 py-2 text-xs text-gray-500">
           <span>Total: {total}</span>
-          <span className="rounded-md bg-black/5 px-2 py-0.5">Showing {rows.length}</span>
+          <div className="flex items-center gap-2">
+            {loading && rows.length > 0 && (
+              <span className="rounded-md bg-black/5 px-2 py-0.5">Refreshing…</span>
+            )}
+            <span className="rounded-md bg-black/5 px-2 py-0.5">Showing {rows.length}</span>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
