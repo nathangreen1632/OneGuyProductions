@@ -371,6 +371,8 @@ export async function markAllOrdersRead(req: Request, res: Response): Promise<vo
 
 // ─────────────────────────────────────────────────────────────
 // NEW: Return orders + unread metadata (for Inbox)
+// Back-compat by default (array). Opt-in to full shape with ?shape=full
+// or header: x-response-shape: full
 // ─────────────────────────────────────────────────────────────
 export async function getMyOrders(req: Request, res: Response): Promise<void> {
   const userIdNum = Number((req as any).user?.id);
@@ -378,12 +380,50 @@ export async function getMyOrders(req: Request, res: Response): Promise<void> {
 
   try {
     const result = await getCustomerOrdersWithUnread(userIdNum);
-    res.json(result);
+
+    // Accept query or header to select response shape
+    const shapeHint = String(req.query.shape ?? req.header('x-response-shape') ?? '').toLowerCase();
+    const wantFullShape =
+      shapeHint === 'full' ||
+      shapeHint === 'withmeta' ||
+      shapeHint === 'with_meta' ||
+      shapeHint === 'object' ||
+      shapeHint === 'new' ||
+      shapeHint === 'v2';
+
+    if (wantFullShape) {
+      // New shape: object with metadata
+      res.setHeader('X-Response-Shape', 'full');
+      res.status(200).json(result);
+      return;
+    }
+
+    // Legacy shape: array of orders
+    // Also surface metadata in headers for clients that want it
+    const unreadIds = (result.unreadOrderIds ?? []).join(',');
+    const countsMap: Record<number, number> = {};
+    for (const o of result.orders) countsMap[(o as any).id] = Number((o as any).unreadCount ?? 0);
+
+    res.setHeader('X-Unread-Order-Ids', unreadIds);
+    res.setHeader('X-Unread-Counts', JSON.stringify(countsMap));
+    res.setHeader('X-Response-Shape', 'array');
+
+    // Let browsers read the custom headers (esp. when proxied in dev)
+    const expose = 'X-Unread-Order-Ids, X-Unread-Counts, X-Response-Shape';
+    const existingExpose = res.getHeader('Access-Control-Expose-Headers');
+    if (typeof existingExpose === 'string' && existingExpose.length > 0) {
+      res.setHeader('Access-Control-Expose-Headers', `${existingExpose}, ${expose}`);
+    } else {
+      res.setHeader('Access-Control-Expose-Headers', expose);
+    }
+
+    res.status(200).json(result.orders); // legacy expected array
   } catch (err) {
     console.error('getMyOrders failed', err);
     res.status(500).json({ error: 'Failed to load orders.' });
   }
 }
+
 
 // ─────────────────────────────────────────────────────────────
 // NEW: Thread view for one order (oldest → newest)
