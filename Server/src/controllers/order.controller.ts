@@ -135,14 +135,14 @@ export async function linkOrderToCurrentUser(req: Request, res: Response): Promi
 // ─────────────────────────────────────────────────────────────
 export async function updateOrder(req: Request, res: Response): Promise<void> {
   const userId = (req as any).user?.id;
-  const orderId: number = parseInt(req.params.id, 10);
+  const orderId = parseInt(req.params.id, 10);
   const { businessName, projectType, budget, timeline, description } = req.body;
 
   if (!userId) { res.status(401).json({ error: 'Unauthorized' }); return; }
-  if (isNaN(orderId)) { res.status(400).json({ error: 'Invalid order ID.' }); return; }
+  if (Number.isNaN(orderId)) { res.status(400).json({ error: 'Invalid order ID.' }); return; }
 
   try {
-    const order: OrderInstance | null = await Order.findOne({ where: { id: orderId, customerId: userId } });
+    const order = await Order.findOne({ where: { id: orderId, customerId: userId } });
     if (!order) { res.status(404).json({ error: 'Order not found.' }); return; }
 
     if (!isWithin72Hours(order.createdAt.toISOString())) {
@@ -151,7 +151,14 @@ export async function updateOrder(req: Request, res: Response): Promise<void> {
     }
 
     await order.update({ businessName, projectType, budget, timeline, description });
-    res.status(200).json({ success: true, message: 'Order updated.', orderId });
+
+    // Re-fetch with associations to keep client shape stable
+    const updated = await Order.findOne({
+      where: { id: orderId, customerId: userId },
+      include: [{ model: OrderUpdate, as: 'updates' }],
+    });
+
+    res.status(200).json(updated);
   } catch (err) {
     console.error('❌ Update Order Error:', err);
     res.status(500).json({ error: 'Failed to update order.' });
@@ -381,25 +388,18 @@ export async function getMyOrders(req: Request, res: Response): Promise<void> {
   try {
     const result = await getCustomerOrdersWithUnread(userIdNum);
 
-    // Accept query or header to select response shape
     const shapeHint = String(req.query.shape ?? req.header('x-response-shape') ?? '').toLowerCase();
     const wantFullShape =
-      shapeHint === 'full' ||
-      shapeHint === 'withmeta' ||
-      shapeHint === 'with_meta' ||
-      shapeHint === 'object' ||
-      shapeHint === 'new' ||
-      shapeHint === 'v2';
+      shapeHint === 'full' || shapeHint === 'withmeta' || shapeHint === 'with_meta' ||
+      shapeHint === 'object' || shapeHint === 'new' || shapeHint === 'v2';
 
     if (wantFullShape) {
-      // New shape: object with metadata
       res.setHeader('X-Response-Shape', 'full');
       res.status(200).json(result);
       return;
     }
 
-    // Legacy shape: array of orders
-    // Also surface metadata in headers for clients that want it
+    // Legacy response: array + metadata via headers
     const unreadIds = (result.unreadOrderIds ?? []).join(',');
     const countsMap: Record<number, number> = {};
     for (const o of result.orders) countsMap[(o as any).id] = Number((o as any).unreadCount ?? 0);
@@ -408,21 +408,22 @@ export async function getMyOrders(req: Request, res: Response): Promise<void> {
     res.setHeader('X-Unread-Counts', JSON.stringify(countsMap));
     res.setHeader('X-Response-Shape', 'array');
 
-    // Let browsers read the custom headers (esp. when proxied in dev)
     const expose = 'X-Unread-Order-Ids, X-Unread-Counts, X-Response-Shape';
     const existingExpose = res.getHeader('Access-Control-Expose-Headers');
-    if (typeof existingExpose === 'string' && existingExpose.length > 0) {
-      res.setHeader('Access-Control-Expose-Headers', `${existingExpose}, ${expose}`);
-    } else {
-      res.setHeader('Access-Control-Expose-Headers', expose);
-    }
+    res.setHeader(
+      'Access-Control-Expose-Headers',
+      typeof existingExpose === 'string' && existingExpose.length > 0
+        ? `${existingExpose}, ${expose}`
+        : expose
+    );
 
-    res.status(200).json(result.orders); // legacy expected array
+    res.status(200).json(result.orders);
   } catch (err) {
     console.error('getMyOrders failed', err);
     res.status(500).json({ error: 'Failed to load orders.' });
   }
 }
+
 
 
 // ─────────────────────────────────────────────────────────────
