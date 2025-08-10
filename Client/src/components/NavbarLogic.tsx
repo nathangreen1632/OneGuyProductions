@@ -4,7 +4,7 @@ import { type NavLink, navLinks } from '../constants/navLinks';
 import { useAppStore } from '../store/useAppStore';
 import { useAuthStore } from '../store/useAuthStore';
 import NavbarView from '../jsx/navbarView';
-import { LogIn, LogOut, UserSquare2 } from 'lucide-react';
+import { LogIn, LogOut, UserSquare2, ShieldCheck } from 'lucide-react';
 import { logoutUser } from '../helpers/logoutHelper';
 import GravatarModal from '../modals/GravatarModal';
 import md5 from 'blueimp-md5';
@@ -38,18 +38,24 @@ export default function NavbarLogic(): React.ReactElement {
   const [isGravatarModalOpen, setIsGravatarModalOpen] = useState<boolean>(false);
 
   const dynamicLinks: NavLink[] = useMemo<NavLink[]>((): NavLink[] => {
-    const filtered: NavLink[] = navLinks.filter(
-      (link: NavLink): boolean => link.path !== '/auth' && link.path !== '/portal'
-    );
+    const base: NavLink[] = navLinks.slice();
 
     const extras: NavLink[] = [];
 
+    // Add "My Portal" OR "Login / Register"
     extras.push(
       isAuthenticated
         ? ({ label: 'My Portal', path: '/portal', icon: UserSquare2 } as NavLink)
         : ({ label: 'Login / Register', path: '/auth', icon: LogIn } as NavLink)
     );
 
+    // Add "Admin" only for company email accounts
+    const isCompanyEmail: boolean = !!user?.email && user.email.toLowerCase().endsWith('@oneguyproductions.com');
+    if (isAuthenticated && isCompanyEmail) {
+      extras.push({ label: 'Admin', path: '/admin/orders', icon: ShieldCheck } as NavLink);
+    }
+
+    // Add "Logout" when authenticated
     if (isAuthenticated) {
       extras.push({
         label: 'Logout',
@@ -65,8 +71,8 @@ export default function NavbarLogic(): React.ReactElement {
       } as NavLink);
     }
 
-    return [...filtered, ...extras] as NavLink[];
-  }, [isAuthenticated, logout, navigate]);
+    return [...base, ...extras] as NavLink[];
+  }, [isAuthenticated, user?.email, logout, navigate]);
 
   return (
     <div className="bg-[var(--theme-surface)] text-[var(--theme-text)] shadow-md">
@@ -82,7 +88,7 @@ export default function NavbarLogic(): React.ReactElement {
         <div className="flex justify-end px-6 pt-4 pb-2 text-xs text-[var(--theme-text)] relative">
           <div className="flex items-center gap-3">
             <span className="relative text-lg font-semibold text-[var(--theme-text)]">
-              Logged In As:{' '}
+              Logged In As{' '}
               <span className="font-semibold text-[var(--theme-border-red)]">
                 {user.username || user.email}
               </span>
