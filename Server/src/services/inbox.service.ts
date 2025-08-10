@@ -1,48 +1,81 @@
 import { Op, QueryTypes } from 'sequelize';
 import { Order, OrderReadReceipt, sequelize, User } from '../models/index.js';
 
+// top of file already has: import { Op, QueryTypes } from 'sequelize';
+// and imports Order, OrderReadReceipt, sequelize, User
+
 export async function getCustomerOrdersWithUnread(userId: number) {
   const orders = await Order.findAll({
     where: { customerId: userId },
     order: [['updatedAt', 'DESC']],
   });
+
   const ids = orders.map(o => o.id);
   if (ids.length === 0) return { orders: [], unreadOrderIds: [] as number[] };
 
   const recs = await OrderReadReceipt.findAll({ where: { userId, orderId: { [Op.in]: ids } } });
   const lastByOrder = new Map<number, Date>(recs.map(r => [r.orderId, r.lastReadAt]));
 
-  // NOTE: Use IN (:ids). Sequelize expands :ids into a comma-list; PG's ANY() expects an array literal.
+  // latest update timestamps (unchanged)
   const maxRows = await sequelize.query<{ orderId: number; latest: string }>(
-    `
-        SELECT "orderId", MAX("createdAt") AS latest
-        FROM "orderUpdates"
-        WHERE "orderId" IN (:ids)
-        GROUP BY "orderId"
-    `,
+    `SELECT "orderId", MAX("createdAt") AS latest
+     FROM "orderUpdates"
+     WHERE "orderId" IN (:ids)
+     GROUP BY "orderId"`,
     { replacements: { ids }, type: QueryTypes.SELECT }
   );
   const latestMap = new Map<number, string>(maxRows.map(r => [r.orderId, new Date(r.latest).toISOString()]));
 
+  // unread counts (unchanged)
   const countRows = await sequelize.query<{ orderId: number; cnt: number }>(
-    `
-        SELECT ou."orderId", COUNT(*)::int AS cnt
-        FROM "orderUpdates" ou
-                 LEFT JOIN "orderReadReceipts" rr
-                           ON rr."orderId" = ou."orderId" AND rr."userId" = :userId
-        WHERE ou."orderId" IN (:ids)
-          AND (rr."lastReadAt" IS NULL OR ou."createdAt" > rr."lastReadAt")
-        GROUP BY ou."orderId"
-    `,
+    `SELECT ou."orderId", COUNT(*)::int AS cnt
+     FROM "orderUpdates" ou
+              LEFT JOIN "orderReadReceipts" rr
+                        ON rr."orderId" = ou."orderId" AND rr."userId" = :userId
+     WHERE ou."orderId" IN (:ids)
+       AND (rr."lastReadAt" IS NULL OR ou."createdAt" > rr."lastReadAt")
+     GROUP BY ou."orderId"`,
     { replacements: { userId, ids }, type: QueryTypes.SELECT }
   );
   const countMap = new Map<number, number>(countRows.map(r => [r.orderId, r.cnt]));
+
+  // ✅ NEW: fetch timeline updates and shape them for the client
+  const updateRows = await sequelize.query<{
+    orderId: number;
+    user: string | null;
+    body: string | null;
+    message: string | null;
+    createdAt: string;
+  }>(
+    `SELECT ou."orderId",
+            COALESCE(u."email", ou."user") AS "user",
+            COALESCE(ou."body", ou."message") AS "body",
+            ou."message" AS "message",
+            ou."createdAt" AS "createdAt"
+     FROM "orderUpdates" ou
+     LEFT JOIN "users" u ON u."id" = ou."authorUserId"
+     WHERE ou."orderId" IN (:ids)
+     ORDER BY ou."orderId", ou."createdAt" ASC`,
+    { replacements: { ids }, type: QueryTypes.SELECT }
+  );
+
+  const updatesByOrder = new Map<number, Array<{ user: string; timestamp: string; message: string }>>();
+  for (const r of updateRows) {
+    const arr = updatesByOrder.get(r.orderId) ?? [];
+    arr.push({
+      user: (r.user ?? 'System').toString(),
+      timestamp: new Date(r.createdAt).toISOString(),
+      message: (r.body ?? r.message ?? '').toString(),
+    });
+    updatesByOrder.set(r.orderId, arr);
+  }
 
   const payload = orders.map(o => {
     const lastReadAt = lastByOrder.get(o.id) ?? null;
     const latestUpdateAt = latestMap.get(o.id) ?? null;
     const unreadCount = countMap.get(o.id) ?? 0;
     const updated = (o.updatedAt ?? o.createdAt);
+
     return {
       ...o.toJSON(),
       createdAt: o.createdAt.toISOString(),
@@ -51,6 +84,8 @@ export async function getCustomerOrdersWithUnread(userId: number) {
       latestUpdateAt,
       unreadCount,
       isUnread: unreadCount > 0,
+      // ✅ include updates for the timeline view
+      updates: updatesByOrder.get(o.id) ?? [],
     };
   });
 
@@ -59,6 +94,7 @@ export async function getCustomerOrdersWithUnread(userId: number) {
     unreadOrderIds: payload.filter(p => p.isUnread).map(p => p.id),
   };
 }
+
 
 export async function getAdminOrdersWithUnread(
   viewerId: number,
