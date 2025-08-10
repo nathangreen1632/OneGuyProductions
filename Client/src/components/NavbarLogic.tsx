@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { useLocation, useNavigate, type Location } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { type NavLink, navLinks } from '../constants/navLinks';
 import { useAppStore } from '../store/useAppStore';
 import { useAuthStore } from '../store/useAuthStore';
@@ -19,7 +19,6 @@ function getGravatarUrl(email?: string): string {
 }
 
 export default function NavbarLogic(): React.ReactElement {
-  const location: Location = useLocation();
   const navigate: ReturnType<typeof useNavigate> = useNavigate();
 
   const {
@@ -77,7 +76,6 @@ export default function NavbarLogic(): React.ReactElement {
   return (
     <div className="bg-[var(--theme-surface)] text-[var(--theme-text)] shadow-md">
       <NavbarView
-        location={location}
         navLinks={dynamicLinks}
         menuOpen={menuOpen}
         toggleMenu={toggleMenu}
