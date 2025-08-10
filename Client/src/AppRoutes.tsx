@@ -10,10 +10,13 @@ import NotFoundPage from './pages/NotFoundPage';
 import AuthPage from './pages/AuthPage';
 import ProtectedRouteLogic from './components/ProtectedRouteLogic';
 import { useAuthStore } from './store/useAuthStore';
+import { AdminGuard } from './helpers/authGuard';
+import AdminLayout from './pages/admin/AdminLayout';
+import AdminOrdersPage from './pages/admin/AdminOrdersPage';
+import AdminOrderDetailPage from './pages/admin/AdminOrderDetailPage';
 
 export default function AppRoutes(): React.ReactElement {
   const { setUser, setHydrated, isAuthenticated, hydrated } = useAuthStore();
-
 
   useEffect((): void => {
     async function hydrateSession(): Promise<void> {
@@ -38,7 +41,6 @@ export default function AppRoutes(): React.ReactElement {
   }, [setUser, setHydrated]);
 
   const routeKey = `${hydrated}-${isAuthenticated}`;
-
   return (
     <Routes key={routeKey}>
       <Route path="/" element={<HomePage />} />
@@ -56,6 +58,20 @@ export default function AppRoutes(): React.ReactElement {
           </ProtectedRouteLogic>
         }
       />
+
+      {/* 🔐 Admin Portal (guarded by domain) */}
+      <Route
+        path="/admin"
+        element={
+          <AdminGuard>
+            <AdminLayout />
+          </AdminGuard>
+        }
+      >
+        <Route index element={<AdminOrdersPage />} />
+        <Route path="orders" element={<AdminOrdersPage />} />
+        <Route path="orders/:id" element={<AdminOrderDetailPage />} />
+      </Route>
 
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
