@@ -46,7 +46,7 @@ export default function AdminComposer({
             onChange={(e: ChangeEvent<HTMLInputElement>): void => setRequires(e.target.checked)}
             className="
               h-4 w-4 rounded
-              accent-[var(--theme-border-red)]
+              accent-[var(--theme-button)]
               focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30
             "
           />
