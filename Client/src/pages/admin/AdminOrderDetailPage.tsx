@@ -122,11 +122,6 @@ export default function AdminOrderDetailPage(): React.ReactElement {
               return ok;
             }}
           />
-          {!canPost && (
-            <p className="mt-2 text-xs text-[var(--theme-text)]/70">
-              Composer disabled for completed/cancelled orders.
-            </p>
-          )}
         </div>
       </aside>
     </div>
