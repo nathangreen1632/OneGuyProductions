@@ -1,13 +1,41 @@
 import type { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
+import { User } from '../models/index.js';
 
-export function requireAdmin(req: Request, res: Response, next: NextFunction): void {
-  const roleOk = (req as any).user?.role === 'admin';
-  const email: unknown = (req as any).user?.email;
-  const emailOk = typeof email === 'string' && email.endsWith('@oneguyproductions.com');
+const jwtSecret = process.env.JWT_SECRET as string;
 
-  if (!roleOk || !emailOk) {
-    res.status(403).json({ error: 'Forbidden' });
-    return;
+export async function requireAdmin(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const token = req.cookies?.token;
+    if (!token) {
+      res.status(401).json({ error: 'Authentication required.' });
+      return;
+    }
+
+    const decoded = jwt.verify(token, jwtSecret) as { id: number };
+    const user = await User.findByPk(decoded.id);
+
+    if (!user) {
+      res.status(401).json({ error: 'User not found.' });
+      return;
+    }
+
+    const emailOk =
+      typeof user.email === 'string' &&
+      user.email.toLowerCase().endsWith('@oneguyproductions.com');
+
+    if (!emailOk) {
+      // Optional, remove in prod
+      console.warn('Admin guard blocked user:', { id: user.id, email: user.email });
+      res.status(403).json({ error: 'Forbidden' });
+      return;
+    }
+
+    // Attach for downstream handlers if needed
+    (req as any).user = { id: user.id, email: user.email };
+    next();
+  } catch (err) {
+    console.error('requireAdmin failed:', err);
+    res.status(401).json({ error: 'Invalid or expired token.' });
   }
-  next();
 }
