@@ -14,6 +14,8 @@ interface AdminState {
   total: number;
   loading: boolean;
   threads: Record<number, OrderThreadDto | undefined>;
+  lastError?: string | null; // optional, non-breaking
+
   fetchList: (params: {
     q?: string;
     status?: OrderStatus | 'all';
@@ -22,16 +24,42 @@ interface AdminState {
     page?: number;
     pageSize?: number;
   }) => Promise<void>;
+
   fetchThread: (orderId: number) => Promise<void>;
   sendUpdate: (orderId: number, body: string, requiresResponse: boolean) => Promise<boolean>;
   updateStatus: (orderId: number, status: OrderStatus) => Promise<boolean>;
   assign: (orderId: number, adminUserId: number) => Promise<boolean>;
 }
 
-// DEV-only logger
-const __DEV__ = typeof import.meta !== 'undefined' && !!import.meta.env?.DEV;
-function dlog(...args: unknown[]): void {
-  if (__DEV__) console.debug('[adminStore]', ...args);
+function safeNumber(n: unknown, fallback: number): number {
+  const parsed = Number(n);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function synthesizeOrderFromRow(orderId: number, row?: AdminOrderRowDto) {
+  const createdAt =
+    row?.latestUpdateAt ??
+    row?.lastUpdateAt ??
+    row?.updatedAt ??
+    new Date(0).toISOString();
+
+  const updatedAt =
+    row?.updatedAt ??
+    row?.latestUpdateAt ??
+    row?.lastUpdateAt ??
+    createdAt;
+
+  return {
+    id: orderId,
+    status: row?.status ?? 'pending',
+    projectType: row?.projectType ?? '',
+    customerName: row?.name ?? '',
+    customerEmail: row?.customerEmail ?? '',
+    assignedAdminId: row?.assignedAdminId ?? null,
+    assignedAdminName: row?.assignedAdminName ?? null,
+    createdAt,
+    updatedAt,
+  } as OrderThreadDto['order'];
 }
 
 export const useAdminStore: UseBoundStore<StoreApi<AdminState>> = create<AdminState>((set, get: () => AdminState) => ({
@@ -39,204 +67,173 @@ export const useAdminStore: UseBoundStore<StoreApi<AdminState>> = create<AdminSt
   total: 0,
   loading: false,
   threads: {},
+  lastError: null,
 
   async fetchList(params) {
-    if (__DEV__) {
-      console.groupCollapsed('[adminStore] fetchList → params');
-      console.debug(params);
-      console.groupEnd();
-    }
+    set({ loading: true, lastError: null });
+    try {
+      const res = await fetchAdminOrders(params);
+      const ok = !!res?.ok;
+      const rows = (ok && Array.isArray(res?.data?.rows)) ? res.data.rows : [];
+      const total = ok && typeof res?.data?.total === 'number' ? res.data.total : rows.length;
 
-    set({ loading: true });
-    const res = await fetchAdminOrders(params);
-
-    if (__DEV__) {
-      console.groupCollapsed('[adminStore] fetchList → response');
-      console.debug('ok:', res?.ok, 'has data:', !!res?.data);
-      if (res?.data) {
-        console.debug('rows:', Array.isArray(res.data.rows) ? res.data.rows.length : 'n/a', 'total:', res.data.total);
-        if (Array.isArray(res.data.rows) && res.data.rows.length > 0) {
-          console.debug('first row sample:', res.data.rows[0]);
-        }
-      } else {
-        console.debug('raw response:', res);
-      }
-      console.groupEnd();
-    }
-
-    if (res.ok && res.data) {
-      set({ rows: res.data.rows, total: res.data.total, loading: false });
-    } else {
-      set({ loading: false });
+      set({ rows, total, loading: false, lastError: ok ? null : 'Unable to load admin orders.' });
+    } catch {
+      set({ rows: [], total: 0, loading: false, lastError: 'Network or server error while loading admin orders.' });
     }
   },
 
-  // ✅ Normalize thread keys; support array payloads by synthesizing minimal order
   async fetchThread(orderId) {
-    if (__DEV__) {
-      console.groupCollapsed('[adminStore] fetchThread → start');
-      console.debug('orderId (arg):', orderId);
-      console.groupEnd();
-    }
-
-    const res = await fetchOrderThread(orderId);
-
-    if (__DEV__) {
-      console.groupCollapsed('[adminStore] fetchThread → response');
-      console.debug('ok:', res?.ok, 'has data:', !!res?.data);
-      if (res?.data) {
-        console.debug('raw payload (type):', Array.isArray(res.data) ? 'Array' : typeof res.data);
-      } else {
-        console.debug('raw response:', res);
-      }
-      console.groupEnd();
-    }
-
-    if (!res.ok || !res.data) {
-      if (__DEV__) console.warn('[adminStore] fetchThread → non-ok or empty for', orderId, res);
+    const id = safeNumber(orderId, 0);
+    if (!id) {
+      // create a minimal empty thread entry to avoid UI breakage
+      set(s => ({ threads: { ...s.threads, [orderId]: { order: synthesizeOrderFromRow(0), updates: [], canPost: false } as OrderThreadDto }, lastError: 'Invalid order id.' }));
       return;
     }
 
-    const raw: any = res.data;
-    const numericKey: number = Number((raw as any)?.order?.id ?? orderId);
+    try {
+      const res = await fetchOrderThread(id);
 
-    // 🔎 show raw before normalization
-    if (__DEV__) {
-      console.groupCollapsed('[adminStore] fetchThread → pre-normalize');
-      console.debug('raw payload:', raw);
-      console.groupEnd();
-    }
+      if (!res?.ok || !res.data) {
+        // fallback: synthesize minimal thread from any known list row
+        const row = get().rows.find(r => r.id === id);
+        const synthesized = synthesizeOrderFromRow(id, row);
 
-    // ✅ normalize payload:
-    // - If backend returns an array, treat it as "updates" and synthesize a minimal "order"
-    //   from the list row so the header can render.
-    // - If backend returns an object, prefer .updates, else map .messages, else [].
-    let normalized: OrderThreadDto;
+        set(s => ({
+          threads: { ...s.threads, [id]: { order: synthesized, updates: [], canPost: synthesized.status !== 'cancelled' && synthesized.status !== 'complete' } },
+          lastError: 'Thread not available for this order yet.',
+        }));
+        return;
+      }
 
-    // inside fetchThread, replace only the Array.isArray(raw) branch:
+      const raw: unknown = res.data;
+      const numericKey = safeNumber((raw as any)?.order?.id ?? id, id);
 
-    if (Array.isArray(raw)) {
-      const row = get().rows.find(r => r.id === numericKey);
+      let normalized: OrderThreadDto;
 
-      // derive timestamps safely
-      const firstUpdateCreated =
-        raw.length > 0 && typeof raw[0]?.createdAt === 'string' ? raw[0].createdAt : undefined;
+      if (Array.isArray(raw)) {
+        const updates = raw as unknown[];
+        const row = get().rows.find(r => r.id === numericKey);
 
-      const createdAt =
-        firstUpdateCreated ??
-        row?.latestUpdateAt ??
-        row?.lastUpdateAt ??
-        row?.updatedAt ??                      // new optional
-        new Date(0).toISOString();            // fallback (epoch)
+        const firstUpdateCreated =
+          updates.length > 0 && typeof (updates[0] as any)?.createdAt === 'string'
+            ? (updates[0] as any).createdAt
+            : undefined;
 
-      const updatedAt =
-        row?.updatedAt ??
-        row?.latestUpdateAt ??
-        row?.lastUpdateAt ??
-        createdAt;
+        const createdAt =
+          firstUpdateCreated ??
+          row?.latestUpdateAt ??
+          row?.lastUpdateAt ??
+          row?.updatedAt ??
+          new Date(0).toISOString();
 
-      const synthesizedOrder: OrderThreadDto['order'] = {
-        id: numericKey,
-        status: row?.status ?? 'pending',     // sensible default
-        projectType: row?.projectType ?? '',
-        customerName: row?.name ?? '',
-        customerEmail: row?.customerEmail ?? '',
-        assignedAdminId: row?.assignedAdminId ?? null,
-        assignedAdminName: row?.assignedAdminName ?? null,
-        createdAt,
-        updatedAt,
-      };
+        const updatedAt =
+          row?.updatedAt ??
+          row?.latestUpdateAt ??
+          row?.lastUpdateAt ??
+          createdAt;
 
-      normalized = {
-        order: synthesizedOrder,
-        updates: raw,          // array from server
-        canPost: synthesizedOrder.status !== 'cancelled' && synthesizedOrder.status !== 'complete',
-      };
-    } else {
-      normalized = {
-        ...raw,
-        updates: Array.isArray(raw?.updates)
-          ? raw.updates
-          : Array.isArray(raw?.messages)
-            ? raw.messages
-            : [],
-      } as OrderThreadDto;
-    }
+        const synthesizedOrder = {
+          id: numericKey,
+          status: row?.status ?? 'pending',
+          projectType: row?.projectType ?? '',
+          customerName: row?.name ?? '',
+          customerEmail: row?.customerEmail ?? '',
+          assignedAdminId: row?.assignedAdminId ?? null,
+          assignedAdminName: row?.assignedAdminName ?? null,
+          createdAt,
+          updatedAt,
+        } as OrderThreadDto['order'];
 
+        normalized = {
+          order: synthesizedOrder,
+          updates: updates as any[],
+          canPost: synthesizedOrder.status !== 'cancelled' && synthesizedOrder.status !== 'complete',
+        };
+      } else {
+        const obj = raw as any;
+        const updates = Array.isArray(obj?.updates)
+          ? obj.updates
+          : Array.isArray(obj?.messages)
+            ? obj.messages
+            : [];
 
-    if (__DEV__) {
-      console.groupCollapsed('[adminStore] fetchThread → normalized');
-      console.debug('key:', numericKey);
-      console.debug('order.id:', (normalized as any)?.order?.id);
-      console.debug('updates length:', Array.isArray((normalized as any)?.updates) ? (normalized as any).updates.length : 'n/a');
-      console.debug('canPost:', (normalized as any)?.canPost);
-      console.groupEnd();
-    }
+        // If order block is missing, synthesize from list row or minimal fallback
+        const row = get().rows.find(r => r.id === numericKey);
+        const orderBlock: OrderThreadDto['order'] = obj?.order ?? synthesizeOrderFromRow(numericKey, row);
 
-    if (__DEV__) {
-      console.groupCollapsed('[adminStore] fetchThread → cache write');
-      console.debug('normalized key:', numericKey);
-      console.debug('existing (before):', get().threads[numericKey]);
-      console.groupEnd();
-    }
+        normalized = {
+          ...obj,
+          order: orderBlock,
+          updates,
+          canPost: typeof obj?.canPost === 'boolean'
+            ? obj.canPost
+            : (orderBlock.status !== 'cancelled' && orderBlock.status !== 'complete'),
+        } as OrderThreadDto;
+      }
 
-    set((s) => {
-      const next = { ...s.threads } as Record<string | number, OrderThreadDto | undefined>;
-      const strKey = String(numericKey);
-      if (strKey in next) delete next[strKey];
+      set(s => ({
+        threads: { ...s.threads, [numericKey]: normalized },
+        lastError: null,
+      }));
+    } catch {
+      const row = get().rows.find(r => r.id === orderId);
+      const synthesized = synthesizeOrderFromRow(orderId, row);
 
-      const updated: Record<number, OrderThreadDto | undefined> = {
-        ...(next as Record<number, OrderThreadDto | undefined>),
-        [numericKey]: normalized,
-      };
-      return { threads: updated };
-    });
-
-    if (__DEV__) {
-      console.groupCollapsed('[adminStore] fetchThread → cache verify');
-      const cached = get().threads[numericKey] as any;
-      console.debug('threads keys:', Object.keys(get().threads));
-      console.debug('cached order.id:', cached?.order?.id);
-      console.debug('cached updates length:', Array.isArray(cached?.updates) ? cached.updates.length : 'n/a');
-      console.groupEnd();
+      set(s => ({
+        threads: { ...s.threads, [orderId]: { order: synthesized, updates: [], canPost: synthesized.status !== 'cancelled' && synthesized.status !== 'complete' } },
+        lastError: 'Network or server error while loading the thread.',
+      }));
     }
   },
 
   async sendUpdate(orderId, body, requiresResponse) {
-    if (__DEV__) dlog('sendUpdate →', { orderId, requiresResponse, bodyPreview: body?.slice?.(0, 120) });
-    const res = await postAdminUpdate(orderId, { body, requiresResponse });
-    if (!res.ok) {
-      if (__DEV__) console.warn('[adminStore] sendUpdate → failed', res);
+    try {
+      const res = await postAdminUpdate(orderId, { body, requiresResponse });
+      if (!res?.ok) {
+        set({ lastError: 'Failed to post update.' });
+        return false;
+      }
+      await get().fetchThread(orderId);
+      return true;
+    } catch {
+      set({ lastError: 'Network or server error while posting update.' });
       return false;
     }
-    await get().fetchThread(orderId);
-    return true;
   },
 
   async updateStatus(orderId, status) {
-    if (__DEV__) dlog('updateStatus →', { orderId, status });
-    const res = await postOrderStatus(orderId, status);
-    if (!res.ok) {
-      if (__DEV__) console.warn('[adminStore] updateStatus → failed', res);
+    try {
+      const res = await postOrderStatus(orderId, status);
+      if (!res?.ok) {
+        set({ lastError: 'Failed to update order status.' });
+        return false;
+      }
+      await get().fetchThread(orderId);
+      return true;
+    } catch {
+      set({ lastError: 'Network or server error while updating status.' });
       return false;
     }
-    await get().fetchThread(orderId);
-    return true;
   },
 
   async assign(orderId, adminUserId) {
-    if (__DEV__) dlog('assign →', { orderId, adminUserId });
-    const res = await postAssignOrder(orderId, adminUserId);
-    if (!res.ok) {
-      if (__DEV__) console.warn('[adminStore] assign → failed', res);
+    try {
+      const res = await postAssignOrder(orderId, adminUserId);
+      if (!res?.ok) {
+        set({ lastError: 'Failed to assign order.' });
+        return false;
+      }
+      await get().fetchThread(orderId);
+      return true;
+    } catch {
+      set({ lastError: 'Network or server error while assigning order.' });
       return false;
     }
-    await get().fetchThread(orderId);
-    return true;
   },
 }));
 
-// Dev helper (unchanged)
+// Dev helper (kept for quick inspection)
 if (import.meta.env.DEV) {
   (window as any).__adm__ = {
     get state() { return useAdminStore.getState(); },
