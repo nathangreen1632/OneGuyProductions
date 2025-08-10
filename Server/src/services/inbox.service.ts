@@ -1,9 +1,6 @@
 import { Op, QueryTypes } from 'sequelize';
 import { Order, OrderReadReceipt, sequelize, User } from '../models/index.js';
 
-// top of file already has: import { Op, QueryTypes } from 'sequelize';
-// and imports Order, OrderReadReceipt, sequelize, User
-
 export async function getCustomerOrdersWithUnread(userId: number) {
   const orders = await Order.findAll({
     where: { customerId: userId },
@@ -16,7 +13,7 @@ export async function getCustomerOrdersWithUnread(userId: number) {
   const recs = await OrderReadReceipt.findAll({ where: { userId, orderId: { [Op.in]: ids } } });
   const lastByOrder = new Map<number, Date>(recs.map(r => [r.orderId, r.lastReadAt]));
 
-  // latest update timestamps (unchanged)
+  // latest update timestamps
   const maxRows = await sequelize.query<{ orderId: number; latest: string }>(
     `SELECT "orderId", MAX("createdAt") AS latest
      FROM "orderUpdates"
@@ -26,7 +23,7 @@ export async function getCustomerOrdersWithUnread(userId: number) {
   );
   const latestMap = new Map<number, string>(maxRows.map(r => [r.orderId, new Date(r.latest).toISOString()]));
 
-  // unread counts (unchanged)
+  // unread counts
   const countRows = await sequelize.query<{ orderId: number; cnt: number }>(
     `SELECT ou."orderId", COUNT(*)::int AS cnt
      FROM "orderUpdates" ou
@@ -39,23 +36,21 @@ export async function getCustomerOrdersWithUnread(userId: number) {
   );
   const countMap = new Map<number, number>(countRows.map(r => [r.orderId, r.cnt]));
 
-  // ✅ NEW: fetch timeline updates and shape them for the client
+  // timeline updates (align to new schema)
   const updateRows = await sequelize.query<{
     orderId: number;
     user: string | null;
     body: string | null;
-    message: string | null;
     createdAt: string;
   }>(
     `SELECT ou."orderId",
-            COALESCE(u."email", ou."user") AS "user",
-            COALESCE(ou."body", ou."message") AS "body",
-            ou."message" AS "message",
-            ou."createdAt" AS "createdAt"
+            COALESCE(u."email", u."username") AS "user",
+            ou."body"                         AS "body",
+            ou."createdAt"                    AS "createdAt"
      FROM "orderUpdates" ou
-     LEFT JOIN "users" u ON u."id" = ou."authorUserId"
+              LEFT JOIN "users" u ON u."id" = ou."authorUserId"
      WHERE ou."orderId" IN (:ids)
-     ORDER BY ou."orderId", ou."createdAt" ASC`,
+     ORDER BY ou."orderId", ou."createdAt" `,
     { replacements: { ids }, type: QueryTypes.SELECT }
   );
 
@@ -65,7 +60,7 @@ export async function getCustomerOrdersWithUnread(userId: number) {
     arr.push({
       user: (r.user ?? 'System').toString(),
       timestamp: new Date(r.createdAt).toISOString(),
-      message: (r.body ?? r.message ?? '').toString(),
+      message: (r.body ?? '').toString(), // new schema: use body
     });
     updatesByOrder.set(r.orderId, arr);
   }
@@ -84,7 +79,6 @@ export async function getCustomerOrdersWithUnread(userId: number) {
       latestUpdateAt,
       unreadCount,
       isUnread: unreadCount > 0,
-      // ✅ include updates for the timeline view
       updates: updatesByOrder.get(o.id) ?? [],
     };
   });
@@ -94,7 +88,6 @@ export async function getCustomerOrdersWithUnread(userId: number) {
     unreadOrderIds: payload.filter(p => p.isUnread).map(p => p.id),
   };
 }
-
 
 export async function getAdminOrdersWithUnread(
   viewerId: number,
@@ -120,33 +113,26 @@ export async function getAdminOrdersWithUnread(
     };
   }
 
-  // >>> changed ANY(:ids) -> IN (:ids)
   const maxRows = await sequelize.query<{ orderId: number; latest: string }>(
-    `
-        SELECT "orderId", MAX("createdAt") AS latest
-        FROM "orderUpdates"
-        WHERE "orderId" IN (:ids)
-        GROUP BY "orderId"
-    `,
+    `SELECT "orderId", MAX("createdAt") AS latest
+     FROM "orderUpdates"
+     WHERE "orderId" IN (:ids)
+     GROUP BY "orderId"`,
     { replacements: { ids }, type: QueryTypes.SELECT }
   );
   const latestMap = new Map<number, string>(maxRows.map(r => [r.orderId, new Date(r.latest).toISOString()]));
 
-  // >>> changed ANY(:ids) -> IN (:ids)
   const countRows = await sequelize.query<{ orderId: number; cnt: number }>(
-    `
-        SELECT ou."orderId", COUNT(*)::int AS cnt
-        FROM "orderUpdates" ou
-                 LEFT JOIN "orderReadReceipts" rr
-                           ON rr."orderId" = ou."orderId" AND rr."userId" = :viewerId
-        WHERE ou."orderId" IN (:ids)
-          AND (rr."lastReadAt" IS NULL OR ou."createdAt" > rr."lastReadAt")
-        GROUP BY ou."orderId"
-    `,
+    `SELECT ou."orderId", COUNT(*)::int AS cnt
+     FROM "orderUpdates" ou
+              LEFT JOIN "orderReadReceipts" rr
+                        ON rr."orderId" = ou."orderId" AND rr."userId" = :viewerId
+     WHERE ou."orderId" IN (:ids)
+       AND (rr."lastReadAt" IS NULL OR ou."createdAt" > rr."lastReadAt")
+     GROUP BY ou."orderId"`,
     { replacements: { viewerId, ids }, type: QueryTypes.SELECT }
   );
   const countMap = new Map<number, number>(countRows.map(r => [r.orderId, r.cnt]));
 
-  // Preserve your original contract (orders array + maps + total)
   return { orders, total, latestMap, countMap };
 }
