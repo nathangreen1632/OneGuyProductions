@@ -1,16 +1,17 @@
 import React, { type ReactElement } from 'react';
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import type { NavLink as INavLink } from '../constants/navLinks';
 import type NavbarViewProps from '../types/navbarProps.types';
 
 export default function NavbarView({
-                                     location,
                                      navLinks,
                                      menuOpen,
                                      toggleMenu,
                                      closeMenu,
                                    }: Readonly<NavbarViewProps>): React.ReactElement {
+  const loc = useLocation();
+
   const desktopLinkClass = (isActive: boolean): string =>
     `flex items-center gap-1 border-b-2 ${
       isActive
@@ -37,7 +38,7 @@ export default function NavbarView({
           {navLinks.map(({ label, path, icon: Icon, onClick }: INavLink): ReactElement => {
             // Button-style (e.g., logout)
             if (onClick) {
-              const isActive = location.pathname === path;
+              const isActive = loc.pathname === path;
               return (
                 <li key={path}>
                   <button
@@ -52,7 +53,7 @@ export default function NavbarView({
               );
             }
 
-            // Regular nav link (active state handled by NavLink)
+            // Regular nav link
             return (
               <li key={path}>
                 <NavLink
@@ -84,7 +85,7 @@ export default function NavbarView({
         <ul className="lg:hidden flex flex-col gap-4 px-6 pb-6 text-sm font-medium border-t border-[var(--theme-border)] bg-[var(--theme-bg)]">
           {navLinks.map(({ label, path, icon: Icon, onClick }: INavLink): ReactElement => {
             if (onClick) {
-              const isActive = location.pathname === path;
+              const isActive = loc.pathname === path;
               return (
                 <li key={path}>
                   <button
