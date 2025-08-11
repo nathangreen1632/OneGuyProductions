@@ -88,7 +88,7 @@ export default function NavbarLogic(): React.ReactElement {
             <span className="relative text-lg font-semibold text-[var(--theme-text)]">
               Logged In As{' '}
               <span className="font-semibold text-[var(--theme-border-red)]">
-                {user.username || user.email}
+                {user.username}
               </span>
             </span>
 
