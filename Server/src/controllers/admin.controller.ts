@@ -1,14 +1,10 @@
-// src/controllers/admin.controller.ts
 import type { Request, Response } from 'express';
 import { Op, WhereOptions } from 'sequelize';
-// ⬇️ ADDED: bring in Order so we can fetch the order header fields
 import { Order, OrderUpdate, User } from '../models/index.js';
 import type { OrderStatus } from '../types/api.types.js';
 import { getAdminOrdersWithUnread } from '../services/inbox.service.js';
 import { setStatus as svcSetStatus, assignToAdmin as svcAssignToAdmin } from '../services/admin.service.js';
 
-// ───────────────────────────────────────────────────────────────────────────────
-// Types for admin list
 export interface AdminOrderRow {
   id: number;
   customerId: number;
@@ -17,9 +13,9 @@ export interface AdminOrderRow {
   projectType: string;
   status: OrderStatus;
   assignedAdminId: number | null;
-  updatedAt: string;              // ISO
-  latestUpdateAt: string | null;  // ISO
-  unreadCount: number;            // for the viewer (admin)
+  updatedAt: string;
+  latestUpdateAt: string | null;
+  unreadCount: number;
   ageHours: number;
 }
 
@@ -29,15 +25,8 @@ export interface AdminOrdersResponse {
   page: number;
   pageSize: number;
 }
-// ───────────────────────────────────────────────────────────────────────────────
 
-/**
- * GET /api/admin/orders
- * Filters (all optional): status, assignedTo ('me' | userId), unread ('true'|'false'),
- * projectType, updatedWithin ('24h'|'7d'|'30d'), q (name/email/businessName), page, pageSize
- */
 export async function getAdminOrders(req: Request, res: Response): Promise<void> {
-  // small helpers (scoped)
   const viewerId = Number((req as any).user?.id);
   const parsePagination = (qs: Record<string, string>) => {
     const p = Math.max(parseInt(qs.page ?? '1', 10) || 1, 1);
@@ -123,20 +112,11 @@ export async function getAdminOrders(req: Request, res: Response): Promise<void>
   }
 }
 
-/**
- * GET /api/admin/orders/:orderId/updates
- * Admin timeline (oldest → newest)
- *
- * ⬇️ CHANGE: include a minimal "order" block with the extra fields
- *            needed for the right-rail card. This is backward-compatible
- *            with your store (it already handles array OR object).
- */
 export async function getOrderThread(req: Request, res: Response): Promise<void> {
   const orderIdNum = Number(req.params.orderId);
   if (!Number.isFinite(orderIdNum)) { res.status(400).json({ error: 'Invalid request.' }); return; }
 
   try {
-    // Fetch updates (existing behavior)
     const updates = await OrderUpdate.findAll({
       where: { orderId: orderIdNum },
       order: [['createdAt', 'ASC']],
@@ -161,7 +141,6 @@ export async function getOrderThread(req: Request, res: Response): Promise<void>
       ],
     });
 
-    // ⬇️ NEW: Fetch the order header fields you need for the card
     const order = await Order.findByPk(orderIdNum, {
       attributes: [
         'id',
@@ -180,7 +159,6 @@ export async function getOrderThread(req: Request, res: Response): Promise<void>
       ],
     });
 
-    // Map updates to the shape you already send
     const mapped = updates.map(u => ({
       id: u.id,
       orderId: u.orderId,
@@ -193,7 +171,6 @@ export async function getOrderThread(req: Request, res: Response): Promise<void>
       createdAt: (u.createdAt ?? new Date()).toISOString(),
     }));
 
-    // Build an order payload safely (in case record is missing)
     const orderPayload = order
       ? {
         id: order.id,
@@ -226,10 +203,8 @@ export async function getOrderThread(req: Request, res: Response): Promise<void>
         updatedAt: new Date(0).toISOString(),
       };
 
-    // canPost logic mirrors what you already use elsewhere
     const canPost = orderPayload.status !== 'cancelled' && orderPayload.status !== 'complete';
 
-    // Return combined payload (object shape); store remains compatible
     res.json({ order: orderPayload, updates: mapped, canPost });
   } catch (err) {
     console.error('getOrderThread failed', err);
@@ -237,11 +212,6 @@ export async function getOrderThread(req: Request, res: Response): Promise<void>
   }
 }
 
-/**
- * POST/PATCH /api/admin/orders/:orderId/status  { status }
- * Uses service to set status and log a system update.
- * Service returns { ok, message? } and never throws.
- */
 export async function setOrderStatus(req: Request, res: Response): Promise<void> {
   const orderIdNum = Number(req.params.orderId);
   const next = String(req.body?.status ?? '').trim() as OrderStatus;
@@ -261,10 +231,6 @@ export async function setOrderStatus(req: Request, res: Response): Promise<void>
   res.json({ ok: true, data: { orderId: orderIdNum, status: next } });
 }
 
-/**
- * POST/PATCH /api/admin/orders/:orderId/assign  { assignedAdminId }
- * Uses service to assign and log a system update.
- */
 export async function assignOrderToAdmin(req: Request, res: Response): Promise<void> {
   const orderIdNum = Number(req.params.orderId);
   const adminIdNum = Number(req.body?.assignedAdminId);
