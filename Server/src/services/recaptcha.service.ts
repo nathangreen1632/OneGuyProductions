@@ -1,19 +1,19 @@
 import {GoogleAuth} from 'google-auth-library';
 import fs from 'fs/promises';
 import type {RecaptchaVerificationResponse, RecaptchaVerificationResult,} from '../types/requestBodies.types.js';
-import '../config/dotenv.config.js';
+import {EnvConfig} from "../config/env.config.js";
 
-const PROJECT_ID: string = process.env.RECAPTCHA_PROJECT_ID || '';
-const SITE_KEY: string = process.env.RECAPTCHA_SITE_KEY || '';
-const MIN_SCORE: number = parseFloat(process.env.RECAPTCHA_MIN_SCORE || '0.5');
+const PROJECT_ID: string = EnvConfig.RECAPTCHA_PROJECT_ID || '';
+const SITE_KEY: string = EnvConfig.RECAPTCHA_SITE_KEY || '';
+const MIN_SCORE: number = parseFloat(EnvConfig.RECAPTCHA_MIN_SCORE || '0.5');
 const IS_PROD: boolean = process.env.NODE_ENV === 'production';
 
-const SERVICE_ACCOUNT_KEY_PATH: string = process.env.SERVICE_ACCOUNT_KEY_PATH || '';
+const SERVICE_ACCOUNT_KEY_PATH: string = EnvConfig.SERVICE_ACCOUNT_KEY_PATH || '';
 
 (async (): Promise<void> => {
-  if (process.env.GOOGLE_CREDENTIALS_B64) {
+  if (EnvConfig.GOOGLE_CREDENTIALS_B64) {
     try {
-      const buffer = Buffer.from(process.env.GOOGLE_CREDENTIALS_B64, 'base64');
+      const buffer = Buffer.from(EnvConfig.GOOGLE_CREDENTIALS_B64, 'base64');
       await fs.writeFile(SERVICE_ACCOUNT_KEY_PATH, buffer, { mode: 0o600 });
     } catch (err) {
       console.error('❌ Failed to decode or write service account credentials to /tmp:', err);
