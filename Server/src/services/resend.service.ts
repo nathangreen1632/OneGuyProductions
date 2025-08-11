@@ -36,7 +36,6 @@ export async function sendOrderEmail(data: {
   businessName?: string;
   timeline: string;
 }): Promise<CreateEmailResponse> {
-  // Optional: lightly auto-link URLs and emails in the description
   const desc = (data.description ?? '')
     .replace(/(\bhttps?:\/\/[^\s<]+)/g, '<a href="$1">$1</a>')
     .replace(/\b([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\b/g, '<a href="mailto:$1">$1</a>');
