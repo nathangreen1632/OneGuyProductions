@@ -47,7 +47,7 @@ OrderUpdateModel.init(
     },
     authorUserId: {
       type: DataTypes.INTEGER,
-      allowNull: true, // keep nullable for 'system' events if you use them
+      allowNull: true,
       references: { model: 'users', key: 'id' },
       onDelete: 'SET NULL',
     },
