@@ -13,7 +13,6 @@ interface AdminUiState {
   set: <K extends keyof AdminUiState>(k: K, v: AdminUiState[K]) => void;
   reset: () => void;
 
-  // NEW: explicit pagination setters
   setPage: (page: number) => void;
   setPageSize: (size: number) => void;
 }
@@ -29,7 +28,6 @@ export const useAdminUiStore = create<AdminUiState>((set) => ({
 
   set: (k, v) => set({ [k]: v } as Partial<AdminUiState>),
 
-  // Reset to the same defaults used above
   reset: () =>
     set({
       q: '',
