@@ -31,7 +31,6 @@ interface AdminState {
   assign: (orderId: number, adminUserId: number) => Promise<boolean>;
 }
 
-// helper – keep consistent with your canPost logic elsewhere
 function canPostByStatus(s: OrderStatus): boolean {
   return s !== 'cancelled' && s !== 'complete';
 }
@@ -163,7 +162,6 @@ export const useAdminStore: UseBoundStore<StoreApi<AdminState>> = create<AdminSt
             ? obj.messages
             : [];
 
-        // If order block is missing, synthesize from list row or minimal fallback
         const row = get().rows.find(r => r.id === numericKey);
         const orderBlock: OrderThreadDto['order'] = obj?.order ?? synthesizeOrderFromRow(numericKey, row);
 
@@ -215,13 +213,11 @@ export const useAdminStore: UseBoundStore<StoreApi<AdminState>> = create<AdminSt
         return false;
       }
 
-      // 1) Immediately patch local cache so UI reflects the DB-confirmed status
       set((s) => {
         const rows = Array.isArray(s.rows)
           ? s.rows.map((r) => (r.id === orderId ? { ...r, status } : r))
           : s.rows;
 
-        // If this order's thread is loaded, update it too
         const t = s.threads[orderId];
         const threads = t
           ? {
@@ -237,8 +233,6 @@ export const useAdminStore: UseBoundStore<StoreApi<AdminState>> = create<AdminSt
         return { rows, threads, lastError: null };
       });
 
-      // 2) Hydrate in the background to pick up any server-side flags/timestamps
-      //    Don't block the UI or change the signature.
       void get().fetchThread(orderId);
 
       return true;
@@ -264,7 +258,6 @@ export const useAdminStore: UseBoundStore<StoreApi<AdminState>> = create<AdminSt
   },
 }));
 
-// Dev helper (kept for quick inspection)
 if (import.meta.env.DEV) {
   (window as any).__adm__ = {
     get state() { return useAdminStore.getState(); },
