@@ -12,14 +12,14 @@ export default function NavbarView({
                                    }: Readonly<NavbarViewProps>): React.ReactElement {
   const loc = useLocation();
 
-  const desktopLinkClass = (isActive: boolean): string =>
+  const desktopLinkClass: (isActive: boolean) => string = (isActive: boolean): string =>
     `flex items-center gap-1 border-b-2 ${
       isActive
         ? 'border-[var(--theme-border)] text-[var(--theme-border-red)]'
         : 'border-transparent'
     } hover:underline underline-offset-4 decoration-[var(--theme-border)] transition-colors duration-200`;
 
-  const mobileLinkClass = (isActive: boolean): string =>
+  const mobileLinkClass: (isActive: boolean) => string = (isActive: boolean): string =>
     `block py-2 ${
       isActive
         ? 'text-[var(--theme-border-red)] border-b-2 border-[var(--theme-border)]'
@@ -33,12 +33,11 @@ export default function NavbarView({
           One Guy Productions
         </Link>
 
-        {/* Desktop */}
         <ul className="hidden lg:flex gap-6 text-sm font-medium">
           {navLinks.map(({ label, path, icon: Icon, onClick }: INavLink): ReactElement => {
             // Button-style (e.g., logout)
             if (onClick) {
-              const isActive = loc.pathname === path;
+              const isActive: boolean = loc.pathname === path;
               return (
                 <li key={path}>
                   <button
@@ -53,7 +52,6 @@ export default function NavbarView({
               );
             }
 
-            // Regular nav link
             return (
               <li key={path}>
                 <NavLink
@@ -69,7 +67,6 @@ export default function NavbarView({
           })}
         </ul>
 
-        {/* Mobile menu toggle */}
         <button
           onClick={toggleMenu}
           className="lg:hidden"
@@ -80,7 +77,6 @@ export default function NavbarView({
         </button>
       </nav>
 
-      {/* Mobile */}
       {menuOpen && (
         <ul className="lg:hidden flex flex-col gap-4 px-6 pb-6 text-sm font-medium border-t border-[var(--theme-border)] bg-[var(--theme-bg)]">
           {navLinks.map(({ label, path, icon: Icon, onClick }: INavLink): ReactElement => {
