@@ -1,6 +1,5 @@
-// Client/src/components/admin/AdminPager.tsx
 import React from 'react';
-import { useAdminUiStore } from '../../store/useAdminUiStore.ts';
+import { useAdminUiStore } from '../../store/useAdminUiStore';
 
 export default function AdminPager(
   { total }: Readonly<{ total: number }>
