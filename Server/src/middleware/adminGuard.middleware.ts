@@ -14,16 +14,14 @@ export async function requireAdmin(req: Request, res: Response, next: NextFuncti
     }
 
     const decoded = jwt.verify(token, jwtSecret) as { id: number };
-    const user = await User.findByPk(decoded.id);
+    const user: User | null = await User.findByPk(decoded.id);
 
     if (!user) {
       res.status(401).json({ error: 'User not found.' });
       return;
     }
 
-    const emailOk =
-      typeof user.email === 'string' &&
-      user.email.toLowerCase().endsWith('@oneguyproductions.com');
+    const emailOk = user.email.toLowerCase().endsWith('@oneguyproductions.com');
 
     if (!emailOk) {
       // Optional, remove in prod
