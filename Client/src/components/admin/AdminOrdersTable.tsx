@@ -54,7 +54,7 @@ export default function AdminOrdersTable({
 
       {/* Mobile cards */}
       <div className="space-y-2 md:hidden">
-        {rows.map((r): ReactElement => {
+        {rows.map((r: AdminOrderRowDto): ReactElement => {
           const unread = (r as any).unreadCountForCustomer ?? (r as any).unreadCount ?? 0;
           const hasUnread = unread > 0;
           return (
