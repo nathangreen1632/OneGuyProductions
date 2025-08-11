@@ -55,7 +55,7 @@ export default function AdminOrdersTable({
       {/* Mobile cards */}
       <div className="space-y-2 md:hidden">
         {rows.map((r): ReactElement => {
-          const unread = r.unreadCountForCustomer ?? 0;
+          const unread = (r as any).unreadCountForCustomer ?? (r as any).unreadCount ?? 0;
           const hasUnread = unread > 0;
           return (
             <button
@@ -130,8 +130,10 @@ export default function AdminOrdersTable({
                   <td className="truncate px-3 py-2">{r.name}</td>
                   <td className="truncate px-3 py-2">{r.projectType}</td>
                   <td className={`px-3 py-2 capitalize ${getStatusTextClasses(r.status)}`}>{r.status}</td>
-                  <td className="truncate px-3 py-2">{r.assignedAdminName ?? '—'}</td>
-                  <td className="px-3 py-2">{formatDate(r.lastUpdateAt)}</td>
+                  <td className="truncate px-3 py-2">
+                    {(r as any).assignedAdminName ?? ((r as any).assignedAdminId ? `#${(r as any).assignedAdminId}` : '—')}
+                  </td>
+                  <td className="px-3 py-2">{formatDate((r as any).lastUpdateAt ?? (r as any).latestUpdateAt)}</td>
                   <td className="px-3 py-2">
                     {hasUnread && (
                       <span
