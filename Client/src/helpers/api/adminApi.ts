@@ -1,4 +1,4 @@
-import type { AdminOrderRowDto, OrderThreadDto } from '../../types/admin.types.ts';
+import type { AdminOrderRowDto, OrderThreadDto } from '../../types/admin.types';
 import type { OrderStatus } from '../../types/order.types';
 
 async function safeFetch<T>(input: RequestInfo, init?: RequestInit): Promise<{ ok: boolean; data?: T; error?: string }> {
