@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import ProductsPage from './pages/ProductsPage';
 import OrderPage from './pages/OrderPage';
@@ -15,8 +15,15 @@ import AdminLayout from './pages/admin/AdminLayout';
 import AdminOrdersPage from './pages/admin/AdminOrdersPage';
 import AdminOrderDetailPage from './pages/admin/AdminOrderDetailPage';
 
+const nextPathForEmail = (email: string): string => {
+  const e = (email || '').toLowerCase().trim();
+  return e.endsWith('@oneguyproductions.com') ? '/admin/orders' : '/portal';
+};
+
 export default function AppRoutes(): React.ReactElement {
   const { setUser, setHydrated, isAuthenticated, hydrated } = useAuthStore();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     if (hydrated) return;
@@ -55,6 +62,16 @@ export default function AppRoutes(): React.ReactElement {
         if (res.ok && data?.user && !cancelled) {
           setUser(data.user, null); // token via HttpOnly cookie
         }
+
+        const email = (data?.user?.email ?? '') as string;
+
+        // Only auto-redirect if the user is at "/" or "/auth"
+        const isEntry = location.pathname === '/' || location.pathname === '/auth';
+        if (isEntry) {
+          const dest = nextPathForEmail(email);
+          navigate(dest, { replace: true });
+        }
+
       } catch {
         // Swallow errors; we only hydrate state, not block the UI
       } finally {
