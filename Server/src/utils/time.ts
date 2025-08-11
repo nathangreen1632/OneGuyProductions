@@ -1,14 +1,7 @@
-/**
- * Returns the current timestamp in ISO 8601 format.
- */
 export function getCurrentTimestamp(): string {
   return new Date().toISOString();
 }
 
-/**
- * Checks whether a given ISO timestamp is within 72 hours of the current time.
- * Gracefully handles invalid input.
- */
 export function isWithin72Hours(isoDate: string): boolean {
   const createdAt = Date.parse(isoDate);
 
@@ -20,13 +13,9 @@ export function isWithin72Hours(isoDate: string): boolean {
   const now = Date.now();
   const diff = now - createdAt;
 
-  return diff < 72 * 60 * 60 * 1000; // 72 hours in ms
+  return diff < 72 * 60 * 60 * 1000;
 }
 
-/**
- * Returns a human-readable date/time string from an ISO timestamp.
- * Gracefully falls back to original input if formatting fails.
- */
 export function formatReadableDate(isoDate: string): string {
   const parsed = Date.parse(isoDate);
 
