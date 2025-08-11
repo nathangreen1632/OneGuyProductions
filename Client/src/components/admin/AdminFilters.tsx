@@ -1,8 +1,9 @@
 import React, {type ChangeEvent} from 'react';
-import { useAdminUiStore } from '../../store/useAdminUiStore.ts';
+import { useAdminUiStore } from '../../store/useAdminUiStore';
+import type {AdminUiState} from "../../types/dto.types";
 
 export default function AdminFilters(): React.ReactElement {
-  const ui = useAdminUiStore();
+  const ui: AdminUiState = useAdminUiStore();
   return (
     <div className="rounded-2xl bg-[var(--theme-surface)] p-3 shadow-sm grid gap-2 md:grid-cols-4">
       <input
