@@ -4,6 +4,7 @@ import AdminFilters from '../../components/admin/AdminFilters';
 import AdminOrdersTable from '../../components/admin/AdminOrdersTable';
 import { useAdminStore } from '../../store/useAdminStore.ts';
 import { useAdminUiStore } from '../../store/useAdminUiStore.ts';
+import AdminPager from "../../components/admin/AdminPager.tsx";
 
 export default function AdminOrdersPage(): React.ReactElement {
   const nav = useNavigate();
@@ -28,8 +29,17 @@ export default function AdminOrdersPage(): React.ReactElement {
         rows={rows}
         loading={loading}
         total={total}
+        page={ui.page}
+        pageSize={ui.pageSize}
         onRowClick={(id: number): void | Promise<void> => nav(`/admin/orders/${id}`)}
       />
+
+      <div className="hidden md:block rounded-2xl bg-[var(--theme-surface)] p-3 shadow-sm">
+        <AdminPager total={total} />
+      </div>
+      <div className="md:hidden">
+        <AdminPager total={total} />
+      </div>
     </div>
   );
 }
