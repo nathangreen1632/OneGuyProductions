@@ -2,6 +2,39 @@ import React, { type ReactElement } from 'react';
 import type { OrderUpdateDto } from '../../types/order.types.ts';
 import { linkifySafe } from '../../helpers/linkify.ts';
 
+// Never expose internal emails; prefer name/username.
+// Falls back to email *alias* (before "@") or generic labels.
+function displayLabel(update: OrderUpdateDto): string {
+  const u: any = update as any;
+
+  // prefer a nested author object if present
+  const author = u.author ?? {};
+  const role: string | undefined = author.role ?? u.authorRole;
+  const first: string | undefined = author.firstName ?? u.authorFirstName;
+  const username: string | undefined = author.username ?? u.authorUsername;
+
+  // email may come from author/email fields or be stuffed into authorName
+  const rawEmail: string | undefined =
+    author.email ??
+    u.authorEmail ??
+    (typeof u.authorName === 'string' && u.authorName.includes('@') ? u.authorName : undefined);
+
+  // text-ish name provided by API
+  const providedName: string | undefined = u.authorName;
+
+  // Admins: never show email, just a friendly label
+  if (role === 'admin') {
+    return first || username || 'Admin';
+  }
+
+  // For non-admins: prefer human name/username; otherwise use the alias before "@"
+  const aliasFromEmail = rawEmail ? rawEmail.split('@')[0] : undefined;
+  const candidate = first || username || providedName || aliasFromEmail || 'User';
+
+  // If providedName was actually an email, trim it
+  return candidate.includes('@') ? candidate.split('@')[0] : candidate;
+}
+
 export default function AdminTimeline(
   { updates }: Readonly<{ updates: OrderUpdateDto[] }>
 ): React.ReactElement {
@@ -32,9 +65,11 @@ export default function AdminTimeline(
             {/* header */}
             <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
               <div className="flex items-center gap-2">
-                <span className="font-medium">{u.authorName}</span>
-                <span className="rounded-full border px-2 py-0.5 uppercase tracking-wide
-                                  border-[var(--theme-border-red)] text-[10px]">
+                <span className="font-medium">{displayLabel(u)}</span>
+                <span
+                  className="rounded-full border px-2 py-0.5 uppercase tracking-wide
+                             border-[var(--theme-border-red)] text-[10px]"
+                >
                   {u.source}
                 </span>
               </div>
