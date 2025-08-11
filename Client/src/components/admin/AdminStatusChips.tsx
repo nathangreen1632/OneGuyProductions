@@ -1,6 +1,6 @@
 import React, { type ReactElement, useState } from 'react';
 import type { OrderStatus } from '../../types/order.types';
-import { useAdminStore } from '../../store/useAdminStore.ts';
+import { useAdminStore } from '../../store/useAdminStore';
 
 const statuses: OrderStatus[] = ['pending', 'in-progress', 'needs-feedback', 'complete', 'cancelled'];
 
