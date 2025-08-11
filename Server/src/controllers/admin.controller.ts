@@ -1,13 +1,14 @@
 // src/controllers/admin.controller.ts
 import type { Request, Response } from 'express';
 import { Op, WhereOptions } from 'sequelize';
-import { OrderUpdate, User } from '../models/index.js';
+// ⬇️ ADDED: bring in Order so we can fetch the order header fields
+import { Order, OrderUpdate, User } from '../models/index.js';
 import type { OrderStatus } from '../types/api.types.js';
 import { getAdminOrdersWithUnread } from '../services/inbox.service.js';
 import { setStatus as svcSetStatus, assignToAdmin as svcAssignToAdmin } from '../services/admin.service.js';
 
-
-
+// ───────────────────────────────────────────────────────────────────────────────
+// Types for admin list
 export interface AdminOrderRow {
   id: number;
   customerId: number;
@@ -28,6 +29,7 @@ export interface AdminOrdersResponse {
   page: number;
   pageSize: number;
 }
+// ───────────────────────────────────────────────────────────────────────────────
 
 /**
  * GET /api/admin/orders
@@ -35,7 +37,7 @@ export interface AdminOrdersResponse {
  * projectType, updatedWithin ('24h'|'7d'|'30d'), q (name/email/businessName), page, pageSize
  */
 export async function getAdminOrders(req: Request, res: Response): Promise<void> {
-  // ── small helpers (scoped here to avoid file-wide changes) ───────────────────
+  // small helpers (scoped)
   const viewerId = Number((req as any).user?.id);
   const parsePagination = (qs: Record<string, string>) => {
     const p = Math.max(parseInt(qs.page ?? '1', 10) || 1, 1);
@@ -93,7 +95,6 @@ export async function getAdminOrders(req: Request, res: Response): Promise<void>
     unreadCount: countMap.get(o.id) ?? 0,
     ageHours: Math.max(0, Math.round((Date.now() - new Date(o.createdAt).getTime()) / 36e5)),
   });
-  // ─────────────────────────────────────────────────────────────────────────────
 
   if (!Number.isFinite(viewerId)) { res.status(401).json({ error: 'Unauthorized' }); return; }
 
@@ -104,7 +105,6 @@ export async function getAdminOrders(req: Request, res: Response): Promise<void>
   try {
     const svc = await getAdminOrdersWithUnread(viewerId, where, p, ps);
 
-    // ✅ Concrete fallbacks kill TS18048
     const orders = svc?.orders ?? [];
     const total = svc?.total ?? 0;
     const latestMap = svc?.latestMap ?? new Map<number, string>();
@@ -123,16 +123,20 @@ export async function getAdminOrders(req: Request, res: Response): Promise<void>
   }
 }
 
-
 /**
  * GET /api/admin/orders/:orderId/updates
  * Admin timeline (oldest → newest)
+ *
+ * ⬇️ CHANGE: include a minimal "order" block with the extra fields
+ *            needed for the right-rail card. This is backward-compatible
+ *            with your store (it already handles array OR object).
  */
 export async function getOrderThread(req: Request, res: Response): Promise<void> {
   const orderIdNum = Number(req.params.orderId);
   if (!Number.isFinite(orderIdNum)) { res.status(400).json({ error: 'Invalid request.' }); return; }
 
   try {
+    // Fetch updates (existing behavior)
     const updates = await OrderUpdate.findAll({
       where: { orderId: orderIdNum },
       order: [['createdAt', 'ASC']],
@@ -150,72 +154,132 @@ export async function getOrderThread(req: Request, res: Response): Promise<void>
       include: [
         {
           model: User,
-          as: 'author',                // <- matches your association
+          as: 'author',
           attributes: ['id', 'email'],
           required: false,
         },
       ],
     });
 
-    // Keep the response shape your UI expects (no legacy `message`/`user` fields).
-    res.json(
-      updates.map(u => ({
-        id: u.id,
-        orderId: u.orderId,
-        authorUserId: u.authorUserId ?? null,
-        authorEmail: (u as any).author?.email ?? null,
-        body: (u as any).body ?? '',                 // canonical text field
-        source: (u as any).source ?? 'web',
-        eventType: (u as any).eventType ?? 'comment',
-        requiresCustomerResponse: Boolean((u as any).requiresCustomerResponse),
-        createdAt: (u.createdAt ?? new Date()).toISOString(),
-      }))
-    );
+    // ⬇️ NEW: Fetch the order header fields you need for the card
+    const order = await Order.findByPk(orderIdNum, {
+      attributes: [
+        'id',
+        'name',
+        'email',
+        'businessName',
+        'projectType',
+        'budget',
+        'timeline',
+        'description',
+        'customerId',
+        'status',
+        'assignedAdminId',
+        'createdAt',
+        'updatedAt',
+      ],
+    });
+
+    // Map updates to the shape you already send
+    const mapped = updates.map(u => ({
+      id: u.id,
+      orderId: u.orderId,
+      authorUserId: u.authorUserId ?? null,
+      authorEmail: (u as any).author?.email ?? null,
+      body: (u as any).body ?? '',
+      source: (u as any).source ?? 'web',
+      eventType: (u as any).eventType ?? 'comment',
+      requiresCustomerResponse: Boolean((u as any).requiresCustomerResponse),
+      createdAt: (u.createdAt ?? new Date()).toISOString(),
+    }));
+
+    // Build an order payload safely (in case record is missing)
+    const orderPayload = order
+      ? {
+        id: order.id,
+        name: (order as any).name ?? '',
+        email: (order as any).email ?? '',
+        businessName: (order as any).businessName ?? '',
+        projectType: (order as any).projectType ?? '',
+        budget: (order as any).budget ?? '',
+        timeline: (order as any).timeline ?? '',
+        description: (order as any).description ?? '',
+        customerId: (order as any).customerId ?? null,
+        status: (order as any).status as OrderStatus,
+        assignedAdminId: (order as any).assignedAdminId ?? null,
+        createdAt: (order.createdAt ?? new Date()).toISOString(),
+        updatedAt: (order.updatedAt ?? order.createdAt ?? new Date()).toISOString(),
+      }
+      : {
+        id: orderIdNum,
+        name: '',
+        email: '',
+        businessName: '',
+        projectType: '',
+        budget: '',
+        timeline: '',
+        description: '',
+        customerId: null,
+        status: 'pending' as OrderStatus,
+        assignedAdminId: null,
+        createdAt: new Date(0).toISOString(),
+        updatedAt: new Date(0).toISOString(),
+      };
+
+    // canPost logic mirrors what you already use elsewhere
+    const canPost = orderPayload.status !== 'cancelled' && orderPayload.status !== 'complete';
+
+    // Return combined payload (object shape); store remains compatible
+    res.json({ order: orderPayload, updates: mapped, canPost });
   } catch (err) {
     console.error('getOrderThread failed', err);
     res.status(500).json({ error: 'Failed to load thread.' });
   }
 }
 
-
 /**
- * POST /api/admin/orders/:orderId/status  { status }
- * Uses service to set status and log system update.
+ * POST/PATCH /api/admin/orders/:orderId/status  { status }
+ * Uses service to set status and log a system update.
+ * Service returns { ok, message? } and never throws.
  */
 export async function setOrderStatus(req: Request, res: Response): Promise<void> {
   const orderIdNum = Number(req.params.orderId);
-  const next = (req.body?.status ?? '') as OrderStatus;
+  const next = String(req.body?.status ?? '').trim() as OrderStatus;
+  const actorId = Number((req as any).user?.id) || null;
 
-  if (!Number.isFinite(orderIdNum) || !next) { res.status(400).json({ error: 'Invalid request.' }); return; }
-
-  try {
-    await svcSetStatus(orderIdNum, next);
-    res.json({ ok: true });
-  } catch (err: any) {
-    if (err?.message === 'NOT_FOUND') { res.status(404).json({ error: 'Order not found.' }); return; }
-    console.error('setOrderStatus failed', err);
-    res.status(500).json({ error: 'Failed to update status.' });
+  if (!Number.isFinite(orderIdNum) || !next) {
+    res.status(400).json({ ok: false, message: 'Invalid order id or status' });
+    return;
   }
+
+  const result = await svcSetStatus(orderIdNum, next, actorId);
+  if (!result.ok) {
+    res.status(400).json({ ok: false, message: result.message ?? 'Unable to set status' });
+    return;
+  }
+
+  res.json({ ok: true, data: { orderId: orderIdNum, status: next } });
 }
 
 /**
- * POST /api/admin/orders/:orderId/assign  { assignedAdminId }
- * Uses service to assign and log system update.
+ * POST/PATCH /api/admin/orders/:orderId/assign  { assignedAdminId }
+ * Uses service to assign and log a system update.
  */
 export async function assignOrderToAdmin(req: Request, res: Response): Promise<void> {
   const orderIdNum = Number(req.params.orderId);
   const adminIdNum = Number(req.body?.assignedAdminId);
+  const actorId = Number((req as any).user?.id) || null;
 
   if (!Number.isFinite(orderIdNum) || !Number.isFinite(adminIdNum)) {
-    res.status(400).json({ error: 'Invalid request.' }); return;
+    res.status(400).json({ ok: false, message: 'Invalid order id or admin id' });
+    return;
   }
 
-  try {
-    await svcAssignToAdmin(orderIdNum, adminIdNum);
-    res.json({ ok: true });
-  } catch (err: any) {
-    if (err?.message === 'NOT_FOUND') { res.status(404).json({ error: 'Order not found.' }); return; }
-    console.error('assignOrderToAdmin failed', err);
-    res.status(500).json({ error: 'Failed to assign order.' });
+  const result = await svcAssignToAdmin(orderIdNum, adminIdNum, actorId);
+  if (!result.ok) {
+    res.status(400).json({ ok: false, message: result.message ?? 'Unable to assign order' });
+    return;
   }
+
+  res.json({ ok: true, data: { orderId: orderIdNum, assignedAdminId: adminIdNum } });
 }
