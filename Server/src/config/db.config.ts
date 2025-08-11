@@ -2,9 +2,10 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import { Sequelize } from 'sequelize';
+import {EnvConfig} from "./env.config.js";
 
 function createSequelizeInstance(): Sequelize {
-  const dbUrl: string | undefined = process.env.DATABASE_URL;
+  const dbUrl: string | undefined = EnvConfig.DATABASE_URL;
 
   if (!dbUrl) {
     console.warn('⚠️ DATABASE_URL not defined. Falling back to in-memory SQLite.');
