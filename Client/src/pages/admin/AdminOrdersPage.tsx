@@ -2,9 +2,9 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminFilters from '../../components/admin/AdminFilters';
 import AdminOrdersTable from '../../components/admin/AdminOrdersTable';
-import { useAdminStore } from '../../store/useAdminStore.ts';
-import { useAdminUiStore } from '../../store/useAdminUiStore.ts';
-import AdminPager from "../../components/admin/AdminPager.tsx";
+import { useAdminStore } from '../../store/useAdminStore';
+import { useAdminUiStore } from '../../store/useAdminUiStore';
+import AdminPager from "../../components/admin/AdminPager";
 
 export default function AdminOrdersPage(): React.ReactElement {
   const nav = useNavigate();
