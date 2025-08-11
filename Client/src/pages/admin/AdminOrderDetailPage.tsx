@@ -1,10 +1,23 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import AdminTimeline from '../../components/admin/AdminTimeline';
 import AdminStatusChips from '../../components/admin/AdminStatusChips';
 import AdminComposer from '../../components/admin/AdminComposer';
 import { useAdminStore } from '../../store/useAdminStore.ts';
 import type { OrderThreadDto } from '../../types/admin.types.ts';
+import type { OrderStatus } from '../../types/order.types';
+
+// helper to keep status classes readable
+function statusClass(s: OrderStatus): string {
+  switch (s) {
+    case 'complete':        return 'bg-emerald-600 text-white';
+    case 'cancelled':       return 'bg-red-600 text-white';
+    case 'in-progress':     return 'bg-yellow-500 text-black';
+    case 'needs-feedback':  return 'bg-orange-600 text-white';
+    case 'pending':
+    default:                return 'bg-sky-600 text-white';
+  }
+}
 
 export default function AdminOrderDetailPage(): React.ReactElement {
   const { id } = useParams<{ id: string }>();
@@ -33,6 +46,21 @@ export default function AdminOrderDetailPage(): React.ReactElement {
     return (): void => { active = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderId, fetchThread]);
+
+  // ✅ Derive presentation fields BEFORE any early returns
+  const details = useMemo(() => {
+    const o: any = data?.order ?? {};
+    const name: string = o.customerName ?? o.name ?? '';
+    const email: string = o.customerEmail ?? o.email ?? '';
+    const projectType: string = o.projectType ?? '';
+    const status: OrderStatus = (o.status ?? 'pending') as OrderStatus;
+    const timeline: string = o.timeline ?? '';
+    const description: string = o.description ?? '';
+    const businessName: string = o.businessName ?? '';
+    const budget: string = o.budget ?? '';
+    const customerId: number | null = typeof o.customerId === 'number' ? o.customerId : null;
+    return { name, email, projectType, status, timeline, description, businessName, budget, customerId };
+  }, [data?.order]);
 
   // Bad or missing id
   if (!Number.isFinite(orderId) || orderId <= 0) {
@@ -88,6 +116,65 @@ export default function AdminOrderDetailPage(): React.ReactElement {
 
       {/* Right Rail */}
       <aside className="md:col-span-2 space-y-3">
+
+        {/* Order Overview Card (merged) */}
+        <div className="rounded-2xl bg-[var(--theme-surface)] shadow-[0_4px_14px_0_var(--theme-shadow)] p-3 sm:p-4 space-y-3">
+          {/* Header: Order + Status */}
+          <div className="flex items-start gap-3">
+            <div className="flex-1 min-w-0">
+              <div className="text-sm opacity-70">Order</div>
+              <div className="text-lg font-semibold truncate">#{data.order.id}</div>
+            </div>
+            <span className={['text-xs px-2 py-1 rounded-full', statusClass(details.status)].join(' ')}>
+              {String(details.status).replace('-', ' ')}
+            </span>
+          </div>
+
+          {/* Compact Info Grid */}
+          <div className="space-y-1 text-sm">
+            <div className="truncate">
+              <span className="opacity-70 mr-1">Customer:</span>
+              <span className="font-medium">{details.name || details.email || '—'}</span>
+              {details.name && details.email && <span className="opacity-70"> · {details.email}</span>}
+            </div>
+
+            {Boolean(details.businessName) && (
+              <div className="truncate">
+                <span className="opacity-70 mr-1">Business:</span>
+                <span className="font-medium">{details.businessName}</span>
+              </div>
+            )}
+
+            <div className="truncate">
+              <span className="opacity-70 mr-1">Project Type:</span>
+              <span className="font-medium">{details.projectType || '—'}</span>
+            </div>
+
+            <div className="truncate">
+              <span className="opacity-70 mr-1">Budget:</span>
+              <span className="font-medium">{details.budget || '—'}</span>
+            </div>
+
+            <div className="truncate">
+              <span className="opacity-70 mr-1">Timeline:</span>
+              <span className="font-medium">{details.timeline || '—'}</span>
+            </div>
+
+            <div className="truncate">
+              <span className="opacity-70 mr-1">Customer ID:</span>
+              <span className="font-medium">{details.customerId ?? '—'}</span>
+            </div>
+          </div>
+
+          {/* Description */}
+          <div>
+            <div className="opacity-70 mb-1 text-sm">Description</div>
+            <div className="rounded-lg bg-[var(--theme-bg)]/60 p-2 text-sm whitespace-pre-wrap">
+              {details.description || '—'}
+            </div>
+          </div>
+        </div>
+
         {/* Status Card */}
         <div
           className="
