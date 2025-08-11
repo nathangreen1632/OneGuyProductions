@@ -1,5 +1,3 @@
-// Client/src/types/dto.types.ts
-
 /** Common primitives */
 export type ISODateString = string;
 
@@ -131,4 +129,41 @@ export interface CustomerOrderDto {
 
   createdAt: ISODateString;
   updatedAt: ISODateString;
+}
+
+/**
+ * UI state shape for Admin order list filters & pagination.
+ * Matches exactly what useAdminUiStore manages.
+ */
+export interface AdminUiState {
+  /** Search query string */
+  q: string;
+
+  /** Filter by status or show all */
+  status: OrderStatus | 'all';
+
+  /** Filter by assignment */
+  assigned: 'me' | 'any';
+
+  /** Updated within time filter */
+  updatedWithin: '24h' | '7d' | '30d' | 'all';
+
+  /** Current page index (1-based) */
+  page: number;
+
+  /** Number of rows per page */
+  pageSize: number;
+
+  /** Whether auto-polling is enabled */
+  polling: boolean;
+
+  /** Generic setter */
+  set: <K extends keyof AdminUiState>(k: K, v: AdminUiState[K]) => void;
+
+  /** Reset all filters/pagination to defaults */
+  reset: () => void;
+
+  /** Explicit pagination setters */
+  setPage: (page: number) => void;
+  setPageSize: (size: number) => void;
 }
