@@ -256,6 +256,42 @@ export async function downloadInvoice(req: Request, res: Response): Promise<void
 // ─────────────────────────────────────────────────────────────
 // NEW: Add an update (two‑way thread; unread by timestamps + email notify)
 // ─────────────────────────────────────────────────────────────
+type UpdateErrorCode =
+  | 'NOT_FOUND'
+  | 'ORDER_CLOSED'
+  | 'RATE_LIMIT'
+  | 'VALIDATION_ERROR'
+  | 'FK_VIOLATION'
+  | 'DB_ERROR'
+  | undefined;
+
+function statusFromCode(code: UpdateErrorCode): number {
+  const map: Record<Exclude<UpdateErrorCode, undefined>, number> = {
+    NOT_FOUND: 404,
+    ORDER_CLOSED: 409,
+    RATE_LIMIT: 429,
+    VALIDATION_ERROR: 400,
+    FK_VIOLATION: 400,
+    DB_ERROR: 500,
+  };
+  if (!code) return 500;
+  return map[code] ?? 500;
+}
+
+async function resolveNotifyTarget(orderId: number, actorUserId: number): Promise<number | null> {
+  const order = await Order.findByPk(orderId);
+  if (!order) return null;
+
+  const customerId = (order as any).customerId as number | null | undefined;
+  const assignedAdminId = (order as any).assignedAdminId as number | null | undefined;
+
+  if (customerId && actorUserId !== customerId) return customerId;        // staff → notify customer
+  if (assignedAdminId && actorUserId !== assignedAdminId) return assignedAdminId; // customer → notify admin
+  return null;
+}
+
+// Controller
+
 export async function addOrderUpdate(req: Request, res: Response): Promise<void> {
   const orderIdNum = Number(req.params.orderId);
   const userIdNum = Number((req as any).user?.id);
@@ -264,81 +300,50 @@ export async function addOrderUpdate(req: Request, res: Response): Promise<void>
     requiresCustomerResponse?: boolean;
   };
 
-  if (!Number.isFinite(userIdNum) || !Number.isFinite(orderIdNum) || !body) {
+  // Basic request guard
+  const invalid = !Number.isFinite(userIdNum) || !Number.isFinite(orderIdNum) || !body;
+  if (invalid) {
     res.status(400).json({ error: 'Invalid request.' });
     return;
   }
 
-  try {
-    // 1) Safety pass on message body
-    const safeBody = sanitizeBody(String(body));
+  const safeBody = sanitizeBody(String(body));
 
-    // 2) Persist the comment to the thread (and bump updatedAt on the order)
-    const update = await createCommentUpdate(
-      orderIdNum,
-      userIdNum,
-      safeBody,
-      !!requiresCustomerResponse
-    );
+  // Persist
+  const result = await createCommentUpdate(
+    orderIdNum,
+    userIdNum,
+    safeBody,
+    Boolean(requiresCustomerResponse)
+  );
 
-    // 3) Determine who should be notified
-    //    - If actor is *not* the customer → notify the customer (if exists)
-    //    - Else if actor *is* the customer → notify the assigned admin (if you track it)
-    //
-    // NOTE: We intentionally keep notification logic simple here.
-    //       Adjust this block to your data model (team inboxes, multiple admins, etc.).
-    let targetUserId: number | null = null;
-    const order = await Order.findByPk(orderIdNum);
-
-    if (order) {
-      const customerId = (order as any).customerId as number | null | undefined;
-      const assignedAdminId = (order as any).assignedAdminId as number | null | undefined;
-
-      if (customerId && userIdNum !== customerId) {
-        // update was posted by admin/staff → notify customer
-        targetUserId = customerId;
-      } else if (assignedAdminId && userIdNum !== assignedAdminId) {
-        // update was posted by customer → notify assigned admin (if tracked)
-        targetUserId = assignedAdminId;
-      }
-      // If neither branch matches, we silently skip notification (e.g., no admin assigned yet).
-    }
-
-    // 4) Fire-and-forget email notification (no throws; function returns boolean)
-    //    We pass a short preview; the full thread is viewed in-app.
-    if (targetUserId) {
-      await notifyOrderUpdate({
-        orderId: orderIdNum,
-        actorUserId: userIdNum,
-        targetUserId,
-        bodyPreview: safeBody.slice(0, 240),
-      });
-    }
-
-    // 5) Respond with the created update (ISO strings for consistency)
-    res.status(201).json({
-      ...update.toJSON(),
-      createdAt: update.createdAt.toISOString(),
-      updatedAt: update.updatedAt.toISOString(),
-    });
-  } catch (err: any) {
-    if (err?.message === 'NOT_FOUND') {
-      res.status(404).json({ error: 'Order not found.' });
-      return;
-    }
-    if (err?.message === 'ORDER_CLOSED') {
-      res.status(409).json({ error: 'Order is closed for updates.' });
-      return;
-    }
-    if (err?.message === 'RATE_LIMIT') {
-      res.status(429).json({ error: 'Rate limit: one update per minute.' });
-      return;
-    }
-    console.error('addOrderUpdate failed', err);
-    res.status(500).json({ error: 'Failed to add update.' });
+  // Error path
+  if (!result.ok) {
+    const status = statusFromCode(result.code as UpdateErrorCode);
+    res.status(status).json({ error: result.message ?? 'Failed to add update.' });
+    return;
   }
-}
 
+  // Success path
+  const update = result.update!;
+  const targetUserId = await resolveNotifyTarget(orderIdNum, userIdNum);
+
+  if (targetUserId) {
+    await notifyOrderUpdate({
+      orderId: orderIdNum,
+      actorUserId: userIdNum,
+      targetUserId,
+      bodyPreview: safeBody.slice(0, 240),
+    });
+  }
+
+  const plain = (update as any).toJSON ? (update as any).toJSON() : update;
+  res.status(201).json({
+    ...plain,
+    createdAt: new Date((update as any).createdAt).toISOString(),
+    updatedAt: new Date((update as any).updatedAt).toISOString(),
+  });
+}
 
 // ─────────────────────────────────────────────────────────────
 // NEW: Mark one order as read (upsert receipt)
