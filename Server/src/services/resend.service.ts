@@ -54,7 +54,7 @@ export async function sendOrderEmail(data: {
 
   return await sendEmail({
     from: EnvConfig.EMAIL_FROM_ORDER ?? '',
-    to: EnvConfig.RESEND_ORDER_RECEIVER_EMAIL ?? EnvConfig.RESEND_TO_ORDER ?? '',
+    to: EnvConfig.RESEND_ORDER_RECEIVER_EMAIL ?? '',
     subject: `New Project Inquiry from ${data.name}`,
     html,
   });
