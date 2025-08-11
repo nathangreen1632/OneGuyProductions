@@ -31,6 +31,11 @@ interface AdminState {
   assign: (orderId: number, adminUserId: number) => Promise<boolean>;
 }
 
+// helper – keep consistent with your canPost logic elsewhere
+function canPostByStatus(s: OrderStatus): boolean {
+  return s !== 'cancelled' && s !== 'complete';
+}
+
 function safeNumber(n: unknown, fallback: number): number {
   const parsed = Number(n);
   return Number.isFinite(parsed) ? parsed : fallback;
@@ -209,7 +214,33 @@ export const useAdminStore: UseBoundStore<StoreApi<AdminState>> = create<AdminSt
         set({ lastError: 'Failed to update order status.' });
         return false;
       }
-      await get().fetchThread(orderId);
+
+      // 1) Immediately patch local cache so UI reflects the DB-confirmed status
+      set((s) => {
+        const rows = Array.isArray(s.rows)
+          ? s.rows.map((r) => (r.id === orderId ? { ...r, status } : r))
+          : s.rows;
+
+        // If this order's thread is loaded, update it too
+        const t = s.threads[orderId];
+        const threads = t
+          ? {
+            ...s.threads,
+            [orderId]: {
+              ...t,
+              order: { ...t.order, status },
+              canPost: canPostByStatus(status),
+            },
+          }
+          : s.threads;
+
+        return { rows, threads, lastError: null };
+      });
+
+      // 2) Hydrate in the background to pick up any server-side flags/timestamps
+      //    Don't block the UI or change the signature.
+      void get().fetchThread(orderId);
+
       return true;
     } catch {
       set({ lastError: 'Network or server error while updating status.' });
