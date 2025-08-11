@@ -1,10 +1,5 @@
 import './dotenv.config.js';
 
-/**
- * Required env var names (exactly as provided).
- * In production: missing => fatal exit (status 1).
- * In development: missing => warn and continue (so nodemon doesn't hard-crash).
- */
 export const REQUIRED_ENV: string[] = [
   'BCRYPT_SALT_ROUNDS',
   'DATABASE_URL',
@@ -29,7 +24,6 @@ export const REQUIRED_ENV: string[] = [
   'SERVICE_ACCOUNT_KEY_PATH',
 ];
 
-/** Alphabetized config surface */
 export const EnvConfig = {
   BCRYPT_SALT_ROUNDS: process.env.BCRYPT_SALT_ROUNDS,
 
@@ -64,7 +58,6 @@ export const EnvConfig = {
   SERVICE_ACCOUNT_KEY_PATH: process.env.SERVICE_ACCOUNT_KEY_PATH,
 } as const;
 
-/** Validate on import */
 (function validateEnv(): void {
   const missing: string[] = REQUIRED_ENV.filter((k: string): boolean => {
     const v: unknown = (EnvConfig as Record<string, unknown>)[k];
