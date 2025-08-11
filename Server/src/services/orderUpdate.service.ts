@@ -22,7 +22,6 @@ export async function createCommentUpdate(
   requiresCustomerResponse = false,
   trx?: Transaction
 ): Promise<CreateCommentUpdateResult> {
-  // Ensure order exists & is open (no throws)
   const order = await Order.findByPk(orderId, { transaction: trx });
 
   if (!order) {
@@ -51,8 +50,6 @@ export async function createCommentUpdate(
     );
     return { ok: true, update: created };
   } catch (err) {
-    // ---- Known DB/Sequelize error handling (no throws) ----
-    // 1) Unique (rate-limit) — supports both minute & second index names
     if (err instanceof UniqueConstraintError) {
       const constraint: string | undefined =
         (err as any)?.parent?.constraint ?? err.message;
@@ -68,7 +65,6 @@ export async function createCommentUpdate(
         };
       }
 
-      // Other unique issues (unlikely here)
       return {
         ok: false,
         code: 'DB_ERROR',
@@ -76,7 +72,6 @@ export async function createCommentUpdate(
       };
     }
 
-    // 2) Validation errors (e.g., empty body)
     if (err instanceof ValidationError) {
       return {
         ok: false,
@@ -85,7 +80,6 @@ export async function createCommentUpdate(
       };
     }
 
-    // 3) Postgres FK violation (e.g., bad orderId/authorUserId)
     const pgCode: string | undefined = (err as any)?.parent?.code;
     if (pgCode === '23503') {
       return {
@@ -95,11 +89,9 @@ export async function createCommentUpdate(
       };
     }
 
-    // 4) Fallback generic DB error
     const safeMessage: string =
       (err as any)?.message || 'Unknown database error creating update.';
 
-    // Log for observability without crashing the app
     console.error('❌ [createCommentUpdate] DB error:', {
       error: safeMessage,
       orderId,
