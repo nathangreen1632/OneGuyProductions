@@ -20,13 +20,25 @@ function formatDate(value?: string | null): string {
 }
 
 export default function AdminOrdersTable({
-                                           rows, loading, total, onRowClick,
-                                         }: Readonly<{ rows: AdminOrderRowDto[]; loading: boolean; total: number; onRowClick: (id: number) => void }>): React.ReactElement {
+                                           rows, loading, total, page, pageSize, onRowClick,
+                                         }: Readonly<{
+  rows: AdminOrderRowDto[];
+  loading: boolean;
+  total: number;
+  page: number;
+  pageSize: number;
+  onRowClick: (id: number) => void;
+}>): React.ReactElement {
   const firstLoad = loading && rows.length === 0;
+
+  // compute visible range
+  const start = total === 0 ? 0 : (page - 1) * pageSize + 1;
+  const end = Math.min((page - 1) * pageSize + rows.length, total);
 
   if (firstLoad) {
     return (
-      <Spinner size={32} color="#3b82f6" className="mx-auto my-6" />);
+      <Spinner size={32} color="#3b82f6" className="mx-auto my-6" />
+    );
   }
 
   return (
@@ -148,7 +160,9 @@ export default function AdminOrdersTable({
             {loading && rows.length > 0 && (
               <span className="rounded-md bg-black/5 px-2 py-0.5">Refreshing…</span>
             )}
-            <span className="rounded-md bg-black/5 px-2 py-0.5">Showing {rows.length}</span>
+            <span className="rounded-md bg-black/5 px-2 py-0.5">
+              Showing {start === 0 ? 0 : start}–{end} of {total}
+            </span>
           </div>
         </div>
       </div>
