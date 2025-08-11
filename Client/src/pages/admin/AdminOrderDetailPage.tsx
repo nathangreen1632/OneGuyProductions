@@ -3,11 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import AdminTimeline from '../../components/admin/AdminTimeline';
 import AdminStatusChips from '../../components/admin/AdminStatusChips';
 import AdminComposer from '../../components/admin/AdminComposer';
-import { useAdminStore } from '../../store/useAdminStore.ts';
-import type { OrderThreadDto } from '../../types/admin.types.ts';
+import { useAdminStore } from '../../store/useAdminStore';
+import type { OrderThreadDto } from '../../types/admin.types';
 import type { OrderStatus } from '../../types/order.types';
 
-// helper to keep status classes readable
 function statusClass(s: OrderStatus): string {
   switch (s) {
     case 'complete':        return 'bg-emerald-600 text-white';
@@ -47,7 +46,6 @@ export default function AdminOrderDetailPage(): React.ReactElement {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderId, fetchThread]);
 
-  // ✅ Derive presentation fields BEFORE any early returns
   const details = useMemo(() => {
     const o: any = data?.order ?? {};
     const name: string = o.customerName ?? o.name ?? '';
@@ -62,7 +60,6 @@ export default function AdminOrderDetailPage(): React.ReactElement {
     return { name, email, projectType, status, timeline, description, businessName, budget, customerId };
   }, [data?.order]);
 
-  // Bad or missing id
   if (!Number.isFinite(orderId) || orderId <= 0) {
     return (
       <div className="rounded-2xl bg-[var(--theme-surface)] p-4 text-sm text-[var(--theme-text)] shadow-[0_4px_14px_0_var(--theme-shadow)]">
@@ -71,7 +68,6 @@ export default function AdminOrderDetailPage(): React.ReactElement {
     );
   }
 
-  // Initial load
   if (loading && !data) {
     return (
       <div className="rounded-2xl bg-[var(--theme-surface)] p-4 text-sm text-[var(--theme-text)] shadow-[0_4px_14px_0_var(--theme-shadow)]">
@@ -81,7 +77,6 @@ export default function AdminOrderDetailPage(): React.ReactElement {
     );
   }
 
-  // Not found / empty payload
   if (!data?.order) {
     return (
       <div className="rounded-2xl bg-[var(--theme-surface)] p-4 text-sm text-[var(--theme-text)] shadow-[0_4px_14px_0_var(--theme-shadow)]">
@@ -100,7 +95,6 @@ export default function AdminOrderDetailPage(): React.ReactElement {
 
   return (
     <div className="grid gap-4 md:grid-cols-5 text-[var(--theme-text)]">
-      {/* Timeline Panel */}
       <section
         className="
           md:col-span-3 rounded-2xl
@@ -114,7 +108,6 @@ export default function AdminOrderDetailPage(): React.ReactElement {
         <AdminTimeline updates={data.updates ?? []} />
       </section>
 
-      {/* Right Rail */}
       <aside className="md:col-span-2 space-y-3">
 
         {/* Order Overview Card (merged) */}
@@ -130,7 +123,6 @@ export default function AdminOrderDetailPage(): React.ReactElement {
             </span>
           </div>
 
-          {/* Compact Info Grid */}
           <div className="space-y-1 text-sm">
             <div className="truncate">
               <span className="opacity-70 mr-1">Customer:</span>
@@ -166,7 +158,6 @@ export default function AdminOrderDetailPage(): React.ReactElement {
             </div>
           </div>
 
-          {/* Description */}
           <div>
             <div className="opacity-70 mb-1 text-sm">Description</div>
             <div className="rounded-lg bg-[var(--theme-bg)]/60 p-2 text-sm whitespace-pre-wrap">
@@ -175,7 +166,6 @@ export default function AdminOrderDetailPage(): React.ReactElement {
           </div>
         </div>
 
-        {/* Status Card */}
         <div
           className="
             rounded-2xl
@@ -187,7 +177,6 @@ export default function AdminOrderDetailPage(): React.ReactElement {
           <AdminStatusChips orderId={data.order.id} status={data.order.status} />
         </div>
 
-        {/* Composer Card */}
         <div
           className="
             rounded-2xl
