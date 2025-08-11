@@ -1,5 +1,19 @@
-import {Transaction} from 'sequelize';
-import {Order, OrderUpdate} from '../models/index.js';
+// Server/src/services/orderUpdate.service.ts
+import { Transaction, UniqueConstraintError, ValidationError } from 'sequelize';
+import { Order, OrderUpdate } from '../models/index.js';
+
+export interface CreateCommentUpdateResult {
+  ok: boolean;
+  code?:
+    | 'NOT_FOUND'
+    | 'ORDER_CLOSED'
+    | 'RATE_LIMIT'
+    | 'VALIDATION_ERROR'
+    | 'FK_VIOLATION'
+    | 'DB_ERROR';
+  message?: string;
+  update?: OrderUpdate;
+}
 
 export async function createCommentUpdate(
   orderId: number,
@@ -7,30 +21,91 @@ export async function createCommentUpdate(
   body: string,
   requiresCustomerResponse = false,
   trx?: Transaction
-): Promise<OrderUpdate> {
-  // Ensure order exists & is open
+): Promise<CreateCommentUpdateResult> {
+  // Ensure order exists & is open (no throws)
   const order = await Order.findByPk(orderId, { transaction: trx });
-  if (!order) throw new Error('NOT_FOUND');
-  if (order.status === 'complete' || order.status === 'cancelled') throw new Error('ORDER_CLOSED');
+
+  if (!order) {
+    return { ok: false, code: 'NOT_FOUND', message: 'Order not found.' };
+  }
+
+  if (order.status === 'complete' || order.status === 'cancelled') {
+    return {
+      ok: false,
+      code: 'ORDER_CLOSED',
+      message: `Order is ${order.status}; updates are not allowed.`,
+    };
+  }
 
   try {
-    return await OrderUpdate.create(
+    const created = await OrderUpdate.create(
       {
         orderId,
         authorUserId,
         body,
         source: 'web',
         eventType: 'comment',
-        requiresCustomerResponse: requiresCustomerResponse,
+        requiresCustomerResponse,
       },
-      {transaction: trx}
+      { transaction: trx }
     );
-  } catch (err: any) {
-    // Postgres unique index for per‑minute rate limit will throw here
-    // idx_orderUpdates_rate_limit
-    if (String(err?.message || '').includes('idx_orderUpdates_rate_limit')) {
-      throw new Error('RATE_LIMIT');
+    return { ok: true, update: created };
+  } catch (err) {
+    // ---- Known DB/Sequelize error handling (no throws) ----
+    // 1) Unique (rate-limit) — supports both minute & second index names
+    if (err instanceof UniqueConstraintError) {
+      const constraint: string | undefined =
+        (err as any)?.parent?.constraint ?? err.message;
+
+      if (
+        constraint?.includes('idx_orderupdates_rate_limit_sec') ||
+        constraint?.includes('idx_orderupdates_rate_limit')
+      ) {
+        return {
+          ok: false,
+          code: 'RATE_LIMIT',
+          message: 'You just posted an update. Try again in a second.',
+        };
+      }
+
+      // Other unique issues (unlikely here)
+      return {
+        ok: false,
+        code: 'DB_ERROR',
+        message: 'Update failed due to a uniqueness constraint.',
+      };
     }
-    throw err;
+
+    // 2) Validation errors (e.g., empty body)
+    if (err instanceof ValidationError) {
+      return {
+        ok: false,
+        code: 'VALIDATION_ERROR',
+        message: err.errors?.[0]?.message || 'Validation failed.',
+      };
+    }
+
+    // 3) Postgres FK violation (e.g., bad orderId/authorUserId)
+    const pgCode: string | undefined = (err as any)?.parent?.code;
+    if (pgCode === '23503') {
+      return {
+        ok: false,
+        code: 'FK_VIOLATION',
+        message: 'Related record not found for order or user.',
+      };
+    }
+
+    // 4) Fallback generic DB error
+    const safeMessage: string =
+      (err as any)?.message || 'Unknown database error creating update.';
+
+    // Log for observability without crashing the app
+    console.error('❌ [createCommentUpdate] DB error:', {
+      error: safeMessage,
+      orderId,
+      authorUserId,
+    });
+
+    return { ok: false, code: 'DB_ERROR', message: 'Could not add update.' };
   }
 }
