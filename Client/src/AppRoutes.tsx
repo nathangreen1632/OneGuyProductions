@@ -10,7 +10,7 @@ import NotFoundPage from './pages/NotFoundPage';
 import AuthPage from './pages/AuthPage';
 import ProtectedRouteLogic from './components/ProtectedRouteLogic';
 import { useAuthStore } from './store/useAuthStore';
-import { AdminGuard } from './common/AuthGuard.tsx';
+import { AdminGuard } from './common/AuthGuard';
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminOrdersPage from './pages/admin/AdminOrdersPage';
 import AdminOrderDetailPage from './pages/admin/AdminOrderDetailPage';
@@ -38,20 +38,17 @@ export default function AppRoutes(): React.ReactElement {
           signal: controller.signal,
         });
 
-        // Non-OK or No Content → just mark hydrated and exit quietly
         if (!res.ok || res.status === 204) {
           if (!cancelled) setHydrated(true);
           return;
         }
 
-        // Must be JSON to parse
         const ct = res.headers.get('content-type') || '';
         if (!ct.includes('application/json')) {
           if (!cancelled) setHydrated(true);
           return;
         }
 
-        // Defensive: avoid JSON parse error on empty body
         const text = await res.text();
         if (!text) {
           if (!cancelled) setHydrated(true);
@@ -60,12 +57,11 @@ export default function AppRoutes(): React.ReactElement {
 
         const data = JSON.parse(text);
         if (res.ok && data?.user && !cancelled) {
-          setUser(data.user, null); // token via HttpOnly cookie
+          setUser(data.user, null);
         }
 
         const email = (data?.user?.email ?? '') as string;
 
-        // Only auto-redirect if the user is at "/" or "/auth"
         const isEntry = location.pathname === '/' || location.pathname === '/auth';
         if (isEntry) {
           const dest = nextPathForEmail(email);
@@ -73,7 +69,6 @@ export default function AppRoutes(): React.ReactElement {
         }
 
       } catch {
-        // Swallow errors; we only hydrate state, not block the UI
       } finally {
         if (!cancelled) setHydrated(true);
       }
@@ -105,7 +100,6 @@ export default function AppRoutes(): React.ReactElement {
         }
       />
 
-      {/* 🔐 Admin Portal (guarded by domain) */}
       <Route
         path="/admin"
         element={
