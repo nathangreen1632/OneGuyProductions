@@ -1,10 +1,9 @@
-/* Server/src/config/sequelize.cjs */
 require('dotenv/config');
 
 const common = {
     dialect: 'postgres',
     logging: console.log,
-    define: { underscored: false }, // you use camelCase
+    define: { underscored: false },
 };
 
 module.exports = {
