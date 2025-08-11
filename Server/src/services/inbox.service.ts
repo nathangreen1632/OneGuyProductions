@@ -13,7 +13,6 @@ export async function getCustomerOrdersWithUnread(userId: number) {
   const recs = await OrderReadReceipt.findAll({ where: { userId, orderId: { [Op.in]: ids } } });
   const lastByOrder = new Map<number, Date>(recs.map(r => [r.orderId, r.lastReadAt]));
 
-  // latest update timestamps
   const maxRows = await sequelize.query<{ orderId: number; latest: string }>(
     `SELECT "orderId", MAX("createdAt") AS latest
      FROM "orderUpdates"
@@ -23,7 +22,6 @@ export async function getCustomerOrdersWithUnread(userId: number) {
   );
   const latestMap = new Map<number, string>(maxRows.map(r => [r.orderId, new Date(r.latest).toISOString()]));
 
-  // unread counts
   const countRows = await sequelize.query<{ orderId: number; cnt: number }>(
     `SELECT ou."orderId", COUNT(*)::int AS cnt
      FROM "orderUpdates" ou
@@ -36,7 +34,6 @@ export async function getCustomerOrdersWithUnread(userId: number) {
   );
   const countMap = new Map<number, number>(countRows.map(r => [r.orderId, r.cnt]));
 
-  // timeline updates (align to new schema)
   const updateRows = await sequelize.query<{
     orderId: number;
     user: string | null;
