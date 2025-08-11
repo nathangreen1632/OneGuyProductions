@@ -1,3 +1,5 @@
+import React from "react";
+
 interface SpinnerProps {
   size?: number;
   color?: string;
@@ -8,7 +10,7 @@ function Spinner({
                    size = 32,
                    color = '#ef4444',
                    className = '',
-                 }: Readonly<SpinnerProps>) {
+                 }: Readonly<SpinnerProps>): React.ReactElement {
   return (
     <div
       className={`inline-block animate-spin ${className}`}
