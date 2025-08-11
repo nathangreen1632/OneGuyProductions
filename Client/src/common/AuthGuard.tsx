@@ -1,13 +1,7 @@
 import React, { useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuthStore } from '../store/useAuthStore.ts';
+import { useAuthStore } from '../store/useAuthStore';
 
-/**
- * Client-side admin guard:
- * - Requires authenticated user
- * - Requires email domain @oneguyproductions.com
- * Note: Server still enforces authorization via /api/admin middleware.
- */
 export function AdminGuard({ children }: Readonly<{ children: React.ReactElement }>): React.ReactElement {
   const { user, isAuthenticated } = useAuthStore();
 
