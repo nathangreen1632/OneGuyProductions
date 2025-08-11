@@ -14,7 +14,6 @@ export default function AdminLayout(): React.ReactElement {
             overflow-hidden
           "
         >
-          {/* Accent bar */}
           <div className="h-1 w-full" />
           <div className="p-3 sm:p-6">
             <Outlet />
