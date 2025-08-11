@@ -10,12 +10,6 @@ interface NotifyParams {
   bodyPreview: string;
 }
 
-/**
- * Sends an email notification to targetUserId that an order received a new update.
- * - Uses Resend under the hood (CreateEmailResponse shape: { data?: { id }, error?: ... }).
- * - Gracefully no-ops if target user or email is missing.
- * - Returns boolean for success/failure (no throws).
- */
 export async function notifyOrderUpdate(params: NotifyParams): Promise<boolean> {
   const { orderId, actorUserId, targetUserId, bodyPreview } = params;
 
