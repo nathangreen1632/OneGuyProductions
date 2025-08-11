@@ -1,6 +1,6 @@
 import React, { type ReactElement } from 'react';
-import type { AdminOrderRowDto } from '../../types/admin.types.ts';
-import Spinner from '../../common/Spinner.tsx';
+import type { AdminOrderRowDto } from '../../types/admin.types';
+import Spinner from '../../common/Spinner';
 
 function getStatusTextClasses(status: string): string {
   switch (status?.toLowerCase()) {
@@ -31,7 +31,6 @@ export default function AdminOrdersTable({
 }>): React.ReactElement {
   const firstLoad = loading && rows.length === 0;
 
-  // compute visible range
   const start = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const end = Math.min((page - 1) * pageSize + rows.length, total);
 
@@ -43,7 +42,6 @@ export default function AdminOrdersTable({
 
   return (
     <>
-      {/* Mobile refreshing badge (no extra wrapper) */}
       {loading && rows.length > 0 && (
         <div className="md:hidden mb-1 flex justify-end">
           <span className="rounded-md bg-[var(--theme-card)]/40 px-2 py-0.5 text-[10px] text-[var(--theme-text)]">
@@ -52,7 +50,6 @@ export default function AdminOrdersTable({
         </div>
       )}
 
-      {/* Mobile cards */}
       <div className="space-y-2 md:hidden">
         {rows.map((r: AdminOrderRowDto): ReactElement => {
           const unread = (r as any).unreadCountForCustomer ?? (r as any).unreadCount ?? 0;
@@ -97,7 +94,6 @@ export default function AdminOrdersTable({
         })}
       </div>
 
-      {/* Desktop table */}
       <div className="mt-2 hidden overflow-hidden rounded-2xl bg-[var(--theme-surface)] shadow-sm md:block">
         <div className="max-h-[70vh] overflow-auto">
           <table className="w-full table-fixed">
@@ -155,7 +151,6 @@ export default function AdminOrdersTable({
           </table>
         </div>
 
-        {/* Footer with inline refreshing badge */}
         <div className="flex items-center justify-between px-3 py-2 text-xs text-gray-500">
           <span>Total: {total}</span>
           <div className="flex items-center gap-2">
