@@ -1,15 +1,15 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import md5 from 'blueimp-md5';
+import { LogIn, LogOut, ShieldCheck, UserSquare2 } from 'lucide-react';
+import type { AuthState } from '../types/authState.types';
 import { type NavLink, navLinks } from '../constants/navLinks';
 import { useAppStore } from '../store/useAppStore';
 import { useAuthStore } from '../store/useAuthStore';
-import NavbarView from '../jsx/navbarView';
-import { LogIn, LogOut, UserSquare2, ShieldCheck } from 'lucide-react';
 import { logoutUser } from '../helpers/logoutHelper';
-import GravatarModal from '../modals/GravatarModal';
-import md5 from 'blueimp-md5';
-import type { AuthState } from '../types/authState.types';
+import NavbarView from '../jsx/navbarView';
 import RedInfoIcon from './RedInfoIcon.tsx';
+import GravatarModal from '../modals/GravatarModal';
 
 function getGravatarUrl(email?: string): string {
   if (!email) return '';
@@ -41,20 +41,17 @@ export default function NavbarLogic(): React.ReactElement {
 
     const extras: NavLink[] = [];
 
-    // Add "My Portal" OR "Login / Register"
     extras.push(
       isAuthenticated
         ? ({ label: 'My Portal', path: '/portal', icon: UserSquare2 } as NavLink)
         : ({ label: 'Login / Register', path: '/auth', icon: LogIn } as NavLink)
     );
 
-    // Add "Admin" only for company email accounts
     const isCompanyEmail: boolean = !!user?.email && user.email.toLowerCase().endsWith('@oneguyproductions.com');
     if (isAuthenticated && isCompanyEmail) {
       extras.push({ label: 'Admin', path: '/admin/orders', icon: ShieldCheck } as NavLink);
     }
 
-    // Add "Logout" when authenticated
     if (isAuthenticated) {
       extras.push({
         label: 'Logout',
