@@ -60,7 +60,7 @@ export default function AdminComposer({
             if (ok) {
               setBody('');
               setRequires(false);
-              setCooldown(60); // UX rate limit: 1/min
+              setCooldown(30); // UX rate limit: 30/seconds
             }
           }}
           className="
