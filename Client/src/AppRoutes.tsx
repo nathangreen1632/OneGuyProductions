@@ -10,7 +10,7 @@ import NotFoundPage from './pages/NotFoundPage';
 import AuthPage from './pages/AuthPage';
 import ProtectedRouteLogic from './components/ProtectedRouteLogic';
 import { useAuthStore } from './store/useAuthStore';
-import { AdminGuard } from './helpers/authGuard';
+import { AdminGuard } from './common/AuthGuard.tsx';
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminOrdersPage from './pages/admin/AdminOrdersPage';
 import AdminOrderDetailPage from './pages/admin/AdminOrderDetailPage';
