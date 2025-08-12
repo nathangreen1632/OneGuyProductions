@@ -19,10 +19,6 @@ import type { AuthFormState, LoginPayload, RegisterPayload } from '../types/auth
 type TAuthEndpoint = '/api/auth/login' | '/api/auth/register';
 type TApiResult = { ok: boolean; data: unknown };
 
-/**
- * Strict: only verified admins go to /admin/orders; everyone else -> /portal.
- * Kept the original name to avoid ripple changes.
- */
 const nextPathForEmail: (email: unknown) => string = (u: any): string => {
   const role = (u?.role as string) || 'user';
   const verified = Boolean(u?.emailVerified);
@@ -85,13 +81,11 @@ export default function AuthFormLogic(): React.ReactElement {
       }
 
       if ((data as any)?.next === 'verify-admin-email') {
-        // Do NOT call persistUserFromResponse here.
         toast.success('Check your @oneguyproductions.com inbox for your admin verification code.');
         // Optionally route to a verify step (or stay put and show an OTP field)
         navigate('/auth?mode=verify-admin', { replace: true });
         return;
       }
-
 
       toast.success(isLogin ? 'Login successful!' : 'Registration complete!');
 
@@ -100,9 +94,8 @@ export default function AuthFormLogic(): React.ReactElement {
 
       await linkPendingOrderIfAny();
 
-      // Keep var name 'u' but now use the full user object (server-truth)
-      const u = (data as { user?: Record<string, unknown> } | null)?.user ?? null;
-      const dest = nextPathForEmail(u);
+      const u: Record<string, unknown> | null = (data as { user?: Record<string, unknown> } | null)?.user ?? null;
+      const dest: string = nextPathForEmail(u);
 
       const from = (history.state?.usr?.from?.pathname) || null;
       if (from && dest.startsWith('/admin') && from.startsWith('/admin')) {
