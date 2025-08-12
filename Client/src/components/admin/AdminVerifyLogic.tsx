@@ -1,10 +1,10 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import {type NavigateFunction, useNavigate} from 'react-router-dom';
 import toast from 'react-hot-toast';
 import AdminVerifyView from '../../jsx/adminVerifyView';
 
 export default function AdminVerifyLogic(): React.ReactElement {
-  const navigate = useNavigate();
+  const navigate: NavigateFunction = useNavigate();
 
   const [email, setEmail] = React.useState<string>(sessionStorage.getItem('prefillEmail') || '');
   const [otp, setOtp] = React.useState<string>('');
@@ -18,7 +18,7 @@ export default function AdminVerifyLogic(): React.ReactElement {
     }
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/verify-email', {
+      const res: Response = await fetch('/api/auth/verify-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -44,13 +44,13 @@ export default function AdminVerifyLogic(): React.ReactElement {
     }
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/request-admin-otp', {
+      const res: Response = await fetch('/api/auth/request-admin-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ email }),
       });
-      const data = await res.json().catch(() => ({}));
+      const data = await res.json().catch((): {} => ({}));
       if (!res.ok) {
         toast.error((data)?.error || 'Could not send a new code.');
         return;
@@ -61,7 +61,6 @@ export default function AdminVerifyLogic(): React.ReactElement {
     }
   }
 
-  // mirror your input styling approach from AuthFormLogic
   const inputClass =
     'w-full px-4 py-2 rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] placeholder:text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)]';
 
