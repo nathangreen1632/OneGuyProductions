@@ -1,6 +1,8 @@
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/useAuthStore';
 import type { AuthFormState, LoginPayload, RegisterPayload } from '../types/auth.types';
+// Optional type safety (type-only, so no runtime import):
+import type { TAuthUserType } from '../store/useAuthStore';
 
 type TAuthEndpoint = '/api/auth/login' | '/api/auth/register';
 type TApiResult<T = unknown> = { ok: boolean; data: T | null };
@@ -55,15 +57,29 @@ export async function authRequest<T = unknown>(
   return { ok: res.ok, data };
 }
 
+/**
+ * Persists the server user payload into the auth store.
+ * Expects `data` to look like: { user: { id, email, username?, role?, emailVerified? } }
+ * Falls back safely so older responses won't crash.
+ */
 export function persistUserFromResponse(data: unknown): boolean {
-  const user: unknown = (data as { user?: unknown } | null)?.user;
-  if (!user) {
+  const serverUser: any = (data as { user?: unknown } | null)?.user;
+  if (!serverUser) {
     console.warn('⚠️ Response OK, but no user object returned.');
     toast.error('Unexpected response. Please try again.');
     return false;
   }
+
+  const normalized: TAuthUserType = {
+    id: String(serverUser.id ?? ''),
+    email: String(serverUser.email ?? ''),
+    username: String(serverUser.username ?? ''),
+    role: (serverUser.role as TAuthUserType['role']) ?? 'user',
+    emailVerified: Boolean(serverUser.emailVerified ?? false),
+  };
+
   const { setUser, setHydrated } = useAuthStore.getState();
-  setUser(user as any, null); // keeping cast to avoid ripple; upstream store defines concrete type
+  setUser(normalized, null); // HttpOnly cookie is used; no token string expected
   setHydrated(true);
   return true;
 }
