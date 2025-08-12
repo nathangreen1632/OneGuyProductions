@@ -47,3 +47,15 @@ export interface OrderThreadDto {
   updates: OrderUpdateDto[];
   canPost: boolean;
 }
+
+export type TDetailsType = {
+  name: string;
+  email: string;
+  projectType: string;
+  status: OrderStatus;
+  timeline: string;
+  description: string;
+  businessName: string;
+  budget: string;
+  customerId: number | null;
+};
