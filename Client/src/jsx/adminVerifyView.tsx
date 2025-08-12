@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {type ChangeEvent} from 'react';
 import toast from 'react-hot-toast';
 
 type Props = {
@@ -20,14 +20,14 @@ function toOutcome(
     const r = result as { ok: boolean; message?: string };
     return { ok: r.ok, message: r.message };
   }
-  // If handler returns nothing, assume success (common for fire-and-forget handlers)
+
   return { ok: true };
 }
 
 export default function AdminVerifyView(props: Readonly<Props>): React.ReactElement {
   const { email, otp, loading, inputClass, setEmail, setOtp, onSubmit, onResend } = props;
 
-  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
+  const handleSubmit: (e: React.FormEvent) => Promise<void> = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     try {
       const result = await onSubmit(e);
@@ -43,7 +43,7 @@ export default function AdminVerifyView(props: Readonly<Props>): React.ReactElem
     }
   };
 
-  const handleResend = async (): Promise<void> => {
+  const handleResend: () => Promise<void> = async (): Promise<void> => {
     try {
       const result = await onResend();
       const { ok, message } = toOutcome(result);
@@ -53,7 +53,7 @@ export default function AdminVerifyView(props: Readonly<Props>): React.ReactElem
         toast.error(message ?? 'Could not resend code. Please wait and try again.');
       }
     } catch (err: any) {
-      const msg = (err?.message as string) || 'Could not resend code. Please try again.';
+      const msg: string = (err?.message as string) || 'Could not resend code. Please try again.';
       toast.error(msg);
     }
   };
@@ -70,7 +70,7 @@ export default function AdminVerifyView(props: Readonly<Props>): React.ReactElem
             <input
               id="adminEmail"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e: ChangeEvent<HTMLInputElement>): void => setEmail(e.target.value)}
               placeholder="your@oneguyproductions.com"
               className={`${inputClass} w-full rounded-lg border border-[var(--theme-border)] bg-[var(--theme-card)] px-3 py-2`}
               type="email"
@@ -84,7 +84,7 @@ export default function AdminVerifyView(props: Readonly<Props>): React.ReactElem
             <input
               id="adminOtp"
               value={otp}
-              onChange={(e) => setOtp(e.target.value)}
+              onChange={(e: ChangeEvent<HTMLInputElement>): void => setOtp(e.target.value)}
               placeholder="6-digit code"
               className={`${inputClass} w-full rounded-lg border border-[var(--theme-border)] bg-[var(--theme-card)] px-3 py-2`}
               inputMode="numeric"
