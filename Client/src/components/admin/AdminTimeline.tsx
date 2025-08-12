@@ -1,35 +1,60 @@
-import React, { type ReactElement } from 'react';
+import { type ReactElement, memo } from 'react';
 import type { OrderUpdateDto } from '../../types/order.types';
 import { linkifySafe } from '../../helpers/linkify';
 
-function displayLabel(update: OrderUpdateDto): string {
-  const u: any = update as any;
+type TAuthorNestedType = {
+  role?: string;
+  firstName?: string;
+  username?: string;
+  email?: string;
+};
 
-  const author = u.author ?? {};
-  const role: string | undefined = author.role ?? u.authorRole;
-  const first: string | undefined = author.firstName ?? u.authorFirstName;
-  const username: string | undefined = author.username ?? u.authorUsername;
+type TLegacyAuthorFieldsType = {
+  author?: TAuthorNestedType;
+  authorRole?: string;
+  authorFirstName?: string;
+  authorUsername?: string;
+  authorEmail?: string;
+  authorName?: string;
+};
+
+type TOrderUpdateLikeType = OrderUpdateDto & Partial<TLegacyAuthorFieldsType>;
+
+type TAdminTimelinePropsType = Readonly<{
+  updates: ReadonlyArray<OrderUpdateDto>;
+}>;
+
+function displayLabel(update: TOrderUpdateLikeType): string {
+  const author: TAuthorNestedType = update.author ?? {};
+  const role: string | undefined = author.role ?? update.authorRole;
+  const first: string | undefined = author.firstName ?? update.authorFirstName;
+  const username: string | undefined = author.username ?? update.authorUsername;
 
   const rawEmail: string | undefined =
     author.email ??
-    u.authorEmail ??
-    (typeof u.authorName === 'string' && u.authorName.includes('@') ? u.authorName : undefined);
+    update.authorEmail ??
+    (update.authorName.includes('@')
+      ? update.authorName
+      : undefined);
 
-  const providedName: string | undefined = u.authorName;
+  const providedName: string | undefined = update.authorName;
 
   if (role === 'admin') {
     return first || username || 'Admin';
   }
 
-  const aliasFromEmail = rawEmail ? rawEmail.split('@')[0] : undefined;
+  const aliasFromEmail: string | undefined = rawEmail ? rawEmail.split('@')[0] : undefined;
   const candidate = first || username || providedName || aliasFromEmail || 'User';
 
   return candidate.includes('@') ? candidate.split('@')[0] : candidate;
 }
 
-export default function AdminTimeline(
-  { updates }: Readonly<{ updates: OrderUpdateDto[] }>
-): React.ReactElement {
+function formatDateSafe(input: unknown): string {
+  const d = new Date(String(input));
+  return Number.isNaN(d.getTime()) ? '' : d.toLocaleString();
+}
+
+function AdminTimelineComponent({ updates }: TAdminTimelinePropsType): ReactElement {
   if (!updates?.length) {
     return (
       <div className="rounded-2xl bg-[var(--theme-surface)] p-4 text-sm text-[var(--theme-text)] shadow-[0_4px_14px_0_var(--theme-shadow)]">
@@ -55,7 +80,9 @@ export default function AdminTimeline(
           <div className="p-3 sm:p-4 text-[var(--theme-text)]">
             <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
               <div className="flex items-center gap-2">
-                <span className="font-medium">{displayLabel(u)}</span>
+                <span className="font-medium">
+                  {displayLabel(u as TOrderUpdateLikeType)}
+                </span>
                 <span
                   className="rounded-full border px-2 py-0.5 uppercase tracking-wide
                              border-[var(--theme-border-red)] text-[10px]"
@@ -64,7 +91,7 @@ export default function AdminTimeline(
                 </span>
               </div>
               <span className="text-[var(--theme-text)]/70">
-                {new Date(u.createdAt).toLocaleString()}
+                {formatDateSafe(u.createdAt)}
               </span>
             </div>
 
@@ -87,3 +114,5 @@ export default function AdminTimeline(
     </ol>
   );
 }
+
+export default memo(AdminTimelineComponent);
