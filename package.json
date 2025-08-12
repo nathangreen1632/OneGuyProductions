@@ -9,11 +9,11 @@
     "build": "npm run build --prefix Server && npm run build --prefix Client",
     "start": "npm run start --prefix Server",
 
-    "migrate": "NODE_ENV=production npx --prefix Server sequelize-cli db:migrate --cwd Server",
-    "migrate:undo": "NODE_ENV=production npx --prefix Server sequelize-cli db:migrate:undo --cwd Server",
-    "migrate:reset": "NODE_ENV=production npx --prefix Server sequelize-cli db:migrate:undo:all --cwd Server && NODE_ENV=production npx --prefix Server sequelize-cli db:migrate --cwd Server",
-    "seed": "NODE_ENV=production npx --prefix Server sequelize-cli db:seed:all --cwd Server",
-    "seed:undo": "NODE_ENV=production npx --prefix Server sequelize-cli db:seed:undo:all --cwd Server"
+    "migrate": "cd Server && NODE_ENV=production npx sequelize-cli db:migrate",
+    "migrate:undo": "cd Server && NODE_ENV=production npx sequelize-cli db:migrate:undo",
+    "migrate:reset": "cd Server && NODE_ENV=production npx sequelize-cli db:migrate:undo:all && NODE_ENV=production npx sequelize-cli db:migrate",
+    "seed": "cd Server && NODE_ENV=production npx sequelize-cli db:seed:all",
+    "seed:undo": "cd Server && NODE_ENV=production npx sequelize-cli db:seed:undo:all"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
