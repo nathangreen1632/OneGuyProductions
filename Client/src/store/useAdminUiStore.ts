@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import {create, type StoreApi, type UseBoundStore} from 'zustand';
 import type { OrderStatus } from '../types/order.types';
 
 interface AdminUiState {
@@ -17,7 +17,7 @@ interface AdminUiState {
   setPageSize: (size: number) => void;
 }
 
-export const useAdminUiStore = create<AdminUiState>((set) => ({
+export const useAdminUiStore: UseBoundStore<StoreApi<AdminUiState>> = create<AdminUiState>((set) => ({
   q: '',
   status: 'all',
   assigned: 'any',
@@ -39,6 +39,6 @@ export const useAdminUiStore = create<AdminUiState>((set) => ({
       polling: true,
     }),
 
-  setPage: (page: number) => set({ page }),
-  setPageSize: (size: number) => set({ pageSize: size }),
+  setPage: (page: number): void => set({ page }),
+  setPageSize: (size: number): void => set({ pageSize: size }),
 }));
