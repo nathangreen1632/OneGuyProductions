@@ -1,15 +1,16 @@
 import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import {type NavigateFunction, useNavigate} from 'react-router-dom';
 import AdminFilters from '../../components/admin/AdminFilters';
 import AdminOrdersTable from '../../components/admin/AdminOrdersTable';
 import { useAdminStore } from '../../store/useAdminStore';
 import { useAdminUiStore } from '../../store/useAdminUiStore';
 import AdminPager from "../../components/admin/AdminPager";
+import type {AdminUiState} from "../../types/dto.types.ts";
 
 export default function AdminOrdersPage(): React.ReactElement {
-  const nav = useNavigate();
+  const nav: NavigateFunction = useNavigate();
   const { rows, total, loading, fetchList } = useAdminStore();
-  const ui = useAdminUiStore();
+  const ui: AdminUiState = useAdminUiStore();
 
   useEffect((): void => {
     void fetchList({
