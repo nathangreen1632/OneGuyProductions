@@ -17,9 +17,12 @@ import {
   hashOtp,
   verifyJwt,
 } from '../services/auth.service.js';
-import { sendOtpEmail,  } from '../services/resend.service.js';
+import { sendOtpEmail } from '../services/resend.service.js';
 import { Op } from 'sequelize';
 import { COOKIE_OPTIONS } from '../config/constants.config.js';
+import { otpExpiryDate } from '../utils/otp.util.js';
+import { issueOtpForEmail } from '../utils/otp-issuer.util.js';
+import {OtpTokenInstance} from "../models/otpToken.model.js";
 
 export async function register(
   req: Request<unknown, unknown, TRegisterBodyType>,
@@ -28,40 +31,35 @@ export async function register(
   const { username, email, password, rememberMe } = req.body;
 
   try {
-    const existingUser = await User.findOne({ where: { email } });
+    const existingUser: User | null = await User.findOne({ where: { email } });
     if (existingUser) {
       res.status(409).json({ error: 'Email already registered.' });
       return;
     }
 
     const hashed: string = await hashPassword(password);
+    const isOGP: boolean = email.toLowerCase().endsWith('@oneguyproductions.com');
 
-    // Treat OGP emails as admin-candidates; others as normal users
-    const isOGP = email.toLowerCase().endsWith('@oneguyproductions.com');
-
-    const newUser = await User.create({
+    const newUser: User = await User.create({
       username,
       email,
       password: hashed,
-      // these fields exist in your updated user.model.ts + migration
       role: isOGP ? 'pending-admin' : 'user',
       emailVerified: false,
       adminCandidateAt: isOGP ? new Date() : null,
     });
 
     if (isOGP) {
-      // Send admin verification OTP (same signatures you already use)
       const otp: string = generateOtp();
       const hashedOtp: string = await hashOtp(otp);
 
       await OtpToken.create({
         email,
         otpHash: hashedOtp,
-        // match your existing 5-minute OTP expiry to avoid surprises
-        expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+        expiresAt: otpExpiryDate(),
       });
 
-      await sendOtpEmail(email, otp); // <- exactly 2 args
+      await sendOtpEmail(email, otp);
 
       res.status(201).json({
         success: true,
@@ -70,15 +68,13 @@ export async function register(
           id: newUser.id,
           username: newUser.username,
           email: newUser.email,
-          role: newUser.role,                 // NEW
-          emailVerified: newUser.emailVerified, // NEW
+          role: newUser.role,
+          emailVerified: newUser.emailVerified,
         },
       });
-
       return;
     }
 
-    // Normal user flow (unchanged)
     const token: string = generateJwt({ id: newUser.id });
     const options: TCookieOptionsType = {
       ...COOKIE_OPTIONS,
@@ -92,11 +88,10 @@ export async function register(
         id: newUser.id,
         username: newUser.username,
         email: newUser.email,
-        role: newUser.role,                 // NEW
-        emailVerified: newUser.emailVerified, // NEW
+        role: newUser.role,
+        emailVerified: newUser.emailVerified,
       },
     });
-
   } catch (err) {
     console.error('Register Error:', err);
     res.status(500).json({ error: 'Failed to register user.' });
@@ -110,7 +105,7 @@ export async function login(
   const { email, password, rememberMe } = req.body;
 
   try {
-    const user = await User.findOne({ where: { email } });
+    const user: User | null = await User.findOne({ where: { email } });
     if (!user) {
       res.status(401).json({ error: 'Invalid email or password.' });
       return;
@@ -135,11 +130,10 @@ export async function login(
         id: user.id,
         username: user.username,
         email: user.email,
-        role: user.role,                   // NEW
-        emailVerified: user.emailVerified, // NEW
+        role: user.role,
+        emailVerified: user.emailVerified,
       },
     });
-
   } catch (err) {
     console.error('Login Error:', err);
     res.status(500).json({ error: 'Failed to log in.' });
@@ -155,7 +149,7 @@ export async function getAuthenticatedUser(req: Request, res: Response): Promise
 
   try {
     const decoded = verifyJwt(token) as TJwtPayloadType;
-    const user = await User.findByPk(decoded.id);
+    const user: User | null = await User.findByPk(decoded.id);
     if (!user) {
       res.status(404).json({ error: 'User not found' });
       return;
@@ -165,11 +159,10 @@ export async function getAuthenticatedUser(req: Request, res: Response): Promise
       user: {
         id: user.id,
         email: user.email,
-        role: user.role,                   // NEW
-        emailVerified: user.emailVerified, // NEW
+        role: user.role,
+        emailVerified: user.emailVerified,
       },
     });
-
   } catch (err) {
     console.error('getAuthenticatedUser error:', err);
     res.status(401).json({ error: 'Invalid or expired token' });
@@ -183,15 +176,13 @@ export async function requestAdminOtp(
   const { email } = req.body;
 
   try {
-    // Must be OGP domain
-    const isOGP = email.toLowerCase().endsWith('@oneguyproductions.com');
+    const isOGP: boolean = email.toLowerCase().endsWith('@oneguyproductions.com');
     if (!isOGP) {
       res.status(400).json({ error: 'Admin OTP is only available for @oneguyproductions.com emails.' });
       return;
     }
 
-    // Must exist and be a pending admin
-    const user = await User.findOne({ where: { email } });
+    const user: User | null = await User.findOne({ where: { email } });
     if (!user) {
       res.status(404).json({ error: 'No account found for that email.' });
       return;
@@ -201,26 +192,11 @@ export async function requestAdminOtp(
       return;
     }
 
-    // Same short cooldown as user OTP
-    const recentOtp = await OtpToken.findOne({
-      where: { email, createdAt: { [Op.gt]: new Date(Date.now() - 60 * 1000) } },
-    });
-    if (recentOtp) {
-      res.status(429).json({ error: 'Please wait 60 seconds before requesting another OTP.' });
+    const result = await issueOtpForEmail(email);
+    if (!result.ok) {
+      res.status(result.status).json({ error: result.error });
       return;
     }
-
-    // Generate + store (5‑minute expiry to match existing behavior)
-    const otp: string = generateOtp();
-    const hashed: string = await hashOtp(otp);
-    await OtpToken.create({
-      email,
-      otpHash: hashed,
-      expiresAt: new Date(Date.now() + 5 * 60 * 1000),
-    });
-
-    // Send with your existing branded template
-    await sendOtpEmail(email, otp);
 
     res.status(200).json({ success: true });
   } catch (err) {
@@ -229,7 +205,6 @@ export async function requestAdminOtp(
   }
 }
 
-
 export async function requestOtp(
   req: Request<unknown, unknown, TRequestOtpBodyType>,
   res: Response
@@ -237,34 +212,18 @@ export async function requestOtp(
   const { email } = req.body;
 
   try {
-    const user = await User.findOne({ where: { email } });
+    const user: User | null = await User.findOne({ where: { email } });
     if (!user) {
       res.status(404).json({ error: 'No account found for that email.' });
       return;
     }
 
-    const recentOtp = await OtpToken.findOne({
-      where: {
-        email,
-        createdAt: { [Op.gt]: new Date(Date.now() - 60 * 1000) },
-      },
-    });
-
-    if (recentOtp) {
-      res.status(429).json({ error: 'Please wait 60 seconds before requesting another OTP.' });
+    const result = await issueOtpForEmail(email);
+    if (!result.ok) {
+      res.status(result.status).json({ error: result.error });
       return;
     }
 
-    const otp: string = generateOtp();
-    const hashed: string = await hashOtp(otp);
-
-    await OtpToken.create({
-      email,
-      otpHash: hashed,
-      expiresAt: new Date(Date.now() + 5 * 60 * 1000),
-    });
-
-    await sendOtpEmail(email, otp);
     res.status(200).json({ success: true });
   } catch (err) {
     console.error('OTP Request Error:', err);
@@ -284,7 +243,7 @@ export async function verifyOtp(
   const { email, otp, newPassword } = req.body;
 
   try {
-    const token = await OtpToken.findOne({
+    const token: OtpTokenInstance | null = await OtpToken.findOne({
       where: { email },
       order: [['createdAt', 'DESC']],
     });
@@ -301,7 +260,7 @@ export async function verifyOtp(
       return;
     }
 
-    const user = await User.findOne({ where: { email } });
+    const user: User | null = await User.findOne({ where: { email } });
     if (!user) {
       res.status(404).json({ error: 'User not found.' });
       return;
@@ -318,7 +277,6 @@ export async function verifyOtp(
   }
 }
 
-// OPTIONAL: call this from /api/auth/verify-email after the user enters the admin OTP
 export async function verifyAdminEmail(
   req: Request<unknown, unknown, { email: string; otp: string }>,
   res: Response
@@ -330,7 +288,7 @@ export async function verifyAdminEmail(
   }
 
   try {
-    const token = await OtpToken.findOne({
+    const token: OtpTokenInstance | null = await OtpToken.findOne({
       where: { email, expiresAt: { [Op.gt]: new Date() } },
       order: [['createdAt', 'DESC']],
     });
@@ -340,13 +298,13 @@ export async function verifyAdminEmail(
       return;
     }
 
-    const ok = await verifyPassword(otp, token.otpHash);
+    const ok: boolean = await verifyPassword(otp, token.otpHash);
     if (!ok) {
       res.status(401).json({ error: 'Invalid code.' });
       return;
     }
 
-    const user = await User.findOne({ where: { email } });
+    const user: User | null = await User.findOne({ where: { email } });
     if (!user) {
       res.status(404).json({ error: 'User not found.' });
       return;
@@ -368,17 +326,13 @@ export async function verifyAdminEmail(
 }
 
 export async function debugUsers(_: Request, res: Response): Promise<void> {
-  const users = await User.findAll();
+  const users: User[] = await User.findAll();
   res.status(200).json(users);
 }
 
-// Lightweight MX check for domains or full emails.
-// Accepts ?email=<email-or-domain>. Returns { ok: true, hasMx: boolean }.
 export async function checkEmailDomain(req: Request, res: Response): Promise<void> {
-  const raw = (req.query?.email ?? '').toString().toLowerCase().trim();
-
-  // Support either a full email or just a bare domain
-  const domain = raw.includes('@') ? raw.split('@')[1] : raw;
+  const raw: string = (req.query?.email ?? '').toString().toLowerCase().trim();
+  const domain: string = raw.includes('@') ? raw.split('@')[1] : raw;
 
   if (!domain) {
     res.status(200).json({ ok: true, hasMx: false });
@@ -387,11 +341,9 @@ export async function checkEmailDomain(req: Request, res: Response): Promise<voi
 
   try {
     const mx = await dns.resolveMx(domain);
-    const hasMx = Array.isArray(mx) && mx.length > 0;
+    const hasMx: boolean = Array.isArray(mx) && mx.length > 0;
     res.status(200).json({ ok: true, hasMx });
   } catch {
-    // NXDOMAIN / no MX → false, but still 200 to keep this as a UX helper
     res.status(200).json({ ok: true, hasMx: false });
   }
 }
-
