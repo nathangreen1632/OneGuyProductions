@@ -7,7 +7,13 @@
     "install": "if [ -d './Server' ]; then cd Server && npm i; cd ..; fi && cd Client && npm i",
     "dev": "concurrently \"npm run dev --prefix Client\" \"npm run dev --prefix Server\"",
     "build": "npm run build --prefix Server && npm run build --prefix Client",
-    "start": "npm run start --prefix Server"
+    "start": "npm run start --prefix Server",
+
+    "migrate": "NODE_ENV=production npx --prefix Server sequelize-cli db:migrate",
+    "migrate:undo": "NODE_ENV=production npx --prefix Server sequelize-cli db:migrate:undo",
+    "migrate:reset": "NODE_ENV=production npx --prefix Server sequelize-cli db:migrate:undo:all && NODE_ENV=production npx --prefix Server sequelize-cli db:migrate",
+    "seed": "NODE_ENV=production npx --prefix Server sequelize-cli db:seed:all",
+    "seed:undo": "NODE_ENV=production npx --prefix Server sequelize-cli db:seed:undo:all"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
