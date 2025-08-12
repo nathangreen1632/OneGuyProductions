@@ -1,12 +1,11 @@
-// services/notification.service.ts
 import { User, Order } from '../models/index.js';
 import { sendEmail } from './resend.service.js';
 import { EnvConfig } from '../config/env.config.js';
 
 interface NotifyParams {
   orderId: number;
-  actorUserId: number | null; // sender; may be null (system)
-  targetUserId: number;       // who should be notified
+  actorUserId: number | null;
+  targetUserId: number;
   bodyPreview: string;
 }
 
@@ -25,13 +24,13 @@ export async function notifyOrderUpdate(params: NotifyParams): Promise<boolean> 
       return false;
     }
 
-    const toEmail = target?.email ?? null;
+    const toEmail: string | null = target?.email ?? null;
     if (!toEmail) {
       console.warn('notifyOrderUpdate: target user/email missing', { targetUserId });
       return false;
     }
 
-    const fromEmail =
+    const fromEmail: string =
       EnvConfig.RESEND_FROM_EMAIL ??
       EnvConfig.EMAIL_FROM_ORDER ??
       'noreply@oneguyproductions.com';
@@ -41,10 +40,10 @@ export async function notifyOrderUpdate(params: NotifyParams): Promise<boolean> 
     const black = '#000000';
     const white = '#ffffff';
 
-    const actorLabel = actor?.email ?? brand;
+    const actorLabel: string = actor?.email ?? brand;
     const subject = `Order #${order.id} — New update`;
-    const safePreview = String(bodyPreview || '').slice(0, 240);
-    const orderUrl =
+    const safePreview: string = String(bodyPreview || '').slice(0, 240);
+    const orderUrl: string =
       (EnvConfig.PUBLIC_BASE_URL ?? 'http://localhost:3002') + `/orders/${order.id}`;
     const preheader = `Order #${order.id} updated by ${actorLabel}.`;
 
