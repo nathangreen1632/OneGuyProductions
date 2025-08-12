@@ -13,6 +13,7 @@ import { getCustomerOrdersWithUnread } from '../services/inbox.service.js';
 import { notifyOrderUpdate } from '../services/notification.service.js'; // used below in addOrderUpdate()
 import { ingestEmailReply } from '../services/emailIngest.service.js';
 import { sanitizeBody } from '../services/contentSafety.service.js';
+import {OrderUpdateModel} from "../models/orderUpdate.model.js";
 
 export async function submitOrder(req: Request, res: Response): Promise<void> {
   const {
@@ -138,7 +139,6 @@ export async function updateOrder(req: Request, res: Response): Promise<void> {
 
     await order.update({ businessName, projectType, budget, timeline, description });
 
-    // Re-fetch with associations to keep client shape stable
     const updated = await Order.findOne({
       where: { id: orderId, customerId: userId },
       include: [{ model: OrderUpdate, as: 'updates' }],
@@ -264,7 +264,6 @@ async function resolveNotifyTarget(orderId: number, actorUserId: number): Promis
   return null;
 }
 
-
 export async function addOrderUpdate(req: Request, res: Response): Promise<void> {
   const orderIdNum = Number(req.params.orderId);
   const userIdNum = Number((req as any).user?.id);
@@ -273,7 +272,6 @@ export async function addOrderUpdate(req: Request, res: Response): Promise<void>
     requiresCustomerResponse?: boolean;
   };
 
-  // Basic request guard
   const invalid = !Number.isFinite(userIdNum) || !Number.isFinite(orderIdNum) || !body;
   if (invalid) {
     res.status(400).json({ error: 'Invalid request.' });
@@ -282,7 +280,6 @@ export async function addOrderUpdate(req: Request, res: Response): Promise<void>
 
   const safeBody = sanitizeBody(String(body));
 
-  // Persist
   const result = await createCommentUpdate(
     orderIdNum,
     userIdNum,
@@ -290,16 +287,14 @@ export async function addOrderUpdate(req: Request, res: Response): Promise<void>
     Boolean(requiresCustomerResponse)
   );
 
-  // Error path
   if (!result.ok) {
     const status = statusFromCode(result.code as UpdateErrorCode);
     res.status(status).json({ error: result.message ?? 'Failed to add update.' });
     return;
   }
 
-  // Success path
-  const update = result.update!;
-  const targetUserId = await resolveNotifyTarget(orderIdNum, userIdNum);
+  const update: OrderUpdateModel = result.update!;
+  const targetUserId:number | null = await resolveNotifyTarget(orderIdNum, userIdNum);
 
   if (targetUserId) {
     await notifyOrderUpdate({
@@ -319,15 +314,15 @@ export async function addOrderUpdate(req: Request, res: Response): Promise<void>
 }
 
 export async function markOrderRead(req: Request, res: Response): Promise<void> {
-  const orderIdNum = Number(req.params.orderId);
-  const userIdNum = Number((req as any).user?.id);
+  const orderIdNum: number = Number(req.params.orderId);
+  const userIdNum: number = Number((req as any).user?.id);
 
   if (!Number.isFinite(userIdNum) || !Number.isFinite(orderIdNum)) {
     res.status(400).json({ error: 'Invalid request.' }); return;
   }
 
   try {
-    const lastReadAt = await markOneRead(userIdNum, orderIdNum);
+    const lastReadAt: Date = await markOneRead(userIdNum, orderIdNum);
     res.json({ ok: true, lastReadAt: lastReadAt.toISOString() });
   } catch (err) {
     console.error('markOrderRead failed', err);
@@ -336,7 +331,7 @@ export async function markOrderRead(req: Request, res: Response): Promise<void> 
 }
 
 export async function markAllOrdersRead(req: Request, res: Response): Promise<void> {
-  const userIdNum = Number((req as any).user?.id);
+  const userIdNum: number = Number((req as any).user?.id);
   if (!Number.isFinite(userIdNum)) { res.status(401).json({ error: 'Unauthorized' }); return; }
 
   try {
@@ -349,14 +344,14 @@ export async function markAllOrdersRead(req: Request, res: Response): Promise<vo
 }
 
 export async function getMyOrders(req: Request, res: Response): Promise<void> {
-  const userIdNum = Number((req as any).user?.id);
+  const userIdNum: number = Number((req as any).user?.id);
   if (!Number.isFinite(userIdNum)) { res.status(401).json({ error: 'Unauthorized' }); return; }
 
   try {
     const result = await getCustomerOrdersWithUnread(userIdNum);
 
-    const shapeHint = String(req.query.shape ?? req.header('x-response-shape') ?? '').toLowerCase();
-    const wantFullShape =
+    const shapeHint: string = String(req.query.shape ?? req.header('x-response-shape') ?? '').toLowerCase();
+    const wantFullShape: boolean =
       shapeHint === 'full' || shapeHint === 'withmeta' || shapeHint === 'with_meta' ||
       shapeHint === 'object' || shapeHint === 'new' || shapeHint === 'v2';
 
@@ -366,7 +361,6 @@ export async function getMyOrders(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    // Legacy response: array + metadata via headers
     const unreadIds = (result.unreadOrderIds ?? []).join(',');
     const countsMap: Record<number, number> = {};
     for (const o of result.orders) countsMap[(o as any).id] = Number((o as any).unreadCount ?? 0);
@@ -396,7 +390,7 @@ export async function getOrderThread(req: Request, res: Response): Promise<void>
   if (!orderId) { res.status(400).json({ error: 'Invalid request.' }); return; }
 
   try {
-    const updates = await OrderUpdate.findAll({
+    const updates: OrderUpdateModel[] = await OrderUpdate.findAll({
       where: { orderId: Number(orderId) },
       order: [['createdAt', 'ASC']],
       attributes: [
@@ -429,8 +423,8 @@ export async function getOrderThread(req: Request, res: Response): Promise<void>
  * POST /api/order/:orderId/email-reply
  */
 export async function addEmailReply(req: Request, res: Response): Promise<void> {
-  const orderIdNum = Number(req.params.orderId);
-  const userIdNum = Number((req as any).user?.id);
+  const orderIdNum: number = Number(req.params.orderId);
+  const userIdNum: number = Number((req as any).user?.id);
   const { textBody } = (req.body ?? {}) as { textBody?: string };
 
   if (!Number.isFinite(orderIdNum) || !Number.isFinite(userIdNum) || !textBody) {
@@ -438,8 +432,8 @@ export async function addEmailReply(req: Request, res: Response): Promise<void> 
   }
 
   try {
-    const safe = sanitizeBody(textBody);
-    const u = await ingestEmailReply({ orderId: orderIdNum, fromUserId: userIdNum, textBody: safe });
+    const safe: string = sanitizeBody(textBody);
+    const u: OrderUpdateModel = await ingestEmailReply({ orderId: orderIdNum, fromUserId: userIdNum, textBody: safe });
     res.status(201).json({ id: u.id, createdAt: u.createdAt.toISOString() });
   } catch (err) {
     console.error('addEmailReply failed', err);
