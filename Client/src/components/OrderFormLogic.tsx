@@ -64,7 +64,7 @@ export default function OrderFormLogic(): ReactElement {
       }
 
       if (res.ok) {
-        const result = await res.json().catch(() => null);
+        const result: OrderResponse = await res.json().catch(() => null);
         toast.success('Your request was submitted successfully!');
         setLastOrder(payload);
 
