@@ -12,15 +12,21 @@ import {
   buildRegisterPayload,
   authRequest,
   persistUserFromResponse,
-  linkPendingOrderIfAny } from '../helpers/authHelper';
+  linkPendingOrderIfAny
+} from '../helpers/authHelper';
 import type { AuthFormState, LoginPayload, RegisterPayload } from '../types/auth.types';
 
 type TAuthEndpoint = '/api/auth/login' | '/api/auth/register';
 type TApiResult = { ok: boolean; data: unknown };
 
-const nextPathForEmail: (email: string) => string = (email: string): string => {
-  const e: string = (email || '').toLowerCase().trim();
-  return e.endsWith('@oneguyproductions.com') ? '/admin/orders' : '/portal';
+/**
+ * Strict: only verified admins go to /admin/orders; everyone else -> /portal.
+ * Kept the original name to avoid ripple changes.
+ */
+const nextPathForEmail: (email: unknown) => string = (u: any): string => {
+  const role = (u?.role as string) || 'user';
+  const verified = Boolean(u?.emailVerified);
+  return role === 'admin' && verified ? '/admin/orders' : '/portal';
 };
 
 export default function AuthFormLogic(): React.ReactElement {
@@ -77,12 +83,25 @@ export default function AuthFormLogic(): React.ReactElement {
         toast.error(msg);
         return;
       }
+
+      if ((data as any)?.next === 'verify-admin-email') {
+        // Do NOT call persistUserFromResponse here.
+        toast.success('Check your @oneguyproductions.com inbox for your admin verification code.');
+        // Optionally route to a verify step (or stay put and show an OTP field)
+        navigate('/auth?mode=verify-admin', { replace: true });
+        return;
+      }
+
+
       toast.success(isLogin ? 'Login successful!' : 'Registration complete!');
+
       const persisted: boolean = persistUserFromResponse(data);
       if (!persisted) return;
+
       await linkPendingOrderIfAny();
 
-      const u = (data as { user?: { email?: string } } | null)?.user?.email ?? '';
+      // Keep var name 'u' but now use the full user object (server-truth)
+      const u = (data as { user?: Record<string, unknown> } | null)?.user ?? null;
       const dest = nextPathForEmail(u);
 
       const from = (history.state?.usr?.from?.pathname) || null;
