@@ -14,10 +14,13 @@ import { AdminGuard } from './common/AuthGuard';
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminOrdersPage from './pages/admin/AdminOrdersPage';
 import AdminOrderDetailPage from './pages/admin/AdminOrderDetailPage';
+import { persistUserFromResponse } from './helpers/authHelper';
 
-const nextPathForEmail = (email: string): string => {
-  const e = (email || '').toLowerCase().trim();
-  return e.endsWith('@oneguyproductions.com') ? '/admin/orders' : '/portal';
+// Server-truth redirect: only admins with verified email go to /admin/orders
+const nextPathForUser = (u: any): string => {
+  const role = (u?.role as string) || 'user';
+  const verified = Boolean(u?.emailVerified);
+  return role === 'admin' && verified ? '/admin/orders' : '/portal';
 };
 
 export default function AppRoutes(): React.ReactElement {
@@ -38,11 +41,11 @@ export default function AppRoutes(): React.ReactElement {
           signal: controller.signal,
         });
 
+        // no session or unexpected response type → just hydrate and stop
         if (!res.ok || res.status === 204) {
           if (!cancelled) setHydrated(true);
           return;
         }
-
         const ct = res.headers.get('content-type') || '';
         if (!ct.includes('application/json')) {
           if (!cancelled) setHydrated(true);
@@ -56,19 +59,25 @@ export default function AppRoutes(): React.ReactElement {
         }
 
         const data = JSON.parse(text);
-        if (res.ok && data?.user && !cancelled) {
-          setUser(data.user, null);
+
+        // Store user (role + emailVerified included if present)
+        if (!cancelled && res.ok) {
+          // prefer centralized mapping (sets user + hydrated)
+          const persisted = persistUserFromResponse(data);
+          if (!persisted) {
+            // fallback: preserve original behavior if helper didn’t persist
+            if (data?.user) setUser(data.user, null);
+          }
         }
 
-        const email = (data?.user?.email ?? '') as string;
-
+        // Entry redirect only when landing on "/" or "/auth"
         const isEntry = location.pathname === '/' || location.pathname === '/auth';
-        if (isEntry) {
-          const dest = nextPathForEmail(email);
+        if (!cancelled && isEntry) {
+          const dest = nextPathForUser(data?.user);
           navigate(dest, { replace: true });
         }
-
       } catch {
+        // swallow to keep identical behavior
       } finally {
         if (!cancelled) setHydrated(true);
       }
@@ -78,7 +87,7 @@ export default function AppRoutes(): React.ReactElement {
       cancelled = true;
       controller.abort();
     };
-  }, [setUser, setHydrated, hydrated]);
+  }, [setUser, setHydrated, hydrated, location.pathname, navigate]);
 
   const routeKey = `${hydrated}-${isAuthenticated}`;
 
