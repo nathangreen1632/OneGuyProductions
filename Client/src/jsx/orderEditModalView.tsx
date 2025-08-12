@@ -8,17 +8,7 @@ interface Props {
   onClose: () => void;
   onSave: (updatedOrder: Partial<Order>) => void;
 }
-/**
- * OrderEditModalView component allows users to edit order details.
- * It displays a modal with form fields for business name, project type,
- * budget, timeline, and description. The budget field is editable only
- * within 72 hours of order creation.
- *
- * @param {Object} props - Component properties
- * @param {Order} props.order - The order to be edited
- * @param {Function} props.onClose - Callback to close the modal
- * @param {Function} props.onSave - Callback to save the updated order
- */
+
 export default function OrderEditModalView(
   { order, onClose, onSave }: Readonly<Props>
 ): React.ReactElement {

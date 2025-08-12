@@ -1,14 +1,14 @@
-import './config/dotenv.config.js';
 import app from './app.js';
 import { sequelize } from './config/db.config.js';
 import { loggerConfig } from './config/logger.config.js';
 import './models/index.js';
 import './models/order.model.js';
 import './models/user.model.js';
-import './models/update.model.js';
+import './models/orderUpdate.model.js';
 import './models/otpToken.model.js';
+import {EnvConfig} from "./config/env.config.js";
 
-const PORT: number = parseInt(process.env.PORT ?? '3001', 10);
+const PORT: number = parseInt(EnvConfig.PORT ?? '3001', 10);
 
 const ENABLE_DB_SYNC: boolean = process.env.ENABLE_DB_SYNC === 'true';
 

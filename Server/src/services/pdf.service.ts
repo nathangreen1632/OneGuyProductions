@@ -1,9 +1,6 @@
 import {PDFDocument, PDFFont, rgb, StandardFonts} from 'pdf-lib';
 import type { OrderInstance } from '../models/order.model.js';
 
-/**
- * Generates a PDF invoice buffer for a given order using pdf-lib.
- */
 export async function generatePdfBuffer(order: OrderInstance): Promise<Buffer> {
   const pdfDoc = await PDFDocument.create();
   const page = pdfDoc.addPage();

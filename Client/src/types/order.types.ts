@@ -28,7 +28,10 @@ export type DerivedOrderFormData = Omit<OrderPayload, 'captchaToken'>;
 
 export interface OrderResponse {
   success: boolean;
-  error?: string;
+  error?: string; // Optional error message if success is false
+  message: string;
+  orderId: number;
+  unknownEmail: boolean;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -78,3 +81,15 @@ export type OrderState = {
   markAsRead: (id: number) => void;
   updateOrder: (order: Order) => void;
 };
+
+// ─────────────────────────────────────────────────────────────
+// DTO for order updates (returned from server for admin timeline)
+// ─────────────────────────────────────────────────────────────
+export interface OrderUpdateDto {
+  id: number;
+  authorName: string;
+  source: string; // e.g., 'admin', 'customer', 'system'
+  createdAt: string; // ISO date string from the backend
+  body: string; // raw HTML-safe string
+  requiresResponse: boolean;
+}

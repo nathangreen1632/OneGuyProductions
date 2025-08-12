@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import ProductsPage from './pages/ProductsPage';
 import OrderPage from './pages/OrderPage';
@@ -10,32 +10,75 @@ import NotFoundPage from './pages/NotFoundPage';
 import AuthPage from './pages/AuthPage';
 import ProtectedRouteLogic from './components/ProtectedRouteLogic';
 import { useAuthStore } from './store/useAuthStore';
+import { AdminGuard } from './common/AuthGuard';
+import AdminLayout from './pages/admin/AdminLayout';
+import AdminOrdersPage from './pages/admin/AdminOrdersPage';
+import AdminOrderDetailPage from './pages/admin/AdminOrderDetailPage';
+
+const nextPathForEmail = (email: string): string => {
+  const e = (email || '').toLowerCase().trim();
+  return e.endsWith('@oneguyproductions.com') ? '/admin/orders' : '/portal';
+};
 
 export default function AppRoutes(): React.ReactElement {
   const { setUser, setHydrated, isAuthenticated, hydrated } = useAuthStore();
+  const navigate = useNavigate();
+  const location = useLocation();
 
+  useEffect(() => {
+    if (hydrated) return;
 
-  useEffect((): void => {
-    async function hydrateSession(): Promise<void> {
+    let cancelled = false;
+    const controller = new AbortController();
+
+    (async () => {
       try {
-        const res: Response = await fetch('/api/auth/me', {
+        const res = await fetch('/api/auth/me', {
           credentials: 'include',
+          signal: controller.signal,
         });
 
-        const data = await res.json();
-
-        if (res.ok && data.user) {
-          setUser(data.user, null); // token is handled via HttpOnly cookie
+        if (!res.ok || res.status === 204) {
+          if (!cancelled) setHydrated(true);
+          return;
         }
-      } catch (err) {
-        console.error('Session hydration failed:', err);
-      } finally {
-        setHydrated(true);
-      }
-    }
 
-    hydrateSession().catch(console.error);
-  }, [setUser, setHydrated]);
+        const ct = res.headers.get('content-type') || '';
+        if (!ct.includes('application/json')) {
+          if (!cancelled) setHydrated(true);
+          return;
+        }
+
+        const text = await res.text();
+        if (!text) {
+          if (!cancelled) setHydrated(true);
+          return;
+        }
+
+        const data = JSON.parse(text);
+        if (res.ok && data?.user && !cancelled) {
+          setUser(data.user, null);
+        }
+
+        const email = (data?.user?.email ?? '') as string;
+
+        const isEntry = location.pathname === '/' || location.pathname === '/auth';
+        if (isEntry) {
+          const dest = nextPathForEmail(email);
+          navigate(dest, { replace: true });
+        }
+
+      } catch {
+      } finally {
+        if (!cancelled) setHydrated(true);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [setUser, setHydrated, hydrated]);
 
   const routeKey = `${hydrated}-${isAuthenticated}`;
 
@@ -56,6 +99,19 @@ export default function AppRoutes(): React.ReactElement {
           </ProtectedRouteLogic>
         }
       />
+
+      <Route
+        path="/admin"
+        element={
+          <AdminGuard>
+            <AdminLayout />
+          </AdminGuard>
+        }
+      >
+        <Route index element={<AdminOrdersPage />} />
+        <Route path="orders" element={<AdminOrdersPage />} />
+        <Route path="orders/:id" element={<AdminOrderDetailPage />} />
+      </Route>
 
       <Route path="*" element={<NotFoundPage />} />
     </Routes>

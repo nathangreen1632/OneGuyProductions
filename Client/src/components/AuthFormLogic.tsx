@@ -4,11 +4,24 @@ import { useNavigate } from 'react-router-dom';
 import { useResetPasswordStore } from '../store/useResetPasswordStore';
 import { useAuthStore } from '../store/useAuthStore';
 import AuthFormView from '../jsx/authFormView';
-import { passwordsMatch, loginEndpoint, registerEndpoint, buildLoginPayload, buildRegisterPayload, authRequest, persistUserFromResponse, linkPendingOrderIfAny } from '../helpers/authHelper';
-import type { AuthFormState, LoginPayload, RegisterPayload } from '../types/auth.types.ts';
+import {
+  passwordsMatch,
+  loginEndpoint,
+  registerEndpoint,
+  buildLoginPayload,
+  buildRegisterPayload,
+  authRequest,
+  persistUserFromResponse,
+  linkPendingOrderIfAny } from '../helpers/authHelper';
+import type { AuthFormState, LoginPayload, RegisterPayload } from '../types/auth.types';
 
 type TAuthEndpoint = '/api/auth/login' | '/api/auth/register';
 type TApiResult = { ok: boolean; data: unknown };
+
+const nextPathForEmail: (email: string) => string = (email: string): string => {
+  const e: string = (email || '').toLowerCase().trim();
+  return e.endsWith('@oneguyproductions.com') ? '/admin/orders' : '/portal';
+};
 
 export default function AuthFormLogic(): React.ReactElement {
   const { openModal } = useResetPasswordStore();
@@ -68,6 +81,17 @@ export default function AuthFormLogic(): React.ReactElement {
       const persisted: boolean = persistUserFromResponse(data);
       if (!persisted) return;
       await linkPendingOrderIfAny();
+
+      const u = (data as { user?: { email?: string } } | null)?.user?.email ?? '';
+      const dest = nextPathForEmail(u);
+
+      const from = (history.state?.usr?.from?.pathname) || null;
+      if (from && dest.startsWith('/admin') && from.startsWith('/admin')) {
+        navigate(from, { replace: true });
+      } else {
+        navigate(dest, { replace: true });
+      }
+
     } catch (err: unknown) {
       console.error('🚨 Fetch failed:', err);
       toast.error('Server error. Please try again.');

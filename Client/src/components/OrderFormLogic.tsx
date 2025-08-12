@@ -1,8 +1,8 @@
 import React, { type ReactElement, type RefObject, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import type { DerivedOrderFormData, OrderFormData, OrderPayload, OrderResponse } from '../types/order.types';
-import { useSignupPromptStore } from '../store/useSignupPromptStore';
 import { useOrderStore } from '../store/useOrderStore';
+import { useSignupPromptStore } from '../store/useSignupPromptStore';
 import { executeRecaptchaFlow } from '../helpers/recaptchaHandlerHelper';
 import OrderFormView from '../jsx/orderFormView';
 
@@ -64,7 +64,7 @@ export default function OrderFormLogic(): ReactElement {
       }
 
       if (res.ok) {
-        const result = await res.json().catch(() => null);
+        const result: OrderResponse = await res.json().catch(() => null);
         toast.success('Your request was submitted successfully!');
         setLastOrder(payload);
 

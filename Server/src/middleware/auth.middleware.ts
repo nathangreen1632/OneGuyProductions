@@ -1,7 +1,8 @@
 import type { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import {EnvConfig} from "../config/env.config.js";
 
-const jwtSecret = process.env.JWT_SECRET as string;
+const jwtSecret = EnvConfig.JWT_SECRET as string;
 
 interface AuthenticatedRequest extends Request {
   user?: { id: string };
