@@ -361,9 +361,9 @@ export async function getMyOrders(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const unreadIds = (result.unreadOrderIds ?? []).join(',');
+    const unreadIds: string = (result.unreadOrderIds ?? []).join(',');
     const countsMap: Record<number, number> = {};
-    for (const o of result.orders) countsMap[(o as any).id] = Number((o as any).unreadCount ?? 0);
+    for (const o of result.orders) countsMap[(o).id] = Number((o).unreadCount ?? 0);
 
     res.setHeader('X-Unread-Order-Ids', unreadIds);
     res.setHeader('X-Unread-Counts', JSON.stringify(countsMap));
