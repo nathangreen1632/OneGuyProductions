@@ -6,7 +6,7 @@ import ResetPasswordModal from '../modals/ResetPasswordModal';
 
 export default function AuthPage(): React.ReactElement {
   const location = useLocation();
-  const mode = new URLSearchParams(location.search).get('mode');
+  const mode: string | null = new URLSearchParams(location.search).get('mode');
 
   return (
     <>
