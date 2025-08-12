@@ -31,15 +31,15 @@ export default function AdminStatusChips({
     <div className="flex flex-wrap gap-2">
       {statuses.map((s: OrderStatus): ReactElement => {
         const active: boolean = s === status;
-        const base =
+        const base: string =
           'rounded-full px-3 py-1 text-xs transition-all outline-none shadow-sm ' +
           'focus-visible:ring-2 focus-visible:ring-[var(--theme-focus)] hover:shadow-[var(--theme-shadow)]';
-        const inactive =
+        const inactive: string =
           'bg-[var(--theme-surface)] text-[var(--theme-text)] border border-[var(--theme-border)]/40 ' +
           'hover:bg-black/5 disabled:opacity-60';
         const disabledState = busy || active ? 'cursor-not-allowed opacity-70' : '';
 
-        const handleClick = async (): Promise<void> => {
+        const handleClick: () => Promise<void> = async (): Promise<void> => {
           if (busy || active) return;
           setBusy(true);
           try {
