@@ -1,7 +1,6 @@
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../store/useAuthStore';
 import type { AuthFormState, LoginPayload, RegisterPayload } from '../types/auth.types';
-// Optional type safety (type-only, so no runtime import):
 import type { TAuthUserType } from '../store/useAuthStore';
 
 type TAuthEndpoint = '/api/auth/login' | '/api/auth/register';
@@ -57,11 +56,6 @@ export async function authRequest<T = unknown>(
   return { ok: res.ok, data };
 }
 
-/**
- * Persists the server user payload into the auth store.
- * Expects `data` to look like: { user: { id, email, username?, role?, emailVerified? } }
- * Falls back safely so older responses won't crash.
- */
 export function persistUserFromResponse(data: unknown): boolean {
   const serverUser: any = (data as { user?: unknown } | null)?.user;
   if (!serverUser) {
