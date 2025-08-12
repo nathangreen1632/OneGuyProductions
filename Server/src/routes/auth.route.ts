@@ -22,7 +22,7 @@ router.get('/me', getAuthenticatedUser);
 
 /** Admin email verification */
 router.post('/request-admin-otp', otpRateLimitMiddleware, requestAdminOtp);
-router.post('/verify-email', otpRateLimitMiddleware, verifyAdminEmail);
+router.post('/verify-email', verifyAdminEmail);
 
 /** Password reset OTP */
 router.post('/request-otp', otpRateLimitMiddleware, requestOtp);
