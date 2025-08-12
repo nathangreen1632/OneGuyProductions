@@ -3,9 +3,9 @@ import jwt from 'jsonwebtoken';
 import { randomInt } from 'crypto';
 import type { Secret, SignOptions } from 'jsonwebtoken';
 
-const jwtSecret = process.env.JWT_SECRET;
+const jwtSecret: string | undefined = process.env.JWT_SECRET;
 const jwtExpiresIn = (process.env.JWT_EXPIRES_IN || '1d') as SignOptions['expiresIn'];
-const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || '12', 10);
+const saltRounds: number = parseInt(process.env.BCRYPT_SALT_ROUNDS || '12', 10);
 
 if (!jwtSecret) {
   console.error('❌ JWT_SECRET is not defined.');
