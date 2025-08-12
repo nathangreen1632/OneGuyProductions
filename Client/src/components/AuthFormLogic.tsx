@@ -18,8 +18,8 @@ import type { AuthFormState, LoginPayload, RegisterPayload } from '../types/auth
 type TAuthEndpoint = '/api/auth/login' | '/api/auth/register';
 type TApiResult = { ok: boolean; data: unknown };
 
-const nextPathForEmail = (email: string): string => {
-  const e = (email || '').toLowerCase().trim();
+const nextPathForEmail: (email: string) => string = (email: string): string => {
+  const e: string = (email || '').toLowerCase().trim();
   return e.endsWith('@oneguyproductions.com') ? '/admin/orders' : '/portal';
 };
 
