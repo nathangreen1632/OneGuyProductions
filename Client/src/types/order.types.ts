@@ -28,7 +28,10 @@ export type DerivedOrderFormData = Omit<OrderPayload, 'captchaToken'>;
 
 export interface OrderResponse {
   success: boolean;
-  error?: string;
+  error?: string; // Optional error message if success is false
+  message: string;
+  orderId: number;
+  unknownEmail: boolean;
 }
 
 // ─────────────────────────────────────────────────────────────
