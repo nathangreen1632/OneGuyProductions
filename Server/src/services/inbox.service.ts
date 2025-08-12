@@ -1,16 +1,18 @@
 import { Op, QueryTypes } from 'sequelize';
 import { Order, OrderReadReceipt, sequelize, User } from '../models/index.js';
+import {OrderInstance} from "../models/order.model.js";
+import {OrderReadReceiptModel} from "../models/orderReadReceipt.model.js";
 
 export async function getCustomerOrdersWithUnread(userId: number) {
-  const orders = await Order.findAll({
+  const orders: OrderInstance[] = await Order.findAll({
     where: { customerId: userId },
     order: [['updatedAt', 'DESC']],
   });
 
-  const ids = orders.map(o => o.id);
+  const ids: number[] = orders.map(o => o.id);
   if (ids.length === 0) return { orders: [], unreadOrderIds: [] as number[] };
 
-  const recs = await OrderReadReceipt.findAll({ where: { userId, orderId: { [Op.in]: ids } } });
+  const recs: OrderReadReceiptModel[] = await OrderReadReceipt.findAll({ where: { userId, orderId: { [Op.in]: ids } } });
   const lastByOrder = new Map<number, Date>(recs.map(r => [r.orderId, r.lastReadAt]));
 
   const maxRows = await sequelize.query<{ orderId: number; latest: string }>(
@@ -63,10 +65,10 @@ export async function getCustomerOrdersWithUnread(userId: number) {
   }
 
   const payload = orders.map(o => {
-    const lastReadAt = lastByOrder.get(o.id) ?? null;
-    const latestUpdateAt = latestMap.get(o.id) ?? null;
-    const unreadCount = countMap.get(o.id) ?? 0;
-    const updated = (o.updatedAt ?? o.createdAt);
+    const lastReadAt: Date | null = lastByOrder.get(o.id) ?? null;
+    const latestUpdateAt: string | null = latestMap.get(o.id) ?? null;
+    const unreadCount: number = countMap.get(o.id) ?? 0;
+    const updated: Date = (o.updatedAt ?? o.createdAt);
 
     return {
       ...o.toJSON(),
@@ -100,7 +102,7 @@ export async function getAdminOrdersWithUnread(
     limit: pageSize,
   });
 
-  const ids = orders.map(o => o.id);
+  const ids: number[] = orders.map(o => o.id);
   if (ids.length === 0) {
     return {
       orders: [],
