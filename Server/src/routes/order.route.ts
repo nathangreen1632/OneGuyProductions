@@ -19,9 +19,12 @@ const router: Router = Router();
 router.post('/submit', recaptchaMiddleware, submitOrder);
 router.get('/my-orders', authenticateToken, getMyOrders);
 router.patch('/:id', authenticateToken, updateOrder);
-router.patch('/:id/link-user', authenticateToken, linkOrderToCurrentUser);
 router.patch('/:id/cancel', authenticateToken, cancelOrder);
+
+router.patch('/:id/link-user', authenticateToken, linkOrderToCurrentUser);
+
 router.get('/:id/invoice', authenticateToken, downloadInvoice);
+
 router.get('/:orderId/updates', authenticateToken, getOrderThread);
 router.post('/:orderId/updates', authenticateToken, addOrderUpdate);
 router.post('/:orderId/read', authenticateToken, markOrderRead);
