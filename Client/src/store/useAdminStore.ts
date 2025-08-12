@@ -8,13 +8,14 @@ import {
   postOrderStatus,
   postAssignOrder,
 } from '../helpers/api/adminApi';
+import type {TSafeFetchResultType} from "../types/api.types.ts";
 
 interface AdminState {
   rows: AdminOrderRowDto[];
   total: number;
   loading: boolean;
   threads: Record<number, OrderThreadDto | undefined>;
-  lastError?: string | null; // optional, non-breaking
+  lastError?: string | null;
 
   fetchList: (params: {
     q?: string;
@@ -36,18 +37,18 @@ function canPostByStatus(s: OrderStatus): boolean {
 }
 
 function safeNumber(n: unknown, fallback: number): number {
-  const parsed = Number(n);
+  const parsed: number = Number(n);
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
 function synthesizeOrderFromRow(orderId: number, row?: AdminOrderRowDto) {
-  const createdAt =
+  const createdAt: string =
     row?.latestUpdateAt ??
     row?.lastUpdateAt ??
     row?.updatedAt ??
     new Date(0).toISOString();
 
-  const updatedAt =
+  const updatedAt: string =
     row?.updatedAt ??
     row?.latestUpdateAt ??
     row?.lastUpdateAt ??
@@ -73,13 +74,13 @@ export const useAdminStore: UseBoundStore<StoreApi<AdminState>> = create<AdminSt
   threads: {},
   lastError: null,
 
-  async fetchList(params) {
+  async fetchList(params): Promise<void> {
     set({ loading: true, lastError: null });
     try {
       const res = await fetchAdminOrders(params);
-      const ok = !!res?.ok;
-      const rows = (ok && Array.isArray(res?.data?.rows)) ? res.data.rows : [];
-      const total = ok && typeof res?.data?.total === 'number' ? res.data.total : rows.length;
+      const ok: boolean = !!res?.ok;
+      const rows: AdminOrderRowDto[] = (ok && Array.isArray(res?.data?.rows)) ? res.data.rows : [];
+      const total: number = ok && typeof res?.data?.total === 'number' ? res.data.total : rows.length;
 
       set({ rows, total, loading: false, lastError: ok ? null : 'Unable to load admin orders.' });
     } catch {
@@ -87,112 +88,144 @@ export const useAdminStore: UseBoundStore<StoreApi<AdminState>> = create<AdminSt
     }
   },
 
-  async fetchThread(orderId) {
-    const id = safeNumber(orderId, 0);
+  async fetchThread(orderId: number): Promise<void> {
+    const id: number = safeNumber(orderId, 0);
     if (!id) {
-      // create a minimal empty thread entry to avoid UI breakage
-      set(s => ({ threads: { ...s.threads, [orderId]: { order: synthesizeOrderFromRow(0), updates: [], canPost: false } as OrderThreadDto }, lastError: 'Invalid order id.' }));
+      set((s: AdminState) => ({
+        threads: {
+          ...s.threads,
+          [orderId]: {
+            order: synthesizeOrderFromRow(0),
+            updates: [],
+            canPost: false,
+          } as OrderThreadDto,
+        },
+        lastError: 'Invalid order id.',
+      }));
       return;
     }
 
+    const findRow = (key: number): AdminOrderRowDto | undefined => get().rows.find((r: AdminOrderRowDto): boolean => r.id === key);
+
+    const normalizeFromArray = (updatesUnknown: unknown[], key: number): OrderThreadDto => {
+      const row: AdminOrderRowDto | undefined = findRow(key);
+
+      let firstUpdateCreated: string | undefined;
+      if (updatesUnknown.length > 0) {
+        const first = updatesUnknown[0] as any;
+        if (typeof first?.createdAt === 'string') firstUpdateCreated = first.createdAt;
+      }
+
+      const createdAt: string =
+        firstUpdateCreated ??
+        row?.latestUpdateAt ??
+        row?.lastUpdateAt ??
+        row?.updatedAt ??
+        new Date(0).toISOString();
+
+      const updatedAt: string =
+        row?.updatedAt ??
+        row?.latestUpdateAt ??
+        row?.lastUpdateAt ??
+        createdAt;
+
+      const synthesizedOrder = {
+        id: key,
+        status: row?.status ?? 'pending',
+        projectType: row?.projectType ?? '',
+        customerName: row?.name ?? '',
+        customerEmail: row?.customerEmail ?? '',
+        assignedAdminId: row?.assignedAdminId ?? null,
+        assignedAdminName: row?.assignedAdminName ?? null,
+        createdAt,
+        updatedAt,
+      } as OrderThreadDto['order'];
+
+      return {
+        order: synthesizedOrder,
+        updates: updatesUnknown as any[],
+        canPost: canPostByStatus(synthesizedOrder.status),
+      };
+    };
+
+    const normalizeFromObject: (obj: any, key: number) => OrderThreadDto = (obj: any, key: number): OrderThreadDto => {
+      let updates: any[] = [];
+      if (Array.isArray(obj?.updates)) {
+        updates = obj.updates;
+      } else if (Array.isArray(obj?.messages)) {
+        updates = obj.messages;
+      }
+
+      const row: AdminOrderRowDto | undefined = findRow(key);
+      const orderBlock: OrderThreadDto['order'] = obj?.order ?? synthesizeOrderFromRow(key, row);
+
+      const canPost =
+        typeof obj?.canPost === 'boolean'
+          ? obj.canPost
+          : canPostByStatus(orderBlock.status);
+
+      return {
+        ...obj,
+        order: orderBlock,
+        updates,
+        canPost,
+      } as OrderThreadDto;
+    };
+
     try {
-      const res = await fetchOrderThread(id);
+      const res: TSafeFetchResultType<OrderThreadDto> = await fetchOrderThread(id);
 
       if (!res?.ok || !res.data) {
-        // fallback: synthesize minimal thread from any known list row
-        const row = get().rows.find(r => r.id === id);
+        const row: AdminOrderRowDto | undefined = findRow(id);
         const synthesized = synthesizeOrderFromRow(id, row);
 
-        set(s => ({
-          threads: { ...s.threads, [id]: { order: synthesized, updates: [], canPost: synthesized.status !== 'cancelled' && synthesized.status !== 'complete' } },
+        set((s: AdminState) => ({
+          threads: {
+            ...s.threads,
+            [id]: {
+              order: synthesized,
+              updates: [],
+              canPost: canPostByStatus(synthesized.status),
+            },
+          },
           lastError: 'Thread not available for this order yet.',
         }));
         return;
       }
 
       const raw: unknown = res.data;
-      const numericKey = safeNumber((raw as any)?.order?.id ?? id, id);
+      const numericKey: number = safeNumber((raw as any)?.order?.id ?? id, id);
 
-      let normalized: OrderThreadDto;
+      const normalized: OrderThreadDto = Array.isArray(raw)
+        ? normalizeFromArray(raw as unknown[], numericKey)
+        : normalizeFromObject(raw as any, numericKey);
 
-      if (Array.isArray(raw)) {
-        const updates = raw as unknown[];
-        const row = get().rows.find(r => r.id === numericKey);
-
-        const firstUpdateCreated =
-          updates.length > 0 && typeof (updates[0] as any)?.createdAt === 'string'
-            ? (updates[0] as any).createdAt
-            : undefined;
-
-        const createdAt =
-          firstUpdateCreated ??
-          row?.latestUpdateAt ??
-          row?.lastUpdateAt ??
-          row?.updatedAt ??
-          new Date(0).toISOString();
-
-        const updatedAt =
-          row?.updatedAt ??
-          row?.latestUpdateAt ??
-          row?.lastUpdateAt ??
-          createdAt;
-
-        const synthesizedOrder = {
-          id: numericKey,
-          status: row?.status ?? 'pending',
-          projectType: row?.projectType ?? '',
-          customerName: row?.name ?? '',
-          customerEmail: row?.customerEmail ?? '',
-          assignedAdminId: row?.assignedAdminId ?? null,
-          assignedAdminName: row?.assignedAdminName ?? null,
-          createdAt,
-          updatedAt,
-        } as OrderThreadDto['order'];
-
-        normalized = {
-          order: synthesizedOrder,
-          updates: updates as any[],
-          canPost: synthesizedOrder.status !== 'cancelled' && synthesizedOrder.status !== 'complete',
-        };
-      } else {
-        const obj = raw as any;
-        const updates = Array.isArray(obj?.updates)
-          ? obj.updates
-          : Array.isArray(obj?.messages)
-            ? obj.messages
-            : [];
-
-        const row = get().rows.find(r => r.id === numericKey);
-        const orderBlock: OrderThreadDto['order'] = obj?.order ?? synthesizeOrderFromRow(numericKey, row);
-
-        normalized = {
-          ...obj,
-          order: orderBlock,
-          updates,
-          canPost: typeof obj?.canPost === 'boolean'
-            ? obj.canPost
-            : (orderBlock.status !== 'cancelled' && orderBlock.status !== 'complete'),
-        } as OrderThreadDto;
-      }
-
-      set(s => ({
+      set((s: AdminState) => ({
         threads: { ...s.threads, [numericKey]: normalized },
         lastError: null,
       }));
     } catch {
-      const row = get().rows.find(r => r.id === orderId);
+      const row: AdminOrderRowDto | undefined = get().rows.find((r) => r.id === orderId);
       const synthesized = synthesizeOrderFromRow(orderId, row);
 
-      set(s => ({
-        threads: { ...s.threads, [orderId]: { order: synthesized, updates: [], canPost: synthesized.status !== 'cancelled' && synthesized.status !== 'complete' } },
+      set((s: AdminState) => ({
+        threads: {
+          ...s.threads,
+          [orderId]: {
+            order: synthesized,
+            updates: [],
+            canPost: canPostByStatus(synthesized.status),
+          },
+        },
         lastError: 'Network or server error while loading the thread.',
       }));
     }
   },
 
-  async sendUpdate(orderId, body, requiresResponse) {
+
+  async sendUpdate(orderId: number, body: string, requiresResponse: boolean): Promise<boolean> {
     try {
-      const res = await postAdminUpdate(orderId, { body, requiresResponse });
+      const res: TSafeFetchResultType<void> = await postAdminUpdate(orderId, { body, requiresResponse });
       if (!res?.ok) {
         set({ lastError: 'Failed to post update.' });
         return false;
@@ -205,20 +238,20 @@ export const useAdminStore: UseBoundStore<StoreApi<AdminState>> = create<AdminSt
     }
   },
 
-  async updateStatus(orderId, status) {
+  async updateStatus(orderId:number, status: OrderStatus): Promise<boolean> {
     try {
-      const res = await postOrderStatus(orderId, status);
+      const res: TSafeFetchResultType<void> = await postOrderStatus(orderId, status);
       if (!res?.ok) {
         set({ lastError: 'Failed to update order status.' });
         return false;
       }
 
-      set((s) => {
-        const rows = Array.isArray(s.rows)
-          ? s.rows.map((r) => (r.id === orderId ? { ...r, status } : r))
+      set((s: AdminState) => {
+        const rows: AdminOrderRowDto[] = Array.isArray(s.rows)
+          ? s.rows.map((r: AdminOrderRowDto): AdminOrderRowDto => (r.id === orderId ? { ...r, status } : r))
           : s.rows;
 
-        const t = s.threads[orderId];
+        const t: OrderThreadDto | undefined = s.threads[orderId];
         const threads = t
           ? {
             ...s.threads,
@@ -242,9 +275,9 @@ export const useAdminStore: UseBoundStore<StoreApi<AdminState>> = create<AdminSt
     }
   },
 
-  async assign(orderId, adminUserId) {
+  async assign(orderId: number, adminUserId: number): Promise<boolean> {
     try {
-      const res = await postAssignOrder(orderId, adminUserId);
+      const res: TSafeFetchResultType<void> = await postAssignOrder(orderId, adminUserId);
       if (!res?.ok) {
         set({ lastError: 'Failed to assign order.' });
         return false;
@@ -260,7 +293,7 @@ export const useAdminStore: UseBoundStore<StoreApi<AdminState>> = create<AdminSt
 
 if (import.meta.env.DEV) {
   (window as any).__adm__ = {
-    get state() { return useAdminStore.getState(); },
+    get state(): AdminState { return useAdminStore.getState(); },
     get threads() { return useAdminStore.getState().threads; },
   };
 }
