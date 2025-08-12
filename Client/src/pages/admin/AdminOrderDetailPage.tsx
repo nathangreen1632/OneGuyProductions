@@ -95,6 +95,23 @@ export default function AdminOrderDetailPage(): React.ReactElement {
 
   return (
     <div className="grid gap-4 md:grid-cols-5 text-[var(--theme-text)]">
+      {/* Back button row — spans full width, upper-left of the card */}
+      <div className="md:col-span-5">
+        <button
+          onClick={() => nav(-1)}
+          aria-label="Back to orders"
+          className="
+            inline-flex items-center gap-2 rounded-lg
+            bg-[var(--theme-button)] px-3 py-2 text-sm
+            text-[var(--theme-text-white)] hover:opacity-90
+            focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30
+          "
+        >
+          <span>←</span>
+          <span>Back to Orders</span>
+        </button>
+      </div>
+
       <section
         className="
           md:col-span-3 rounded-2xl
@@ -109,7 +126,6 @@ export default function AdminOrderDetailPage(): React.ReactElement {
       </section>
 
       <aside className="md:col-span-2 space-y-3">
-
         {/* Order Overview Card (merged) */}
         <div className="rounded-2xl bg-[var(--theme-surface)] shadow-[0_4px_14px_0_var(--theme-shadow)] p-3 sm:p-4 space-y-3">
           {/* Header: Order + Status */}
