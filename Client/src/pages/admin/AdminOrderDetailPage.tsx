@@ -1,10 +1,10 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import AdminTimeline from '../../components/admin/AdminTimeline';
 import AdminStatusChips from '../../components/admin/AdminStatusChips';
 import AdminComposer from '../../components/admin/AdminComposer';
 import { useAdminStore } from '../../store/useAdminStore';
-import type { OrderThreadDto } from '../../types/admin.types';
+import type { OrderThreadDto, TDetailsType } from '../../types/admin.types';
 import type { OrderStatus } from '../../types/order.types';
 
 function statusClass(s: OrderStatus): string {
@@ -16,6 +16,23 @@ function statusClass(s: OrderStatus): string {
     case 'pending':
     default:                return 'bg-sky-600 text-white';
   }
+}
+
+function toDetails(o: unknown): TDetailsType {
+  const x = (o ?? {}) as Record<string, unknown>;
+
+  const name = (x.customerName as string) ?? (x.name as string) ?? '';
+  const email = (x.customerEmail as string) ?? (x.email as string) ?? '';
+  const projectType = (x.projectType as string) ?? '';
+  const status = ((x.status as OrderStatus) ?? 'pending');
+  const timeline = (x.timeline as string) ?? '';
+  const description = (x.description as string) ?? '';
+  const businessName = (x.businessName as string) ?? '';
+  const budget = (x.budget as string) ?? '';
+  const customerId =
+    typeof x.customerId === 'number' ? (x.customerId) : null;
+
+  return { name, email, projectType, status, timeline, description, businessName, budget, customerId };
 }
 
 export default function AdminOrderDetailPage(): React.ReactElement {
@@ -46,19 +63,7 @@ export default function AdminOrderDetailPage(): React.ReactElement {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderId, fetchThread]);
 
-  const details = useMemo(() => {
-    const o: any = data?.order ?? {};
-    const name: string = o.customerName ?? o.name ?? '';
-    const email: string = o.customerEmail ?? o.email ?? '';
-    const projectType: string = o.projectType ?? '';
-    const status: OrderStatus = (o.status ?? 'pending') as OrderStatus;
-    const timeline: string = o.timeline ?? '';
-    const description: string = o.description ?? '';
-    const businessName: string = o.businessName ?? '';
-    const budget: string = o.budget ?? '';
-    const customerId: number | null = typeof o.customerId === 'number' ? o.customerId : null;
-    return { name, email, projectType, status, timeline, description, businessName, budget, customerId };
-  }, [data?.order]);
+  const details: TDetailsType = toDetails(data?.order);
 
   if (!Number.isFinite(orderId) || orderId <= 0) {
     return (
@@ -95,7 +100,6 @@ export default function AdminOrderDetailPage(): React.ReactElement {
 
   return (
     <div className="grid gap-4 md:grid-cols-5 text-[var(--theme-text)]">
-      {/* Back button row — spans full width, upper-left of the card */}
       <div className="md:col-span-5">
         <button
           onClick={() => nav(-1)}
@@ -126,9 +130,7 @@ export default function AdminOrderDetailPage(): React.ReactElement {
       </section>
 
       <aside className="md:col-span-2 space-y-3">
-        {/* Order Overview Card (merged) */}
         <div className="rounded-2xl bg-[var(--theme-surface)] shadow-[0_4px_14px_0_var(--theme-shadow)] p-3 sm:p-4 space-y-3">
-          {/* Header: Order + Status */}
           <div className="flex items-start gap-3">
             <div className="flex-1 min-w-0">
               <div className="text-sm opacity-70">Order</div>
