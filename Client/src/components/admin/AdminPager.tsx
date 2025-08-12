@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {type ChangeEvent} from 'react';
 import { useAdminUiStore } from '../../store/useAdminUiStore';
 
 export default function AdminPager(
@@ -48,9 +48,8 @@ export default function AdminPager(
         <select
           className="rounded-md bg-black/5 px-2 py-1 text-sm text-[var(--theme-text)] outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30"
           value={safePageSize}
-          onChange={(e): void => {
+          onChange={(e: ChangeEvent<HTMLSelectElement>): void => {
             const next: number = Number(e.target.value) || 20;
-            // reset to page 1 when changing page size to avoid empty pages
             setPage(1);
             setPageSize(next);
           }}
