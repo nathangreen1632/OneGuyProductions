@@ -29,10 +29,10 @@ export default function AdminOrdersTable({
   pageSize: number;
   onRowClick: (id: number) => void;
 }>): React.ReactElement {
-  const firstLoad = loading && rows.length === 0;
+  const firstLoad: boolean = loading && rows.length === 0;
 
-  const start = total === 0 ? 0 : (page - 1) * pageSize + 1;
-  const end = Math.min((page - 1) * pageSize + rows.length, total);
+  const start: number = total === 0 ? 0 : (page - 1) * pageSize + 1;
+  const end: number = Math.min((page - 1) * pageSize + rows.length, total);
 
   if (firstLoad) {
     return (
@@ -53,7 +53,7 @@ export default function AdminOrdersTable({
       <div className="space-y-2 md:hidden">
         {rows.map((r: AdminOrderRowDto): ReactElement => {
           const unread = (r as any).unreadCountForCustomer ?? (r as any).unreadCount ?? 0;
-          const hasUnread = unread > 0;
+          const hasUnread: boolean = unread > 0;
           return (
             <button
               key={r.id}
@@ -110,9 +110,9 @@ export default function AdminOrdersTable({
             </tr>
             </thead>
             <tbody className="text-sm">
-            {rows.map((r, i): ReactElement => {
-              const unread = r.unreadCountForCustomer ?? 0;
-              const hasUnread = unread > 0;
+            {rows.map((r: AdminOrderRowDto, i: number): ReactElement => {
+              const unread: number = r.unreadCountForCustomer ?? 0;
+              const hasUnread: boolean = unread > 0;
               return (
                 <tr
                   key={r.id}
