@@ -90,7 +90,7 @@ export default function OrderTimelineView(): React.ReactElement {
 
                 <button
                   onClick={(): void => openThreadModal(order.id)}
-                  className="px-4 py-2 bg-sky-600 text-white text-sm rounded shadow-md hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60"
+                  className="px-4 py-2 bg-sky-600 text-white text-sm rounded shadow-md cursor-pointer hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60"
                 >
                   View thread
                 </button>
