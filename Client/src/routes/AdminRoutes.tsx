@@ -1,5 +1,5 @@
 import type { RouteObject } from 'react-router-dom';
-import { AdminGuard } from '../common/AuthGuard';
+import { AdminGuard } from '../common/admin/AuthGuard.tsx';
 import AdminLayout from '../pages/admin/AdminLayout';
 import AdminOrdersPage from '../pages/admin/AdminOrdersPage';
 import AdminOrderDetailPage from '../pages/admin/AdminOrderDetailPage';
