@@ -28,7 +28,9 @@ interface Props {
   sending: boolean;
 }
 
-export default function ThreadReplyModalView(props: Props): React.ReactElement | null {
+export default function ThreadReplyModalView(
+  props: Readonly<Props>
+): React.ReactElement | null {
   const {
     isOpen, onClose, header, messages, reply, onChangeReply, onSend, sending,
   } = props;
@@ -104,14 +106,14 @@ export default function ThreadReplyModalView(props: Props): React.ReactElement |
           <div className="flex items-center justify-end gap-2">
             <button
               onClick={onClose}
-              className="px-4 py-2 rounded-lg text-sm border border-[var(--theme-border)] cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60"
+              className="px-4 py-2 rounded-lg text-sm border border-[var(--theme-border)] cursor- focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60"
             >
               Cancel
             </button>
             <button
               onClick={(): void => { void onSend(); }}
               disabled={sending || reply.trim().length === 0}
-              className="px-4 py-2 rounded-lg text-sm bg-[var(--theme-button)] text-[var(--theme-text-white)] shadow-md cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60"
+              className="px-4 py-2 rounded-lg text-sm bg-[var(--theme-button)] text-[var(--theme-text-white)] shadow-md cursor- disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60"
             >
               {sending ? 'Sending…' : 'Send'}
             </button>
