@@ -68,7 +68,7 @@ export default function ThreadReplyModalView(props: Props): React.ReactElement |
             </div>
             <button
               onClick={onClose}
-              className="shrink-0 rounded-lg px-3 py-1 text-sm border border-[var(--theme-border)] hover:bg-[var(--theme-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60"
+              className="shrink-0 rounded-lg px-3 py-1 text-sm border border-[var(--theme-border)] cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60"
             >
               Close
             </button>
@@ -104,14 +104,14 @@ export default function ThreadReplyModalView(props: Props): React.ReactElement |
           <div className="flex items-center justify-end gap-2">
             <button
               onClick={onClose}
-              className="px-4 py-2 rounded-lg text-sm border border-[var(--theme-border)] hover:bg-[var(--theme-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60"
+              className="px-4 py-2 rounded-lg text-sm border border-[var(--theme-border)] cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60"
             >
               Cancel
             </button>
             <button
               onClick={(): void => { void onSend(); }}
               disabled={sending || reply.trim().length === 0}
-              className="px-4 py-2 rounded-lg text-sm bg-[var(--theme-button)] text-[var(--theme-text-white)] shadow-md hover:bg-[var(--theme-hover)] disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60"
+              className="px-4 py-2 rounded-lg text-sm bg-[var(--theme-button)] text-[var(--theme-text-white)] shadow-md cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60"
             >
               {sending ? 'Sending…' : 'Send'}
             </button>
