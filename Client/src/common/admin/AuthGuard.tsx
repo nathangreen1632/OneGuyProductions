@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuthStore } from '../store/useAuthStore';
+import { useAuthStore } from '../../store/useAuthStore';
 
 export function AdminGuard({ children }: Readonly<{ children: React.ReactElement }>): React.ReactElement {
   const { user, isAuthenticated } = useAuthStore();
