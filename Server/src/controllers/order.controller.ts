@@ -6,14 +6,23 @@ import { isWithin72Hours } from '../utils/time.js';
 import { generatePdfBuffer } from '../services/pdf.service.js';
 import type { OrderStatus } from '../types/order.types.js';
 import { OrderInstance } from '../models/order.model.js';
-
-import { createCommentUpdate } from '../services/orderUpdate.service.js';
+import {createCommentUpdate } from '../services/orderUpdate.service.js';
 import { markOneRead, markAllRead } from '../services/readReceipt.service.js';
 import { getCustomerOrdersWithUnread } from '../services/inbox.service.js';
-import { notifyOrderUpdate } from '../services/notification.service.js'; // used below in addOrderUpdate()
 import { ingestEmailReply } from '../services/emailIngest.service.js';
 import { sanitizeBody } from '../services/contentSafety.service.js';
 import {OrderUpdateModel} from "../models/orderUpdate.model.js";
+import {
+  parseAndValidateIds,
+  sanitizeAndValidateBody,
+  fetchActorAndOrder,
+  deriveRoles,
+  ensureAuthorized,
+  finalRequiresCustomerResponseFlag,
+  handleCreateUpdateError,
+  resolveTargetUserId,
+  safeNotify,
+} from '../utils/orderUpdate.helpers.js';
 
 export async function submitOrder(req: Request, res: Response): Promise<void> {
   const {
@@ -121,15 +130,15 @@ export async function linkOrderToCurrentUser(req: Request, res: Response): Promi
 }
 
 export async function updateOrder(req: Request, res: Response): Promise<void> {
-  const userId = (req as any).user?.id;
-  const orderId = parseInt(req.params.id, 10);
+  const userId: any = (req as any).user?.id;
+  const orderId: number = parseInt(req.params.id, 10);
   const { businessName, projectType, budget, timeline, description } = req.body;
 
   if (!userId) { res.status(401).json({ error: 'Unauthorized' }); return; }
   if (Number.isNaN(orderId)) { res.status(400).json({ error: 'Invalid order ID.' }); return; }
 
   try {
-    const order = await Order.findOne({ where: { id: orderId, customerId: userId } });
+    const order: OrderInstance | null = await Order.findOne({ where: { id: orderId, customerId: userId } });
     if (!order) { res.status(404).json({ error: 'Order not found.' }); return; }
 
     if (!isWithin72Hours(order.createdAt.toISOString())) {
@@ -139,7 +148,7 @@ export async function updateOrder(req: Request, res: Response): Promise<void> {
 
     await order.update({ businessName, projectType, budget, timeline, description });
 
-    const updated = await Order.findOne({
+    const updated: OrderInstance | null = await Order.findOne({
       where: { id: orderId, customerId: userId },
       include: [{ model: OrderUpdate, as: 'updates' }],
     });
@@ -151,26 +160,8 @@ export async function updateOrder(req: Request, res: Response): Promise<void> {
   }
 }
 
-export async function getUserOrders(req: Request, res: Response): Promise<void> {
-  try {
-    const userId = (req as any).user?.id;
-    if (!userId) { res.status(401).json({ error: 'Unauthorized' }); return; }
-
-    const orders: OrderInstance[] = await Order.findAll({
-      where: { customerId: userId },
-      include: [{ model: OrderUpdate, as: 'updates' }],
-      order: [['createdAt', 'DESC']],
-    });
-
-    res.status(200).json(orders);
-  } catch (err) {
-    console.error('Fetch Orders Error:', err);
-    res.status(500).json({ error: 'Failed to fetch orders.' });
-  }
-}
-
 export async function cancelOrder(req: Request, res: Response): Promise<void> {
-  const userId = (req as any).user?.id;
+  const userId: any = (req as any).user?.id;
   const orderId: number = parseInt(req.params.id, 10);
 
   if (!userId) { res.status(401).json({ error: 'Unauthorized' }); return; }
@@ -211,16 +202,16 @@ export async function cancelOrder(req: Request, res: Response): Promise<void> {
 }
 
 export async function downloadInvoice(req: Request, res: Response): Promise<void> {
-  const userId = (req as any).user?.id;
-  const orderId = parseInt(req.params.id, 10);
+  const userId: any = (req as any).user?.id;
+  const orderId: number = parseInt(req.params.id, 10);
 
   if (!userId) { res.status(401).json({ error: 'Unauthorized' }); return; }
 
   try {
-    const order = await Order.findOne({ where: { id: orderId, customerId: userId } });
+    const order: OrderInstance | null = await Order.findOne({ where: { id: orderId, customerId: userId } });
     if (!order) { res.status(404).json({ error: 'Order not found.' }); return; }
 
-    const pdfBuffer = await generatePdfBuffer(order);
+    const pdfBuffer: Buffer<ArrayBufferLike> = await generatePdfBuffer(order);
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename=invoice-${order.id}.pdf`);
     res.send(pdfBuffer);
@@ -230,86 +221,46 @@ export async function downloadInvoice(req: Request, res: Response): Promise<void
   }
 }
 
-type UpdateErrorCode =
-  | 'NOT_FOUND'
-  | 'ORDER_CLOSED'
-  | 'RATE_LIMIT'
-  | 'VALIDATION_ERROR'
-  | 'FK_VIOLATION'
-  | 'DB_ERROR'
-  | undefined;
-
-function statusFromCode(code: UpdateErrorCode): number {
-  const map: Record<Exclude<UpdateErrorCode, undefined>, number> = {
-    NOT_FOUND: 404,
-    ORDER_CLOSED: 409,
-    RATE_LIMIT: 429,
-    VALIDATION_ERROR: 400,
-    FK_VIOLATION: 400,
-    DB_ERROR: 500,
-  };
-  if (!code) return 500;
-  return map[code] ?? 500;
-}
-
-async function resolveNotifyTarget(orderId: number, actorUserId: number): Promise<number | null> {
-  const order = await Order.findByPk(orderId);
-  if (!order) return null;
-
-  const customerId = (order as any).customerId as number | null | undefined;
-  const assignedAdminId = (order as any).assignedAdminId as number | null | undefined;
-
-  if (customerId && actorUserId !== customerId) return customerId;        // staff → notify customer
-  if (assignedAdminId && actorUserId !== assignedAdminId) return assignedAdminId; // customer → notify admin
-  return null;
-}
 
 export async function addOrderUpdate(req: Request, res: Response): Promise<void> {
-  const orderIdNum = Number(req.params.orderId);
-  const userIdNum = Number((req as any).user?.id);
+  const ids = parseAndValidateIds(req, res);
+  if (!ids) return;
+  const { orderIdNum, actorUserId } = ids;
+
   const { body, requiresCustomerResponse } = (req.body ?? {}) as {
     body?: string;
     requiresCustomerResponse?: boolean;
   };
+  const safeBody = sanitizeAndValidateBody(body, res);
+  if (!safeBody) return;
 
-  const invalid = !Number.isFinite(userIdNum) || !Number.isFinite(orderIdNum) || !body;
-  if (invalid) {
-    res.status(400).json({ error: 'Invalid request.' });
+  const { actor, order } = await fetchActorAndOrder(actorUserId, orderIdNum);
+  if (!order) {
+    res.status(404).json({ error: 'Order not found.' });
     return;
   }
 
-  const safeBody = sanitizeBody(String(body));
+  const { isAdmin, isOwner } = deriveRoles(actor, order, actorUserId);
+  if (!ensureAuthorized(isAdmin, isOwner, res)) return;
 
-  const result = await createCommentUpdate(
-    orderIdNum,
-    userIdNum,
-    safeBody,
-    Boolean(requiresCustomerResponse)
-  );
+  const finalRCR = finalRequiresCustomerResponseFlag(requiresCustomerResponse, isAdmin);
 
-  if (!result.ok) {
-    const status = statusFromCode(result.code as UpdateErrorCode);
-    res.status(status).json({ error: result.message ?? 'Failed to add update.' });
-    return;
-  }
+  const result = await createCommentUpdate(orderIdNum, actorUserId, safeBody, finalRCR);
+  if (handleCreateUpdateError(res, result)) return;
 
-  const update: OrderUpdateModel = result.update!;
-  const targetUserId:number | null = await resolveNotifyTarget(orderIdNum, userIdNum);
+  const created = result?.update;
 
-  if (targetUserId) {
-    await notifyOrderUpdate({
-      orderId: orderIdNum,
-      actorUserId: userIdNum,
-      targetUserId,
-      bodyPreview: safeBody.slice(0, 240),
-    });
-  }
+  const targetUserId = resolveTargetUserId(isAdmin, order);
+  await safeNotify(orderIdNum, actorUserId, targetUserId, safeBody.slice(0, 240));
 
-  const plain = (update as any).toJSON ? (update as any).toJSON() : update;
   res.status(201).json({
-    ...plain,
-    createdAt: new Date((update as any).createdAt).toISOString(),
-    updatedAt: new Date((update as any).updatedAt).toISOString(),
+    id: created?.id,
+    orderId: created?.orderId,
+    authorUserId: created?.authorUserId,
+    body: created?.body,
+    requiresCustomerResponse: Boolean(created?.requiresCustomerResponse),
+    createdAt: created?.createdAt,
+    updatedAt: created?.updatedAt,
   });
 }
 
