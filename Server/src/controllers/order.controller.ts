@@ -387,36 +387,57 @@ export async function getMyOrders(req: Request, res: Response): Promise<void> {
 
 export async function getOrderThread(req: Request, res: Response): Promise<void> {
   const { orderId } = req.params;
-  if (!orderId) { res.status(400).json({ error: 'Invalid request.' }); return; }
+  if (!orderId || !Number.isFinite(Number(orderId))) {
+    res.status(400).json({ error: 'Invalid request.' });
+    return;
+  }
 
   try {
     const updates: OrderUpdateModel[] = await OrderUpdate.findAll({
       where: { orderId: Number(orderId) },
       order: [['createdAt', 'ASC']],
       attributes: [
-        'id', 'orderId', 'authorUserId', 'body', 'source', 'eventType',
-        'requiresCustomerResponse', 'user', 'message', 'createdAt', 'updatedAt',
+        'id',
+        'orderId',
+        'authorUserId',
+        'body',
+        'source',
+        'eventType',
+        'requiresCustomerResponse',
+        'createdAt',
+        'updatedAt',
       ],
-      include: [{ model: User, as: 'author', attributes: ['id', 'email'] }],
+      include: [
+        {
+          model: User,
+          as: 'author',
+          attributes: ['id', 'username', 'email'],
+          required: false,
+        },
+      ],
     });
 
-    res.json(updates.map(u => ({
-      id: u.id,
-      orderId: u.orderId,
-      authorUserId: u.authorUserId,
-      authorEmail: (u as any).author?.email ?? null,
-      body: (u as any).body ?? (u as any).message ?? '',
-      source: (u as any).source ?? 'web',
-      eventType: (u as any).eventType ?? 'comment',
-      requiresCustomerResponse: !!(u as any).requiresCustomerResponse,
-      createdAt: u.createdAt.toISOString(),
-      updatedAt: u.updatedAt.toISOString(),
-    })));
+    res.status(200).json(
+      updates.map((u: any) => ({
+        id: u.id,
+        orderId: u.orderId,
+        authorUserId: u.authorUserId ?? null,
+        authorUsername: u.author?.username ?? null,
+        authorEmail: u.author?.email ?? null,
+        body: u.body ?? '',
+        source: u.source,
+        eventType: u.eventType,
+        requiresCustomerResponse: !!u.requiresCustomerResponse,
+        createdAt: new Date(u.createdAt).toISOString(),
+        updatedAt: new Date(u.updatedAt).toISOString(),
+      }))
+    );
   } catch (err) {
     console.error('getOrderThread failed', err);
     res.status(500).json({ error: 'Failed to load thread.' });
   }
 }
+
 
 /**
  * (Optional) If you wire an email webhook:
