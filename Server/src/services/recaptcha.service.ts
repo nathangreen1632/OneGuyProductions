@@ -1,4 +1,4 @@
-import {GoogleAuth} from 'google-auth-library';
+import {AnyAuthClient, GoogleAuth} from 'google-auth-library';
 import fs from 'fs/promises';
 import type {RecaptchaVerificationResponse, RecaptchaVerificationResult,} from '../types/requestBodies.types.js';
 import {EnvConfig} from "../config/env.config.js";
@@ -13,7 +13,7 @@ const SERVICE_ACCOUNT_KEY_PATH: string = EnvConfig.SERVICE_ACCOUNT_KEY_PATH || '
 (async (): Promise<void> => {
   if (EnvConfig.GOOGLE_CREDENTIALS_B64) {
     try {
-      const buffer = Buffer.from(EnvConfig.GOOGLE_CREDENTIALS_B64, 'base64');
+      const buffer: Buffer<ArrayBuffer> = Buffer.from(EnvConfig.GOOGLE_CREDENTIALS_B64, 'base64');
       await fs.writeFile(SERVICE_ACCOUNT_KEY_PATH, buffer, { mode: 0o600 });
     } catch (err) {
       console.error('❌ Failed to decode or write service account credentials to /tmp:', err);
@@ -53,7 +53,7 @@ export async function verifyRecaptchaToken(
   }
 
   try {
-    const client = await auth.getClient();
+    const client: AnyAuthClient = await auth.getClient();
 
     const { token: accessToken } = await client.getAccessToken() || {};
     if (!accessToken) {

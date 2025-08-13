@@ -10,7 +10,7 @@ async function safeFetch<T>(
     const res: Response = await fetch(input, { credentials: 'include', ...init });
 
     if (!res.ok) {
-      const errUnknown: unknown = await res.json().catch(() => ({} as unknown));
+      const errUnknown: unknown = await res.json().catch((): unknown => ({} as unknown));
       const errorText =
         typeof (errUnknown as any)?.error?.res?.statusText === 'string'
           ? (errUnknown as any).error.res.statusText

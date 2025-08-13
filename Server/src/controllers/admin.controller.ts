@@ -4,6 +4,8 @@ import { Order, OrderUpdate, User } from '../models/index.js';
 import type { OrderStatus } from '../types/api.types.js';
 import { getAdminOrdersWithUnread } from '../services/inbox.service.js';
 import { setStatus as svcSetStatus, assignToAdmin as svcAssignToAdmin } from '../services/admin.service.js';
+import {OrderInstance} from "../models/order.model.js";
+import {OrderUpdateModel} from "../models/orderUpdate.model.js";
 
 export interface AdminOrderRow {
   id: number;
@@ -27,13 +29,13 @@ export interface AdminOrdersResponse {
 }
 
 export async function getAdminOrders(req: Request, res: Response): Promise<void> {
-  const viewerId = Number((req as any).user?.id);
+  const viewerId: number = Number((req as any).user?.id);
   const parsePagination = (qs: Record<string, string>) => {
-    const p = Math.max(parseInt(qs.page ?? '1', 10) || 1, 1);
-    const ps = Math.min(Math.max(parseInt(qs.pageSize ?? '20', 10) || 20, 1), 100);
+    const p: number = Math.max(parseInt(qs.page ?? '1', 10) || 1, 1);
+    const ps: number = Math.min(Math.max(parseInt(qs.pageSize ?? '20', 10) || 20, 1), 100);
     return { p, ps };
   };
-  const cutoffFrom = (v?: string): Date | null => {
+  const cutoffFrom: (v?: string) => Date | null = (v?: string): Date | null => {
     if (!v) return null;
     const now = new Date();
     const d = new Date(now);
@@ -42,17 +44,17 @@ export async function getAdminOrders(req: Request, res: Response): Promise<void>
     if (v === '30d') { d.setDate(now.getDate() - 30);   return d; }
     return null;
   };
-  const buildWhere = (qs: Record<string, string>): WhereOptions => {
+  const buildWhere: (qs: Record<string, string>) => WhereOptions = (qs: Record<string, string>): WhereOptions => {
     const { status, projectType, updatedWithin, assignedTo, q } = qs;
     const where: WhereOptions = {};
     if (status) where['status'] = status as OrderStatus;
     if (projectType) where['projectType'] = projectType;
-    const cutoff = cutoffFrom(updatedWithin);
+    const cutoff: Date | null = cutoffFrom(updatedWithin);
     if (cutoff) where['updatedAt'] = { [Op.gte]: cutoff };
     if (assignedTo) {
       if (assignedTo === 'me') where['assignedAdminId'] = viewerId;
       else {
-        const id = Number(assignedTo);
+        const id: number = Number(assignedTo);
         if (Number.isFinite(id)) where['assignedAdminId'] = id;
       }
     }
@@ -67,7 +69,10 @@ export async function getAdminOrders(req: Request, res: Response): Promise<void>
     }
     return where;
   };
-  const toRow = (
+  const toRow: (o: any,
+    latestMap: Map<number, string>,
+    countMap: Map<number, number>
+  ) => AdminOrderRow = (
     o: any,
     latestMap: Map<number, string>,
     countMap: Map<number, number>
@@ -89,17 +94,17 @@ export async function getAdminOrders(req: Request, res: Response): Promise<void>
 
   const qs = req.query as Record<string, string>;
   const { p, ps } = parsePagination(qs);
-  const where = buildWhere(qs);
+  const where: WhereOptions = buildWhere(qs);
 
   try {
     const svc = await getAdminOrdersWithUnread(viewerId, where, p, ps);
 
-    const orders = svc?.orders ?? [];
-    const total = svc?.total ?? 0;
-    const latestMap = svc?.latestMap ?? new Map<number, string>();
-    const countMap = svc?.countMap ?? new Map<number, number>();
+    const orders: OrderInstance[] = svc?.orders ?? [];
+    const total: number = svc?.total ?? 0;
+    const latestMap: Map<number, string> = svc?.latestMap ?? new Map<number, string>();
+    const countMap: Map<number, number> = svc?.countMap ?? new Map<number, number>();
 
-    const filtered = qs.unread === 'true'
+    const filtered: OrderInstance[] = qs.unread === 'true'
       ? orders.filter(o => (countMap.get(o.id) ?? 0) > 0)
       : orders;
 
@@ -113,11 +118,11 @@ export async function getAdminOrders(req: Request, res: Response): Promise<void>
 }
 
 export async function getOrderThread(req: Request, res: Response): Promise<void> {
-  const orderIdNum = Number(req.params.orderId);
+  const orderIdNum: number = Number(req.params.orderId);
   if (!Number.isFinite(orderIdNum)) { res.status(400).json({ error: 'Invalid request.' }); return; }
 
   try {
-    const updates = await OrderUpdate.findAll({
+    const updates: OrderUpdateModel[] = await OrderUpdate.findAll({
       where: { orderId: orderIdNum },
       order: [['createdAt', 'ASC']],
       attributes: [
@@ -141,7 +146,7 @@ export async function getOrderThread(req: Request, res: Response): Promise<void>
       ],
     });
 
-    const order = await Order.findByPk(orderIdNum, {
+    const order: OrderInstance | null = await Order.findByPk(orderIdNum, {
       attributes: [
         'id',
         'name',
@@ -203,7 +208,7 @@ export async function getOrderThread(req: Request, res: Response): Promise<void>
         updatedAt: new Date(0).toISOString(),
       };
 
-    const canPost = orderPayload.status !== 'cancelled' && orderPayload.status !== 'complete';
+    const canPost: boolean = orderPayload.status !== 'cancelled' && orderPayload.status !== 'complete';
 
     res.json({ order: orderPayload, updates: mapped, canPost });
   } catch (err) {
@@ -213,9 +218,9 @@ export async function getOrderThread(req: Request, res: Response): Promise<void>
 }
 
 export async function setOrderStatus(req: Request, res: Response): Promise<void> {
-  const orderIdNum = Number(req.params.orderId);
+  const orderIdNum: number = Number(req.params.orderId);
   const next = String(req.body?.status ?? '').trim() as OrderStatus;
-  const actorId = Number((req as any).user?.id) || null;
+  const actorId: number | null = Number((req as any).user?.id) || null;
 
   if (!Number.isFinite(orderIdNum) || !next) {
     res.status(400).json({ ok: false, message: 'Invalid order id or status' });
@@ -232,9 +237,9 @@ export async function setOrderStatus(req: Request, res: Response): Promise<void>
 }
 
 export async function assignOrderToAdmin(req: Request, res: Response): Promise<void> {
-  const orderIdNum = Number(req.params.orderId);
-  const adminIdNum = Number(req.body?.assignedAdminId);
-  const actorId = Number((req as any).user?.id) || null;
+  const orderIdNum: number = Number(req.params.orderId);
+  const adminIdNum: number = Number(req.body?.assignedAdminId);
+  const actorId: number | null = Number((req as any).user?.id) || null;
 
   if (!Number.isFinite(orderIdNum) || !Number.isFinite(adminIdNum)) {
     res.status(400).json({ ok: false, message: 'Invalid order id or admin id' });

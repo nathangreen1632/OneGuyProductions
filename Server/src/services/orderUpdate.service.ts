@@ -1,6 +1,7 @@
-// Server/src/services/orderUpdate.service.ts
 import { Transaction, UniqueConstraintError, ValidationError } from 'sequelize';
 import { Order, OrderUpdate } from '../models/index.js';
+import {OrderInstance} from "../models/order.model.js";
+import {OrderUpdateModel} from "../models/orderUpdate.model.js";
 
 export interface CreateCommentUpdateResult {
   ok: boolean;
@@ -22,7 +23,7 @@ export async function createCommentUpdate(
   requiresCustomerResponse = false,
   trx?: Transaction
 ): Promise<CreateCommentUpdateResult> {
-  const order = await Order.findByPk(orderId, { transaction: trx });
+  const order: OrderInstance | null = await Order.findByPk(orderId, { transaction: trx });
 
   if (!order) {
     return { ok: false, code: 'NOT_FOUND', message: 'Order not found.' };
@@ -37,7 +38,7 @@ export async function createCommentUpdate(
   }
 
   try {
-    const created = await OrderUpdate.create(
+    const created: OrderUpdateModel = await OrderUpdate.create(
       {
         orderId,
         authorUserId,

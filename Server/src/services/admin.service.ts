@@ -9,7 +9,7 @@ export async function setStatus(
   actorUserId?: number | null,
   trx?: Transaction
 ): Promise<{ ok: boolean; message?: string }> {
-  const ownTx = !trx;
+  const ownTx: boolean = !trx;
   const t = trx ?? (await sequelize.transaction());
   try {
     const [count] = await Order.update({ status }, { where: { id: orderId }, transaction: t });
@@ -50,7 +50,7 @@ export async function assignToAdmin(
   actorUserId?: number | null,
   trx?: Transaction
 ): Promise<{ ok: boolean; message?: string }> {
-  const ownTx = !trx;
+  const ownTx: boolean = !trx;
   const t = trx ?? (await sequelize.transaction());
   try {
     const [count] = await Order.update(

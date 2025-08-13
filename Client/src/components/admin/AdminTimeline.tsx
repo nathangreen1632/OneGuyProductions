@@ -33,7 +33,7 @@ function displayLabel(update: TOrderUpdateLikeType): string {
   const rawEmail: string | undefined =
     author.email ??
     update.authorEmail ??
-    (update.authorName.includes('@')
+    (update.authorName?.includes('@')
       ? update.authorName
       : undefined);
 
@@ -46,7 +46,7 @@ function displayLabel(update: TOrderUpdateLikeType): string {
   const aliasFromEmail: string | undefined = rawEmail ? rawEmail.split('@')[0] : undefined;
   const candidate = first || username || providedName || aliasFromEmail || 'User';
 
-  return candidate.includes('@') ? candidate.split('@')[0] : candidate;
+  return candidate?.includes('@') ? candidate.split('@')[0] : candidate;
 }
 
 function formatDateSafe(input: unknown): string {

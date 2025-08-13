@@ -21,16 +21,14 @@ export async function requireAdmin(req: Request, res: Response, next: NextFuncti
       return;
     }
 
-    const emailOk = user.email.toLowerCase().endsWith('@oneguyproductions.com');
+    const emailOk: boolean = user.email.toLowerCase().endsWith('@oneguyproductions.com');
 
     if (!emailOk) {
-      // Optional, remove in prod
       console.warn('Admin guard blocked user:', { id: user.id, email: user.email });
       res.status(403).json({ error: 'Forbidden' });
       return;
     }
 
-    // Attach for downstream handlers if needed
     (req as any).user = { id: user.id, email: user.email };
     next();
   } catch (err) {
