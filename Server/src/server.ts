@@ -19,7 +19,7 @@ async function startServer(): Promise<void> {
       await sequelize.sync({ alter: false });
       loggerConfig.info('✅ DB sync complete.');
     } else {
-      loggerConfig.info('✅ DB sync skipped. Using migrations / existing schema.');
+      loggerConfig.info('DB sync skipped. Using migrations / existing schema.');
     }
 
     app.listen(PORT, (): void => {

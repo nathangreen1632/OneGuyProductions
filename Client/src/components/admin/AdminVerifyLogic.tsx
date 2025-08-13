@@ -1,7 +1,7 @@
 import React from 'react';
 import {type NavigateFunction, useNavigate} from 'react-router-dom';
 import toast from 'react-hot-toast';
-import AdminVerifyView from '../../jsx/adminVerifyView';
+import AdminVerifyView from '../../jsx/admin/adminVerifyView.tsx';
 
 export default function AdminVerifyLogic(): React.ReactElement {
   const navigate: NavigateFunction = useNavigate();

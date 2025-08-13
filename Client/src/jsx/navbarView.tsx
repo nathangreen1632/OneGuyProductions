@@ -13,7 +13,7 @@ export default function NavbarView({
   const loc = useLocation();
 
   const desktopLinkClass: (isActive: boolean) => string = (isActive: boolean): string =>
-    `flex items-center gap-1 border-b-2 ${
+    `flex items-center gap-1 border-b-2 cursor-pointer ${
       isActive
         ? 'border-[var(--theme-border)] text-[var(--theme-border-red)]'
         : 'border-transparent'
@@ -35,7 +35,6 @@ export default function NavbarView({
 
         <ul className="hidden lg:flex gap-6 text-sm font-medium">
           {navLinks.map(({ label, path, icon: Icon, onClick }: INavLink): ReactElement => {
-            // Button-style (e.g., logout)
             if (onClick) {
               const isActive: boolean = loc.pathname === path;
               return (

@@ -43,13 +43,13 @@ export async function getCustomerOrdersWithUnread(userId: number) {
     createdAt: string;
   }>(
     `SELECT ou."orderId",
-            COALESCE(u."email", u."username") AS "user",
-            ou."body"                         AS "body",
-            ou."createdAt"                    AS "createdAt"
-     FROM "orderUpdates" ou
-              LEFT JOIN "users" u ON u."id" = ou."authorUserId"
-     WHERE ou."orderId" IN (:ids)
-     ORDER BY ou."orderId", ou."createdAt" `,
+          u."username"                    AS "user",
+          ou."body"                       AS "body",
+          ou."createdAt"                  AS "createdAt"
+   FROM "orderUpdates" ou
+            LEFT JOIN "users" u ON u."id" = ou."authorUserId"
+   WHERE ou."orderId" IN (:ids)
+   ORDER BY ou."orderId", ou."createdAt"`,
     { replacements: { ids }, type: QueryTypes.SELECT }
   );
 

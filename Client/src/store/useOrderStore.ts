@@ -1,5 +1,6 @@
 import { create, type StateCreator, type StoreApi, type UseBoundStore } from 'zustand';
 import type { Order, OrderPayload } from '../types/order.types';
+import type { CustomerThread } from '../types/customer.types';
 
 export interface TOrderStateType {
   lastOrder: OrderPayload | null;
@@ -16,6 +17,13 @@ export interface TOrderStateType {
   markAsRead: (orderId: number) => void;
   setView: (view: 'card' | 'timeline') => void;
   updateOrder: (updated: Order) => void;
+
+  threadByOrderId?: Record<number, CustomerThread>;
+  threadLoading?: boolean;
+  threadError?: string | null;
+
+  fetchOrderThread?: (orderId: number) => Promise<void>;
+  postOrderComment?: (orderId: number, body: string, requiresCustomerResponse?: boolean) => Promise<boolean>;
 }
 
 const LOCAL_KEY: string = 'unreadOrderIds';
@@ -76,6 +84,10 @@ const orderStoreCreator: StateCreator<TOrderStateType> = (
   unreadOrderIds: readUnread().ids,
   currentView: 'card',
   initialized: false,
+
+  threadByOrderId: {},
+  threadLoading: false,
+  threadError: null,
 
   fetchOrders: async (): Promise<void> => {
     try {
@@ -154,6 +166,51 @@ const orderStoreCreator: StateCreator<TOrderStateType> = (
       );
       return { orders: [...updatedOrders] };
     }),
+
+  fetchOrderThread: async (orderId: number): Promise<void> => {
+    set({ threadLoading: true, threadError: null });
+    try {
+      const res: Response = await fetch(`/api/order/${orderId}/updates`, { credentials: 'include' });
+      const data: unknown = await res.json();
+      if (!Array.isArray(data)) {
+        set({ threadError: 'Unexpected response.', threadLoading: false });
+        return;
+      }
+      set((s: TOrderStateType): Partial<TOrderStateType> => ({
+        threadByOrderId: { ...(s.threadByOrderId ?? {}), [orderId]: data as CustomerThread },
+        threadLoading: false,
+      }));
+
+      get().markAsRead?.(orderId);
+    } catch {
+      set({ threadError: 'Network error', threadLoading: false });
+    }
+  },
+
+  postOrderComment: async (
+    orderId: number,
+    body: string,
+    requiresCustomerResponse: boolean = false
+  ): Promise<boolean> => {
+    try {
+      const res: Response = await fetch(`/api/order/${orderId}/updates`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ body, requiresCustomerResponse }),
+      });
+      if (!res.ok) {
+        const err: unknown = await res.json().catch(() => ({}));
+        set({ threadError: (err as { error?: string })?.error ?? 'Failed to post comment' });
+        return false;
+      }
+      await get().fetchOrderThread?.(orderId);
+      return true;
+    } catch {
+      set({ threadError: 'Network error' });
+      return false;
+    }
+  },
 });
 
 export const useOrderStore: UseBoundStore<StoreApi<TOrderStateType>> =
