@@ -28,7 +28,7 @@ export default function OrderCardView({
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-[85vw] mx-auto">
       {orders.map((order: Order): ReactElement => {
         const isEditable: boolean = isWithin72Hours(order.createdAt);
         const isUnread: boolean = unreadOrderIds.includes(order.id);
