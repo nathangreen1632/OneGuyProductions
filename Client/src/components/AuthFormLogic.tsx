@@ -19,11 +19,18 @@ import type { AuthFormState, LoginPayload, RegisterPayload } from '../types/auth
 type TAuthEndpoint = '/api/auth/login' | '/api/auth/register';
 type TApiResult = { ok: boolean; data: unknown };
 
-const nextPathForEmail: (email: unknown) => string = (u: any): string => {
+const nextPathForEmail: (u: unknown) => string = (u: any): string => {
   const role = (u?.role as string) || 'user';
   const verified = Boolean(u?.emailVerified);
   return role === 'admin' && verified ? '/admin/orders' : '/portal';
 };
+
+function getSafeReturnTo(): string | null {
+  const params = new URLSearchParams(window.location.search);
+  const rt = params.get('returnTo') || '';
+  if (rt?.startsWith('/')) return rt;
+  return null;
+}
 
 export default function AuthFormLogic(): React.ReactElement {
   const { openModal } = useResetPasswordStore();
@@ -51,7 +58,10 @@ export default function AuthFormLogic(): React.ReactElement {
   const [rememberMe, setRememberMe] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
 
-  const { isAuthenticated, hydrated }: { isAuthenticated: boolean; hydrated: boolean } = useAuthStore();
+  const inputClass =
+    'w-full rounded-xl border border-[var(--theme-border-blue)] bg-transparent p-2 text-sm outline-none';
+
+  const { isAuthenticated, hydrated } = useAuthStore();
 
   useEffect((): void => {
     if (hydrated && isAuthenticated) navigate('/portal');
@@ -82,20 +92,21 @@ export default function AuthFormLogic(): React.ReactElement {
 
       if ((data as any)?.next === 'verify-admin-email') {
         toast.success('Check your @oneguyproductions.com inbox for your admin verification code.');
-        // Optionally route to a verify step (or stay put and show an OTP field)
         navigate('/auth?mode=verify-admin', { replace: true });
         return;
       }
-
-      toast.success(isLogin ? 'Login successful!' : 'Registration complete!');
 
       const persisted: boolean = persistUserFromResponse(data);
       if (!persisted) return;
 
       await linkPendingOrderIfAny();
 
-      const u: Record<string, unknown> | null = (data as { user?: Record<string, unknown> } | null)?.user ?? null;
-      const dest: string = nextPathForEmail(u);
+      const u: Record<string, unknown> | null =
+        (data as { user?: Record<string, unknown> } | null)?.user ?? null;
+      const fallback: string = nextPathForEmail(u);
+      const rt: string | null = getSafeReturnTo();
+
+      const dest: string = rt ?? fallback;
 
       const from = (history.state?.usr?.from?.pathname) || null;
       if (from && dest.startsWith('/admin') && from.startsWith('/admin')) {
@@ -103,7 +114,6 @@ export default function AuthFormLogic(): React.ReactElement {
       } else {
         navigate(dest, { replace: true });
       }
-
     } catch (err: unknown) {
       console.error('🚨 Fetch failed:', err);
       toast.error('Server error. Please try again.');
@@ -118,11 +128,8 @@ export default function AuthFormLogic(): React.ReactElement {
     return 'Register';
   }
 
-  const inputClass: string =
-    'w-full px-4 py-2 rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] placeholder:text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)]';
-
-  const passwordType: 'text' | 'password' = showPassword ? 'text' : 'password';
   const buttonText: string = getButtonText(loading, isLogin);
+  const passwordType: 'text' | 'password' = showPassword ? 'text' : 'password';
 
   return (
     <AuthFormView
