@@ -20,7 +20,7 @@ export default function CustomerPortalView(): React.ReactElement {
   return (
     <div className="p-4 sm:p-6">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold">My Orders</h2>
+        <h2 className="text-3xl font-bold">My Orders</h2>
         <ToggleViewButton />
       </div>
       {currentView === 'card' ? <OrderCardLogic /> : <OrderTimelineView />}
