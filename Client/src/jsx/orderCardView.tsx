@@ -1,15 +1,15 @@
 import React, { type ReactElement, useMemo, useState } from 'react';
 import { ChevronRight } from 'lucide-react';
-import NotificationBadge from '../common/NotificationBadge'; // 🚫 removed for now
 import type { Order } from '../types/order.types';
 import { format } from 'date-fns';
-import { useNotificationStore } from '../store/useNotificationStore';
 import DescriptionModal from '../modals/DescriptionModal';
+import NotificationBadge from '../common/NotificationBadge';
+import { useNotificationStore } from '../store/useNotificationStore';
 
 interface IOrderCardViewProps {
   orders: Order[];
-  unreadOrderIds: number[]; // kept for compatibility (unused here)
-  onCardClick: (order: Order) => void; // intentionally unused now
+  unreadOrderIds: number[];
+  onCardClick: (order: Order) => void;
   onEdit: (order: Order) => void;
   onCancel: (order: Order) => void;
   onDownload: (orderId: number) => void;
@@ -19,16 +19,24 @@ interface IOrderCardViewProps {
 
 export default function OrderCardView({
                                         orders = [],
-                                        // unreadOrderIds = [], // still accepted, not used
-                                        onCardClick: _onCardClick, // intentionally unused to keep signature stable
+                                        onCardClick: _onCardClick,
                                         onEdit,
                                         onCancel,
                                         onDownload,
                                         getStatusTextClasses,
                                         isWithin72Hours,
                                       }: Readonly<IOrderCardViewProps>): React.ReactElement {
-  // Unconditional hooks so we never trip Rules of Hooks / Sonar
   const [modalOrderId, setModalOrderId] = useState<number | null>(null);
+
+  const items = useNotificationStore((s) => s.items);
+  const unreadOrderIds = useMemo<number[]>(
+    () => items.filter((n) => !n.read).map((n) => n.orderId),
+    [items]
+  );
+  const unreadOrderIdsSet = useMemo<Set<number>>(
+    () => new Set<number>(unreadOrderIds),
+    [unreadOrderIds]
+  );
 
   const modalOrder: Order | null = useMemo(
     () => (modalOrderId ? orders.find((o) => o.id === modalOrderId) ?? null : null),
@@ -48,9 +56,7 @@ export default function OrderCardView({
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-6 max-w-[85vw] mx-auto items-start">
           {orders.map((order: Order): ReactElement => {
             const isEditable: boolean = isWithin72Hours(order.createdAt);
-            // const isUnread: boolean = unreadOrderIds.includes(order.id); // 🚫 not used now
 
-            // Truncate Description to 300 chars
             const shouldTruncate = order.description.length > 300;
             const displayDescription = shouldTruncate
               ? `${order.description.slice(0, 300)}…`
@@ -59,16 +65,16 @@ export default function OrderCardView({
             return (
               <article
                 key={order.id}
-                className="pt-4 m-2 break-inside-avoid rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] p-4 sm:p-6 shadow-[0_4px_14px_0_var(--theme-shadow)] border border-[var(--theme-border)]"
+                className={`relative pt-4 m-2 break-inside-avoid rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] p-4 sm:p-6 shadow-[0_4px_14px_0_var(--theme-shadow)] border ${
+                  unreadOrderIdsSet.has(order.id)
+                    ? 'border-transparent blink-border-3'
+                    : 'border-[var(--theme-border)]'
+                }`}
               >
-                {/* 🚫 Red-dot removed entirely to avoid any interference */}
-                {/* {isUnread && <NotificationBadge />} */}
-                {useNotificationStore.getState().hasUnreadForOrder(order.id) && <NotificationBadge />}
+              {/* Red dot */}
+                {unreadOrderIdsSet.has(order.id) && <NotificationBadge />}
 
-
-                {/* CONTENT (flex-1) so the actions can hug the bottom */}
                 <div className="flex-1">
-                  {/* Header block (non-interactive) */}
                   <div className="mb-4">
                     <h3 className="text-lg font-bold">{order.projectType}</h3>
                     <p className="text-sm text-[var(--theme-text)]">
@@ -85,7 +91,6 @@ export default function OrderCardView({
                     </p>
                   </div>
 
-                  {/* Non-interactive details */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
                       <p className="text-lg underline">Email</p>
@@ -101,7 +106,6 @@ export default function OrderCardView({
                     </div>
                   </div>
 
-                  {/* Description (still outside any button to avoid nested controls) */}
                   <div className="mt-4 sm:col-span-2">
                     <p className="text-lg underline">Description</p>
                     <p className="text-sm font-medium break-words">{displayDescription}</p>
@@ -110,7 +114,7 @@ export default function OrderCardView({
                       <button
                         type="button"
                         onClick={(e): void => {
-                          e.stopPropagation(); // harmless, defensive
+                          e.stopPropagation();
                           openDescriptionModal(order.id);
                         }}
                         className="mt-1 inline-flex items-center gap-1 text-red-500 text-xs focus:outline-none hover:underline"
@@ -124,7 +128,6 @@ export default function OrderCardView({
                   </div>
                 </div>
 
-                {/* ACTIONS */}
                 <div className="mt-6 flex flex-wrap gap-3">
                   <button
                     type="button"
@@ -163,7 +166,6 @@ export default function OrderCardView({
         </div>
       )}
 
-      {/* Modal for full description */}
       <DescriptionModal
         open={!!modalOrder}
         title={modalOrder ? `Order #${modalOrder.id} — Full Description` : 'Order'}
