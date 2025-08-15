@@ -63,3 +63,14 @@
     border: 2px solid var(--theme-surface);
   }
 }
+
+/* Blink the border color 3 times */
+@keyframes ogp-blink-border {
+  0%, 100% { border-color: var(--theme-border-red); }
+  50%      { border-color: transparent; }
+}
+
+/* helper class that runs the 3-blink animation */
+.ogp-blink-border-3 {
+  animation: ogp-blink-border 0.5s ease-in-out 4;
+}
