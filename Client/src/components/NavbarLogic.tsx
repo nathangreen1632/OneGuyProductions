@@ -1,11 +1,11 @@
 import React, {useEffect, useMemo, useState} from 'react';
-import {useNavigate} from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import md5 from 'blueimp-md5';
 import {Bell, LogIn, LogOut, ShieldCheck, UserSquare2} from 'lucide-react';
 import type {AuthState} from '../types/authState.types';
 import {type NavLink, navLinks} from '../constants/navLinks';
 import {useAppStore} from '../store/useAppStore';
-import {useAuthStore} from '../store/useAuthStore';
+import {type TAuthStateType, useAuthStore} from '../store/useAuthStore';
 import { useOrderStore } from '../store/useOrderStore';
 import {logoutUser} from '../helpers/logoutHelper';
 import {useNotificationStore} from '../store/useNotificationStore';
@@ -23,30 +23,35 @@ function getGravatarUrl(email?: string): string {
 
 export default function NavbarLogic(): React.ReactElement {
   const navigate: ReturnType<typeof useNavigate> = useNavigate();
-  const [isInboxOpen, setIsInboxOpen] = useState<boolean>(false);
-  const unreadCount: number = useNotificationStore((s) => s.unreadCount());
+  const loc = useLocation();
 
-  const {
-    menuOpen,
-    toggleMenu,
-    closeMenu,
-  }: { menuOpen: boolean; toggleMenu: () => void; closeMenu: () => void } = useAppStore();
+  const [isInboxOpen, setIsInboxOpen] = useState<boolean>(false);
+
+  const { menuOpen, toggleMenu, closeMenu } = useAppStore();
 
   useEffect((): void => { closeMenu(); }, [location.pathname, closeMenu]);
 
-  // 🔄 Hydrate notifications after auth; refresh every 30s
+  const HIDE_ON_ADMIN = useMemo<Set<string>>(
+    (): Set<string> => new Set<string>(['Products', 'About', 'Contact', 'Order', 'My Portal', 'Home']),
+    []
+  );
+  const HIDE_ON_PORTAL = useMemo<Set<string>>(
+    (): Set<string> => new Set<string>([]),
+    []
+  );
+
   useEffect((): (() => void) | void => {
     const isAuthenticated: boolean = useAuthStore.getState().isAuthenticated;
     const hydrated: boolean = useAuthStore.getState().hydrated;
     if (!hydrated || !isAuthenticated) return;
 
-    let cancelled = false;
-    const load = async (): Promise<void> => {
+    let cancelled: boolean = false;
+
+    const load: () => Promise<void> = async (): Promise<void> => {
       try {
-        const res = await fetch('/api/order/inbox?unreadOnly=1', { credentials: 'include' });
+        const res: Response = await fetch('/api/order/inbox?unreadOnly=1', { credentials: 'include' });
         const data = await res.json();
         if (!cancelled && Array.isArray(data)) {
-          // [{ id, orderId, title, message, createdAt, read }]
           useNotificationStore.getState().set(data);
         }
       } catch (e) {
@@ -54,16 +59,12 @@ export default function NavbarLogic(): React.ReactElement {
       }
     };
 
-    load();
-    const id = window.setInterval(load, 30000);
-    return () => {
-      cancelled = true;
-      window.clearInterval(id);
-    };
+    void load();
+    const id: number = window.setInterval((): void => { void load(); }, 30000);
+    return (): void => { cancelled = true; window.clearInterval(id); };
   }, [
-    // re-run when auth state flips
-    useAuthStore((s) => s.hydrated),
-    useAuthStore((s) => s.isAuthenticated),
+    useAuthStore((s: TAuthStateType): boolean => s.hydrated),
+    useAuthStore((s: TAuthStateType): boolean => s.isAuthenticated),
   ]);
 
   const isAuthenticated: boolean = useAuthStore((state: AuthState): boolean => state.isAuthenticated);
@@ -77,18 +78,21 @@ export default function NavbarLogic(): React.ReactElement {
     const base: NavLink[] = navLinks.slice();
     const extras: NavLink[] = [];
 
-    // Only render auth-specific links when hydration is complete
     if (hydrated && isAuthenticated) {
-      // Portal
       extras.push({ label: 'My Portal', path: '/portal', icon: UserSquare2 } as NavLink);
 
-      // Admin (company emails only)
       const isCompanyEmail: boolean = !!user?.email && user.email.toLowerCase().endsWith('@oneguyproductions.com');
       if (isCompanyEmail) {
         extras.push({ label: 'Admin', path: '/admin/orders', icon: ShieldCheck } as NavLink);
       }
 
-      // Logout
+      extras.push({
+        label: 'Inbox',
+        path: '#',
+        icon: Bell,
+        onClick: (): void => setIsInboxOpen(true),
+      } as NavLink);
+
       extras.push({
         label: 'Logout',
         path: '#',
@@ -101,29 +105,31 @@ export default function NavbarLogic(): React.ReactElement {
           }
         },
       } as NavLink);
-
-      // Inbox
-      extras.push({
-        label: unreadCount > 0 ? `Inbox (${unreadCount})` : 'Inbox',
-        path: '#',
-        icon: Bell,
-        onClick: (): void => setIsInboxOpen(true),
-      } as NavLink);
     } else if (hydrated && !isAuthenticated) {
-      // Login/Register (only when hydrated and logged out)
       extras.push({ label: 'Login / Register', path: '/auth', icon: LogIn } as NavLink);
     }
 
-    // Deduplicate (guard in case any view mutates or we re-render across transitions)
-    const merged = [...base, ...extras];
-    return Array.from(
-      new Map(merged.map((l) => [`${l.label}|${l.path}`, l])).values()
-    );
-  }, [isAuthenticated, user?.email, logout, navigate, unreadCount, hydrated]);
+    const merged: NavLink[] = [...base, ...extras];
+    const deduped: NavLink[] = Array.from(new Map(merged.map((l: NavLink): [string, NavLink] => [`${l.label}|${l.path}`, l])).values());
+
+    const isAdminRoute: boolean = loc.pathname.startsWith('/admin');
+    const isPortalRoute: boolean = loc.pathname.startsWith('/portal');
+
+    let scoped: NavLink[] = deduped;
+    if (isAdminRoute) scoped = scoped.filter((l: NavLink): boolean => !HIDE_ON_ADMIN.has(l.label));
+    if (isPortalRoute) scoped = scoped.filter((l: NavLink): boolean => !HIDE_ON_PORTAL.has(l.label));
+
+    const logoutIndex2: number = scoped.findIndex((l: NavLink): boolean => l.label === 'Logout');
+    if (logoutIndex2 > -1) {
+      const [logoutLink2] = scoped.splice(logoutIndex2, 1);
+      scoped.push(logoutLink2);
+    }
+
+    return scoped;
+  }, [isAuthenticated, user?.email, logout, navigate, hydrated, loc.pathname, HIDE_ON_ADMIN, HIDE_ON_PORTAL]);
 
   return (
     <div className="bg-[var(--theme-surface)] text-[var(--theme-text)] shadow-md">
-      {/* Force remount when auth/hydration flips to clear any internal state in the view */}
       <NavbarView
         key={`${hydrated ? 'h1' : 'h0'}-${isAuthenticated ? 'auth' : 'anon'}`}
         navLinks={dynamicLinks}
@@ -146,21 +152,12 @@ export default function NavbarLogic(): React.ReactElement {
               open={isInboxOpen}
               onClose={(): void => setIsInboxOpen(false)}
               onNavigateToOrder={(orderId: number): void => {
-                // switch the portal to timeline view first
-                try {
-                  useOrderStore.getState().setView('timeline');
-                } catch {}
-                // then navigate to the specific order anchor
+                try { useOrderStore.getState().setView('timeline'); } catch {}
                 window.location.assign(`/portal#order-${orderId}`);
               }}
             />
 
-
-            <img
-              src={getGravatarUrl(user.email)}
-              alt="User Avatar"
-              className="w-12 h-12 rounded-full"
-            />
+            <img src={getGravatarUrl(user.email)} alt="User Avatar" className="w-12 h-12 rounded-full" />
 
             <button
               type="button"
@@ -171,10 +168,7 @@ export default function NavbarLogic(): React.ReactElement {
               <RedInfoIcon size={16} strokeWidth={2.5} />
             </button>
 
-            <GravatarModal
-              isOpen={isGravatarModalOpen}
-              onClose={(): void => setIsGravatarModalOpen(false)}
-            />
+            <GravatarModal isOpen={isGravatarModalOpen} onClose={(): void => setIsGravatarModalOpen(false)} />
           </div>
         </div>
       )}
