@@ -71,7 +71,7 @@ export function useSessionHydration(): void {
         }
 
         if (isEntry(location.pathname)) {
-          const dest = nextPathForUser(user ?? undefined);
+          const dest: string = nextPathForUser(user ?? undefined);
           navigate(dest, { replace: true });
         }
       } finally {
@@ -79,7 +79,7 @@ export function useSessionHydration(): void {
       }
     })();
 
-    return () => {
+    return (): void => {
       cancelled = true;
       controller.abort();
     };
