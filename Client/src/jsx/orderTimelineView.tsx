@@ -59,6 +59,7 @@ export default function OrderTimelineView(props: Readonly<OrderTimelineViewProps
         return (
           <div
             key={order.id}
+            id={`order-${order.id}`}  // ← anchor for #order-<id>
             ref={(el) => onCardRef(order.id, el)}
             className="pt-4 m-2 break-inside-avoid rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] p-4 sm:p-6 shadow-[0_4px_14px_0_var(--theme-shadow)] border border-[var(--theme-border)]"
           >
