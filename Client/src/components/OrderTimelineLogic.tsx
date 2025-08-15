@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, {type RefObject, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import type { Order } from '../types/order.types';
 import { useOrderStore } from '../store/useOrderStore';
 import { useThreadModalStore } from '../store/useThreadModalStore';
@@ -13,10 +13,10 @@ function useExpandedSet(): {
 } {
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
 
-  const isExpanded = useCallback((id: number): boolean => expanded.has(id), [expanded]);
+  const isExpanded: (id: number) => boolean = useCallback((id: number): boolean => expanded.has(id), [expanded]);
 
-  const toggle = useCallback((id: number): void => {
-    setExpanded((prev): Set<number> => {
+  const toggle: (id: number) => void = useCallback((id: number): void => {
+    setExpanded((prev: Set<number>): Set<number> => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
@@ -24,8 +24,8 @@ function useExpandedSet(): {
     });
   }, []);
 
-  const close = useCallback((id: number): void => {
-    setExpanded((prev): Set<number> => {
+  const close: (id: number) => void = useCallback((id: number): void => {
+    setExpanded((prev: Set<number>): Set<number> => {
       if (!prev.has(id)) return prev;
       const next = new Set(prev);
       next.delete(id);
@@ -42,18 +42,18 @@ export default function OrderTimelineLogic(): React.ReactElement {
 
   const { expanded, isExpanded, toggle, close } = useExpandedSet();
 
-  const cardRefs = useRef<Map<number, HTMLDivElement | null>>(new Map());
+  const cardRefs: RefObject<Map<number, HTMLDivElement | null>> = useRef<Map<number, HTMLDivElement | null>>(new Map());
 
-  const onCardRef = useCallback((id: number, el: HTMLDivElement | null): void => {
+  const onCardRef: (id: number, el: HTMLDivElement | null) => void = useCallback((id: number, el: HTMLDivElement | null): void => {
     if (el) cardRefs.current.set(id, el);
     else cardRefs.current.delete(id);
   }, []);
 
-  useEffect(() => {
+  useEffect((): () => void => {
     function onPointerDown(e: PointerEvent): void {
       const target = e.target as Node;
-      expanded.forEach((id) => {
-        const el = cardRefs.current.get(id);
+      expanded.forEach((id: number): void => {
+        const el: HTMLDivElement | null | undefined = cardRefs.current.get(id);
         if (el && !el.contains(target)) close(id);
       });
     }
@@ -62,12 +62,12 @@ export default function OrderTimelineLogic(): React.ReactElement {
   }, [expanded, close]);
 
   const viewProps: OrderTimelineViewProps = useMemo(
-    () => ({
+    (): OrderTimelineViewProps => ({
       orders,
       isExpanded,
       toggle,
       onCardRef,
-      onOpenThread: (orderId: number) => openThreadModal(orderId),
+      onOpenThread: (orderId: number): void => openThreadModal(orderId),
     }),
     [isExpanded, toggle, onCardRef, openThreadModal]
   );
