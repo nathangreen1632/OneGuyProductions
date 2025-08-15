@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { useOrderStore } from '../store/useOrderStore';
 import ToggleViewButton from '../common/ToggleViewButton';
 import OrderCardLogic from '../components/OrderCardLogic';
-import OrderTimelineView from './orderTimelineView';
+import OrderTimelineLogic from '../components/OrderTimelineLogic';
 
 export default function CustomerPortalView(): React.ReactElement {
   const { currentView, fetchOrders } = useOrderStore();
@@ -23,7 +23,7 @@ export default function CustomerPortalView(): React.ReactElement {
         <h2 className="text-3xl font-bold">My Orders</h2>
         <ToggleViewButton />
       </div>
-      {currentView === 'card' ? <OrderCardLogic /> : <OrderTimelineView />}
+      {currentView === 'card' ? <OrderCardLogic /> : <OrderTimelineLogic />}
     </div>
   );
 }
