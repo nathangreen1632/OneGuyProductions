@@ -16,16 +16,43 @@ export default function InboxModal({
                                    }: Readonly<InboxModalProps>): React.ReactElement | null {
   const items = useNotificationStore(s => s.items);
   const markAllReadForOrder = useNotificationStore(s => s.markAllReadForOrder);
+  const clearRead = useNotificationStore(s => s.clearRead); // NEW
 
-  const handleClick = (orderId: number): void => {
+  const handleClick = async (orderId: number): Promise<void> => {
+    // server ack (best‑effort)
+    try {
+      await fetch(`/api/order/${orderId}/read`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch {
+      // ignore network errors; we still update local state
+    }
+
+    // local state + navigate
     markAllReadForOrder(orderId);
     if (onNavigateToOrder) onNavigateToOrder(orderId);
     else window.location.assign('/portal'); // customer land
     onClose();
   };
 
+  const hasAnyRead = items.some(n => n.read); // NEW
+
   return (
     <DescriptionModal open={open} onClose={onClose} title="Inbox">
+      {/* NEW: Clear already-read notifications */}
+      {hasAnyRead && (
+        <div className="mb-3 flex justify-end">
+          <button
+            type="button"
+            onClick={clearRead}
+            className="text-xs px-2 py-1 rounded border border-[var(--theme-border)] hover:bg-black/10"
+          >
+            Clear Notifications
+          </button>
+        </div>
+      )}
+
       {items.length === 0 ? (
         <p className="text-sm text-gray-500">No notifications.</p>
       ) : (
@@ -52,7 +79,10 @@ export default function InboxModal({
                     </p>
                   </div>
                   {!n.read && (
-                    <span aria-hidden className="mt-1 h-2 w-2 rounded-full bg-[var(--theme-border-red)] inline-block" />
+                    <span
+                      aria-hidden
+                      className="mt-1 h-2 w-2 rounded-full bg-[var(--theme-border-red)] inline-block"
+                    />
                   )}
                 </div>
               </button>
