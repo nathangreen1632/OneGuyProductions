@@ -28,7 +28,7 @@ export default function AdminComposer({
     setRequires(e.target.checked);
   };
 
-  const handleSendClick = async (): Promise<void> => {
+  const handleSendClick: () => Promise<void> = async (): Promise<void> => {
     const trimmed: string = body.trim();
     if (!trimmed) return;
     const ok: boolean = await onSend(trimmed, requires);
