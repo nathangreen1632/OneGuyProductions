@@ -1,7 +1,16 @@
 import { Op, QueryTypes } from 'sequelize';
 import { Order, OrderReadReceipt, sequelize, User } from '../models/index.js';
-import {OrderInstance} from "../models/order.model.js";
-import {OrderReadReceiptModel} from "../models/orderReadReceipt.model.js";
+import { OrderInstance } from '../models/order.model.js';
+import { OrderReadReceiptModel } from '../models/orderReadReceipt.model.js';
+
+export interface InboxItem {
+  id: string;
+  orderId: number;
+  title: string;
+  message: string;
+  createdAt: string;
+  read: boolean;
+}
 
 export async function getCustomerOrdersWithUnread(userId: number) {
   const orders: OrderInstance[] = await Order.findAll({
@@ -43,13 +52,13 @@ export async function getCustomerOrdersWithUnread(userId: number) {
     createdAt: string;
   }>(
     `SELECT ou."orderId",
-          u."username"                    AS "user",
-          ou."body"                       AS "body",
-          ou."createdAt"                  AS "createdAt"
-   FROM "orderUpdates" ou
-            LEFT JOIN "users" u ON u."id" = ou."authorUserId"
-   WHERE ou."orderId" IN (:ids)
-   ORDER BY ou."orderId", ou."createdAt"`,
+            u."username" AS "user",
+            ou."body"     AS "body",
+            ou."createdAt" AS "createdAt"
+     FROM "orderUpdates" ou
+              LEFT JOIN "users" u ON u."id" = ou."authorUserId"
+     WHERE ou."orderId" IN (:ids)
+     ORDER BY ou."orderId", ou."createdAt"`,
     { replacements: { ids }, type: QueryTypes.SELECT }
   );
 
@@ -59,7 +68,7 @@ export async function getCustomerOrdersWithUnread(userId: number) {
     arr.push({
       user: (r.user ?? 'System').toString(),
       timestamp: new Date(r.createdAt).toISOString(),
-      message: (r.body ?? '').toString(), // new schema: use body
+      message: (r.body ?? '').toString(),
     });
     updatesByOrder.set(r.orderId, arr);
   }
@@ -134,4 +143,62 @@ export async function getAdminOrdersWithUnread(
   const countMap = new Map<number, number>(countRows.map(r => [r.orderId, r.cnt]));
 
   return { orders, total, latestMap, countMap };
+}
+
+export async function getInboxForUser(
+  userId: number,
+  limit: number = 100,
+  opts?: { unreadOnly?: boolean }
+): Promise<InboxItem[]> {
+  const rows = await sequelize.query<{
+    updateId: number;
+    orderId: number;
+    body: string | null;
+    eventType: string;
+    createdAt: string;
+    lastReadAt: string | null;
+  }>(
+    `
+        SELECT
+            ou."id"         AS "updateId",
+            ou."orderId"    AS "orderId",
+            ou."body"       AS "body",
+            ou."eventType"  AS "eventType",
+            ou."createdAt"  AS "createdAt",
+            rr."lastReadAt" AS "lastReadAt"
+        FROM "orderUpdates" ou
+                 JOIN "orders" o
+                      ON o."id" = ou."orderId" AND o."customerId" = :userId
+                 LEFT JOIN "orderReadReceipts" rr
+                           ON rr."orderId" = ou."orderId" AND rr."userId" = :userId
+        ORDER BY ou."createdAt" DESC
+        LIMIT :limit
+    `,
+    { replacements: { userId, limit }, type: QueryTypes.SELECT }
+  );
+
+  const items: InboxItem[] = rows.map((r) => {
+    const created = new Date(r.createdAt);
+    const lastRead = r.lastReadAt ? new Date(r.lastReadAt) : null;
+    const read = !!(lastRead && created <= lastRead);
+
+    const title =
+      r.eventType === 'status'
+        ? `Order #${r.orderId} status changed`
+        : `Update on Order #${r.orderId}`;
+
+    const raw = (r.body ?? '').trim();
+    const snippet = raw.length > 180 ? `${raw.slice(0, 177)}…` : raw;
+
+    return {
+      id: `upd-${r.updateId}`,
+      orderId: r.orderId,
+      title,
+      message: snippet,
+      createdAt: created.toISOString(),
+      read,
+    };
+  });
+
+  return opts?.unreadOnly ? items.filter(i => !i.read) : items;
 }
