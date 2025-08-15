@@ -17,7 +17,7 @@ const getStatusBadgeClasses: TStatusBadgeClasses = (status: string): string => {
 };
 
 function LatestUpdatePreview({ updates }: Readonly<{ updates: OrderUpdateEntry[] }>): ReactElement {
-  const latest = useMemo<OrderUpdateEntry | null>(() => {
+  const latest: OrderUpdateEntry | null = useMemo<OrderUpdateEntry | null>((): OrderUpdateEntry | null => {
     if (!updates || updates.length === 0) return null;
     return updates[updates.length - 1] ?? null;
   }, [updates]);
@@ -26,8 +26,8 @@ function LatestUpdatePreview({ updates }: Readonly<{ updates: OrderUpdateEntry[]
     return <span className="text-sm text-gray-400 italic">No updates yet.</span>;
   }
 
-  const ts = format(new Date(latest.timestamp), 'PPP p');
-  const trimmed = latest.message.length > 96 ? `${latest.message.slice(0, 96)}…` : latest.message;
+  const ts: string = format(new Date(latest.timestamp), 'PPP p');
+  const trimmed: string = latest.message.length > 96 ? `${latest.message.slice(0, 96)}…` : latest.message;
 
   return (
     <span className="text-sm text-[var(--theme-text)]/80">
@@ -53,14 +53,14 @@ export default function OrderTimelineView(props: Readonly<OrderTimelineViewProps
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-6 max-w-[85vw] mx-auto items-start">
       {orders.map((order: Order): ReactElement => {
-        const expandedCard = isExpanded(order.id);
+        const expandedCard: boolean = isExpanded(order.id);
         const panelId = `order-updates-${order.id}`;
 
         return (
           <div
             key={order.id}
-            id={`order-${order.id}`}  // ← anchor for #order-<id>
-            ref={(el) => onCardRef(order.id, el)}
+            id={`order-${order.id}`}
+            ref={(el: HTMLDivElement | null): void => onCardRef(order.id, el)}
             className="pt-4 m-2 break-inside-avoid rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] p-4 sm:p-6 shadow-[0_4px_14px_0_var(--theme-shadow)] border border-[var(--theme-border)]"
           >
             <div className="mb-4">
