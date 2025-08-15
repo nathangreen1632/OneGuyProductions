@@ -1,14 +1,14 @@
 import React, { type ReactElement, useMemo, useState } from 'react';
 import { ChevronRight } from 'lucide-react';
-import NotificationBadge from '../common/NotificationBadge';
+// import NotificationBadge from '../common/NotificationBadge'; // 🚫 removed for now
 import type { Order } from '../types/order.types';
 import { format } from 'date-fns';
 import DescriptionModal from '../modals/DescriptionModal';
 
 interface IOrderCardViewProps {
   orders: Order[];
-  unreadOrderIds: number[];
-  onCardClick: (order: Order) => void;
+  unreadOrderIds: number[]; // kept for compatibility (unused here)
+  onCardClick: (order: Order) => void; // intentionally unused now
   onEdit: (order: Order) => void;
   onCancel: (order: Order) => void;
   onDownload: (orderId: number) => void;
@@ -18,8 +18,8 @@ interface IOrderCardViewProps {
 
 export default function OrderCardView({
                                         orders = [],
-                                        unreadOrderIds = [],
-                                        onCardClick,
+                                        // unreadOrderIds = [], // still accepted, not used
+                                        onCardClick: _onCardClick, // intentionally unused to keep signature stable
                                         onEdit,
                                         onCancel,
                                         onDownload,
@@ -47,7 +47,7 @@ export default function OrderCardView({
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-6 max-w-[85vw] mx-auto items-start">
           {orders.map((order: Order): ReactElement => {
             const isEditable: boolean = isWithin72Hours(order.createdAt);
-            const isUnread: boolean = unreadOrderIds.includes(order.id);
+            // const isUnread: boolean = unreadOrderIds.includes(order.id); // 🚫 not used now
 
             // Truncate Description to 300 chars
             const shouldTruncate = order.description.length > 300;
@@ -60,63 +60,57 @@ export default function OrderCardView({
                 key={order.id}
                 className="pt-4 m-2 break-inside-avoid rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] p-4 sm:p-6 shadow-[0_4px_14px_0_var(--theme-shadow)] border border-[var(--theme-border)]"
               >
-                {isUnread && <NotificationBadge />}
+                {/* 🚫 Red-dot removed entirely to avoid any interference */}
+                {/* {isUnread && <NotificationBadge />} */}
 
                 {/* CONTENT (flex-1) so the actions can hug the bottom */}
                 <div className="flex-1">
-                  {/* Header block (like orderTimelineView) */}
-                  <button
-                    type="button"
-                    aria-label={`Open order for ${order.name}`}
-                    onClick={(): void => onCardClick(order)}
-                    className="w-full text-left rounded-2xl focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60"
-                  >
-                    <div className="mb-4">
-                      <h3 className="text-lg font-bold">{order.projectType}</h3>
-                      <p className="text-sm text-[var(--theme-text)]">
-                        {order.name} • {order.businessName}
-                      </p>
-                      <div className="text-sm font-semibold text-[var(--theme-text)]/90">
-                        Order #: {order.id}
-                      </div>
-                      <p className={`font-bold capitalize ${getStatusTextClasses(order.status)}`}>
-                        {order.status}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Placed: {format(new Date(order.createdAt), 'PPP p')}
-                      </p>
+                  {/* Header block (non-interactive) */}
+                  <div className="mb-4">
+                    <h3 className="text-lg font-bold">{order.projectType}</h3>
+                    <p className="text-sm text-[var(--theme-text)]">
+                      {order.name} • {order.businessName}
+                    </p>
+                    <div className="text-sm font-semibold text-[var(--theme-text)]/90">
+                      Order #: {order.id}
                     </div>
+                    <p className={`font-bold capitalize ${getStatusTextClasses(order.status)}`}>
+                      {order.status}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Placed: {format(new Date(order.createdAt), 'PPP p')}
+                    </p>
+                  </div>
 
-                    {/* Non-interactive details only inside this button */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      <div>
-                        <p className="text-lg underline">Email</p>
-                        <p className="font-semibold text-sm break-words">{order.email}</p>
-                      </div>
-                      <div>
-                        <p className="text-lg underline">Budget</p>
-                        <p className="font-semibold text-sm">{order.budget}</p>
-                      </div>
-                      <div>
-                        <p className="text-lg underline">Timeline</p>
-                        <p className="font-semibold text-sm">{order.timeline}</p>
-                      </div>
+                  {/* Non-interactive details */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <p className="text-lg underline">Email</p>
+                      <p className="font-semibold text-sm break-words">{order.email}</p>
                     </div>
-                  </button>
+                    <div>
+                      <p className="text-lg underline">Budget</p>
+                      <p className="font-semibold text-sm">{order.budget}</p>
+                    </div>
+                    <div>
+                      <p className="text-lg underline">Timeline</p>
+                      <p className="font-semibold text-sm">{order.timeline}</p>
+                    </div>
+                  </div>
 
-                  {/* Description lives OUTSIDE the button to avoid nested controls */}
+                  {/* Description (still outside any button to avoid nested controls) */}
                   <div className="mt-4 sm:col-span-2">
                     <p className="text-lg underline">Description</p>
-                    <p className="font-medium text-sm break-words">{displayDescription}</p>
+                    <p className="text-sm font-medium break-words">{displayDescription}</p>
 
                     {shouldTruncate && (
                       <button
                         type="button"
                         onClick={(e): void => {
-                          e.stopPropagation();
+                          e.stopPropagation(); // harmless, defensive
                           openDescriptionModal(order.id);
                         }}
-                        className="mt-1 inline-flex items-center gap-1 text-red-500 text-xs focus:outline-none hover:underline"
+                        className="mt-1 inline-flex items-center gap-1 text-emerald-500 text-xs focus:outline-none hover:underline"
                         aria-haspopup="dialog"
                         aria-label={`Show full description for order ${order.id}`}
                       >
@@ -127,7 +121,7 @@ export default function OrderCardView({
                   </div>
                 </div>
 
-                {/* ACTIONS (pinned to bottom with mt-auto via parent flex layout) */}
+                {/* ACTIONS */}
                 <div className="mt-6 flex flex-wrap gap-3">
                   <button
                     type="button"
