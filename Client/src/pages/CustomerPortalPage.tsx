@@ -10,7 +10,7 @@ export default function CustomerPortalPage(): React.ReactElement {
 
   useEffect((): void => {
     const params = new URLSearchParams(search);
-    const idParam = params.get('openOrder');
+    const idParam: string | null = params.get('openOrder');
     if (!idParam) return;
     const num: number = Number(idParam);
     if (Number.isFinite(num) && num > 0) {
