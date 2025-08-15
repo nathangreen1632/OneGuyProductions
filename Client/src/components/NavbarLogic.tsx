@@ -6,6 +6,7 @@ import type {AuthState} from '../types/authState.types';
 import {type NavLink, navLinks} from '../constants/navLinks';
 import {useAppStore} from '../store/useAppStore';
 import {useAuthStore} from '../store/useAuthStore';
+import { useOrderStore } from '../store/useOrderStore';
 import {logoutUser} from '../helpers/logoutHelper';
 import {useNotificationStore} from '../store/useNotificationStore';
 import NavbarView from '../jsx/navbarView';
@@ -32,6 +33,38 @@ export default function NavbarLogic(): React.ReactElement {
   }: { menuOpen: boolean; toggleMenu: () => void; closeMenu: () => void } = useAppStore();
 
   useEffect((): void => { closeMenu(); }, [location.pathname, closeMenu]);
+
+  // 🔄 Hydrate notifications after auth; refresh every 30s
+  useEffect((): (() => void) | void => {
+    const isAuthenticated: boolean = useAuthStore.getState().isAuthenticated;
+    const hydrated: boolean = useAuthStore.getState().hydrated;
+    if (!hydrated || !isAuthenticated) return;
+
+    let cancelled = false;
+    const load = async (): Promise<void> => {
+      try {
+        const res = await fetch('/api/order/inbox?unreadOnly=1', { credentials: 'include' });
+        const data = await res.json();
+        if (!cancelled && Array.isArray(data)) {
+          // [{ id, orderId, title, message, createdAt, read }]
+          useNotificationStore.getState().set(data);
+        }
+      } catch (e) {
+        console.error('❌ inbox hydrate failed', e);
+      }
+    };
+
+    load();
+    const id = window.setInterval(load, 30000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [
+    // re-run when auth state flips
+    useAuthStore((s) => s.hydrated),
+    useAuthStore((s) => s.isAuthenticated),
+  ]);
 
   const isAuthenticated: boolean = useAuthStore((state: AuthState): boolean => state.isAuthenticated);
   const hydrated: boolean = useAuthStore((state: AuthState): boolean => state.hydrated);
@@ -112,8 +145,16 @@ export default function NavbarLogic(): React.ReactElement {
             <InboxModal
               open={isInboxOpen}
               onClose={(): void => setIsInboxOpen(false)}
-              onNavigateToOrder={(): void => { window.location.assign('/portal'); }}
+              onNavigateToOrder={(orderId: number): void => {
+                // switch the portal to timeline view first
+                try {
+                  useOrderStore.getState().setView('timeline');
+                } catch {}
+                // then navigate to the specific order anchor
+                window.location.assign(`/portal#order-${orderId}`);
+              }}
             />
+
 
             <img
               src={getGravatarUrl(user.email)}
