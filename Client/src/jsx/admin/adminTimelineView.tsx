@@ -1,7 +1,6 @@
-// Client/src/ksx/admin/adminTimelineView.tsx
 import { type ReactElement } from 'react';
 import type { OrderUpdateDto } from '../../types/order.types';
-import type { TOrderUpdateLikeType } from '../../components/admin/AdminTimeline'; // Import type from logic file
+import type { TOrderUpdateLikeType } from '../../components/admin/AdminTimeline';
 import { linkifySafe } from '../../helpers/linkify';
 
 interface AdminTimelineViewProps {
@@ -25,13 +24,11 @@ export default function AdminTimelineView({
 
   return (
     <ol className="space-y-4">
-      {updates.map((u): ReactElement => (
+      {updates.map((u: OrderUpdateDto): ReactElement => (
         <li
           key={u.id}
           className="rounded-2xl bg-[var(--theme-surface)] shadow-[0_4px_14px_0_var(--theme-shadow)] overflow-hidden"
         >
-          <div className="h-0.5 w-full bg-[var(--theme-border-red)]" />
-
           <div className="p-3 sm:p-4 text-[var(--theme-text)]">
             <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
               <div className="flex items-center gap-2">
