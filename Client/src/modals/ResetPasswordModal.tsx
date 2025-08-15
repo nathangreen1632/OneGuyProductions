@@ -40,7 +40,7 @@ export default function ResetPasswordModal(): React.ReactElement | null {
     }
   }, [modalOpen, setEmail, setStep]);
 
-  const handleRequestOtp = async (): Promise<void> => {
+  const handleRequestOtp: () => Promise<void> = async (): Promise<void> => {
     if (!email) {
       toast.error('Please enter your email.');
       return;
@@ -68,7 +68,7 @@ export default function ResetPasswordModal(): React.ReactElement | null {
     }
   };
 
-  const handleVerifyOtp = async (): Promise<void> => {
+  const handleVerifyOtp: () => Promise<void> = async (): Promise<void> => {
     if (!otp || otp.length !== 6) {
       toast.error('OTP must be 6 digits');
       return;
