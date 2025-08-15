@@ -34,11 +34,13 @@ export default function NavbarView({
         </Link>
 
         <ul className="hidden lg:flex gap-6 text-sm font-medium">
-          {navLinks.map(({ label, path, icon: Icon, onClick }: INavLink): ReactElement => {
+          {navLinks.map(({ label, path, icon: Icon, onClick }: INavLink, idx): ReactElement => {
+            const key = `${path}|${label}|d${idx}`;
+
             if (onClick) {
               const isActive: boolean = loc.pathname === path;
               return (
-                <li key={path}>
+                <li key={key}>
                   <button
                     type="button"
                     onClick={onClick}
@@ -52,7 +54,7 @@ export default function NavbarView({
             }
 
             return (
-              <li key={path}>
+              <li key={key}>
                 <NavLink
                   to={path}
                   className={({ isActive }) => desktopLinkClass(isActive)}
@@ -78,11 +80,13 @@ export default function NavbarView({
 
       {menuOpen && (
         <ul className="lg:hidden flex flex-col gap-4 px-6 pb-6 text-sm font-medium border-t border-[var(--theme-border)] bg-[var(--theme-bg)]">
-          {navLinks.map(({ label, path, icon: Icon, onClick }: INavLink): ReactElement => {
+          {navLinks.map(({ label, path, icon: Icon, onClick }: INavLink, idx): ReactElement => {
+            const key = `${path}|${label}|m${idx}`;
+
             if (onClick) {
               const isActive = loc.pathname === path;
               return (
-                <li key={path}>
+                <li key={key}>
                   <button
                     type="button"
                     onClick={() => {
@@ -101,7 +105,7 @@ export default function NavbarView({
             }
 
             return (
-              <li key={path}>
+              <li key={key}>
                 <NavLink
                   to={path}
                   onClick={closeMenu}
