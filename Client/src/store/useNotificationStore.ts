@@ -23,14 +23,14 @@ type Actions = {
 export const useNotificationStore = create<State & Actions>((set, get) => ({
   items: [],
 
-  set: (items) => set({ items }),
-  add: (n) => set({ items: [n, ...get().items] }),
-  markRead: (id) =>
+  set: (items: Notification[]): void => set({ items }),
+  add: (n:Notification): void => set({ items: [n, ...get().items] }),
+  markRead: (id: string): void =>
     set({ items: get().items.map(n => n.id === id ? { ...n, read: true } : n) }),
-  markAllReadForOrder: (orderId) =>
+  markAllReadForOrder: (orderId: number): void =>
     set({ items: get().items.map(n => n.orderId === orderId ? { ...n, read: true } : n) }),
-  hasUnreadForOrder: (orderId) =>
+  hasUnreadForOrder: (orderId: number): boolean =>
     get().items.some(n => !n.read && n.orderId === orderId),
-  unreadCount: () => get().items.filter(n => !n.read).length,
-  clearRead: () => set({ items: get().items.filter(n => !n.read) }),
+  unreadCount: (): number => get().items.filter(n => !n.read).length,
+  clearRead: (): void => set({ items: get().items.filter(n => !n.read) }),
 }));
