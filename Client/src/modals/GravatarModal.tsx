@@ -36,7 +36,7 @@ export default function GravatarModal({ isOpen, onClose }: Readonly<GravatarModa
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Open Gravatar in a new tab"
-          className="block w-full px-4 py-2.5 rounded-md bg-[var(--theme-button)] hover:bg-[var(--theme-hover)] text-base text-[var(--theme-text-white)] text-center font-semibold shadow cursor-pointer transition-all duration-200 hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60"
+          className="block w-full px-4 py-2.5 rounded-md bg-[var(--theme-button)] hover:bg-[var(--theme-hover)] text-base text-[var(--theme-text-white)] text-center shadow cursor-pointer transition-all duration-200 hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60"
         >
           Open Gravatar
         </a>
