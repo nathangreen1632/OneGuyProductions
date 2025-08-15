@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import {useParams, useNavigate, type NavigateFunction} from 'react-router-dom';
 import AdminTimeline from '../../components/admin/AdminTimeline';
 import AdminStatusChips from '../../components/admin/AdminStatusChips';
 import AdminComposer from '../../components/admin/AdminComposer';
@@ -21,15 +21,15 @@ function statusClass(s: OrderStatus): string {
 function toDetails(o: unknown): TDetailsType {
   const x = (o ?? {}) as Record<string, unknown>;
 
-  const name = (x.customerName as string) ?? (x.name as string) ?? '';
-  const email = (x.customerEmail as string) ?? (x.email as string) ?? '';
-  const projectType = (x.projectType as string) ?? '';
-  const status = ((x.status as OrderStatus) ?? 'pending');
-  const timeline = (x.timeline as string) ?? '';
-  const description = (x.description as string) ?? '';
-  const businessName = (x.businessName as string) ?? '';
-  const budget = (x.budget as string) ?? '';
-  const customerId =
+  const name: string = (x.customerName as string) ?? (x.name as string) ?? '';
+  const email: string = (x.customerEmail as string) ?? (x.email as string) ?? '';
+  const projectType: string = (x.projectType as string) ?? '';
+  const status: OrderStatus = ((x.status as OrderStatus) ?? 'pending');
+  const timeline: string = (x.timeline as string) ?? '';
+  const description: string = (x.description as string) ?? '';
+  const businessName: string = (x.businessName as string) ?? '';
+  const budget: string = (x.budget as string) ?? '';
+  const customerId: number | null =
     typeof x.customerId === 'number' ? (x.customerId) : null;
 
   return { name, email, projectType, status, timeline, description, businessName, budget, customerId };
@@ -38,7 +38,7 @@ function toDetails(o: unknown): TDetailsType {
 export default function AdminOrderDetailPage(): React.ReactElement {
   const { id } = useParams<{ id: string }>();
   const orderId: number = Number(id ?? NaN);
-  const nav = useNavigate();
+  const nav: NavigateFunction = useNavigate();
 
   const { threads, fetchThread, sendUpdate } = useAdminStore();
   const data: OrderThreadDto | undefined =
@@ -50,7 +50,7 @@ export default function AdminOrderDetailPage(): React.ReactElement {
   const [loading, setLoading] = useState<boolean>(!data);
 
   useEffect((): () => void => {
-    let active = true;
+    let active: boolean = true;
     (async (): Promise<void> => {
       if (!Number.isFinite(orderId) || orderId <= 0) return;
       if (!data) {
@@ -60,7 +60,7 @@ export default function AdminOrderDetailPage(): React.ReactElement {
       }
     })();
     return (): void => { active = false; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [orderId, fetchThread]);
 
   const details: TDetailsType = toDetails(data?.order);
@@ -88,7 +88,7 @@ export default function AdminOrderDetailPage(): React.ReactElement {
         <span>Could not load this order.</span>
         <button
           className="ml-3 inline-flex items-center rounded-2xl px-3 py-1 text-[var(--theme-text)] transition hover:bg-[var(--theme-card-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30"
-          onClick={() => nav('/admin/orders')}
+          onClick={(): void | Promise<void> => nav('/admin/orders')}
         >
           Back to orders
         </button>
@@ -102,7 +102,7 @@ export default function AdminOrderDetailPage(): React.ReactElement {
     <div className="grid gap-4 md:grid-cols-5 text-[var(--theme-text)]">
       <div className="md:col-span-5">
         <button
-          onClick={() => nav(-1)}
+          onClick={(): void | Promise<void> => nav(-1)}
           aria-label="Back to orders"
           className="
             inline-flex items-center gap-2 rounded-lg

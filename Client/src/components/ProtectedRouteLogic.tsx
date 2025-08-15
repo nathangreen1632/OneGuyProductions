@@ -19,7 +19,8 @@ export default function ProtectedRouteLogic({ children }: Readonly<Props>): Reac
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/auth" replace state={{ from: location }} />;
+    const rt: string = encodeURIComponent(location.pathname + location.search);
+    return <Navigate to={`/auth?returnTo=${rt}`} replace />;
   }
 
   return children;

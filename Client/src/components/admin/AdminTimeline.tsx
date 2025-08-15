@@ -42,7 +42,7 @@ function displayLabel(update: TOrderUpdateLikeType): string {
   }
 
   const aliasFromEmail: string | undefined = rawEmail ? rawEmail.split('@')[0] : undefined;
-  const candidate = first || username || providedName || aliasFromEmail || 'User';
+  const candidate: string = first || username || providedName || aliasFromEmail || 'User';
 
   return candidate?.includes('@') ? candidate.split('@')[0] : candidate;
 }

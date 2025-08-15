@@ -30,7 +30,6 @@ export default function AdminVerifyLogic(): React.ReactElement {
         return;
       }
       toast.success('Admin email verified! Please log in.');
-      // If you later choose to auto-login at the server, you could redirect to /admin/orders here instead.
       navigate('/auth', { replace: true });
     } finally {
       setLoading(false);

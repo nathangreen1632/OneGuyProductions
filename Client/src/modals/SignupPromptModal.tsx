@@ -1,11 +1,11 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import {type NavigateFunction, useNavigate} from 'react-router-dom';
 import TimelineEditModal from './TimelineEditModal';
 import { useSignupPromptStore } from '../store/useSignupPromptStore';
 
 export default function SignupPromptModal(): React.ReactElement | null {
   const { open, email, orderId, closePrompt, markPrompted } = useSignupPromptStore();
-  const navigate = useNavigate();
+  const navigate: NavigateFunction = useNavigate();
 
   if (!open) return null;
 

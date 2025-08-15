@@ -33,12 +33,12 @@ export default function AdminVerifyView(props: Readonly<Props>): React.ReactElem
       const result = await onSubmit(e);
       const { ok, message } = toOutcome(result);
       if (ok) {
-        toast.success(message ?? 'Admin email verified ✅');
+        toast.success(message ?? 'Admin email verified successfully!');
       } else {
         toast.error(message ?? 'Verification failed. Check your code and try again.');
       }
     } catch (err: any) {
-      const msg = (err?.message as string) || 'Verification failed. Please try again.';
+      const msg: string = (err?.message as string) || 'Verification failed. Please try again.';
       toast.error(msg);
     }
   };

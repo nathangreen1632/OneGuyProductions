@@ -26,9 +26,9 @@ export const useAdminUiStore: UseBoundStore<StoreApi<AdminUiState>> = create<Adm
   pageSize: 20,
   polling: true,
 
-  set: (k, v) => set({ [k]: v } as Partial<AdminUiState>),
+  set: (k, v): void => set({ [k]: v } as Partial<AdminUiState>),
 
-  reset: () =>
+  reset: (): void =>
     set({
       q: '',
       status: 'all',

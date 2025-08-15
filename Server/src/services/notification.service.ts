@@ -43,8 +43,11 @@ export async function notifyOrderUpdate(params: NotifyParams): Promise<boolean> 
     const actorLabel: string = actor?.email ?? brand;
     const subject = `Order #${order.id} — New update`;
     const safePreview: string = String(bodyPreview || '').slice(0, 240);
-    const orderUrl: string =
-      (EnvConfig.PUBLIC_BASE_URL ?? 'http://localhost:3002') + `/orders/${order.id}`;
+
+    const base = EnvConfig.PUBLIC_BASE_URL ?? 'https://www.oneguyproductions.com';
+    const portalPath = `/portal?openOrder=${encodeURIComponent(String(order.id))}`;
+    const orderUrl: string = `${base}/auth?returnTo=${encodeURIComponent(portalPath)}`;
+
     const preheader = `Order #${order.id} updated by ${actorLabel}.`;
 
     const html = `
@@ -58,8 +61,6 @@ export async function notifyOrderUpdate(params: NotifyParams): Promise<boolean> 
         <title>${brand} — Order Update</title>
         <style>
           a[x-apple-data-detectors]{color:inherit!important;text-decoration:none!important}
-
-          /* Base */
           .bg-page { background:${black}; }
           .card { background:#0b0b0b; border:1px solid ${red500}; }
           .text { color:${white}; }
@@ -80,8 +81,6 @@ export async function notifyOrderUpdate(params: NotifyParams): Promise<boolean> 
             border-radius:999px;
             text-decoration:none;
           }
-
-          /* Dark mode */
           @media (prefers-color-scheme: dark) {
             .bg-page { background:#000 !important; }
             .card { background:#0b0b0b !important; border-color:${red500} !important; }
@@ -89,8 +88,6 @@ export async function notifyOrderUpdate(params: NotifyParams): Promise<boolean> 
             .message-box { background:#111 !important; }
             .link { color:${red500} !important; }
           }
-
-          /* Outlook.com / O365 dark mode */
           [data-ogsc] .bg-page { background:#000 !important; }
           [data-ogsc] .card { background:#0b0b0b !important; border-color:${red500} !important; }
           [data-ogsc] .text { color:#ffffff !important; }
@@ -99,7 +96,6 @@ export async function notifyOrderUpdate(params: NotifyParams): Promise<boolean> 
         </style>
       </head>
       <body class="bg-page" style="margin:0; padding:0; background:${black}; color:${white}; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-        <!-- Preheader -->
         <div style="display:none; overflow:hidden; line-height:1px; opacity:0; max-height:0; max-width:0; color:transparent;">
           ${preheader}
         </div>
@@ -111,7 +107,6 @@ export async function notifyOrderUpdate(params: NotifyParams): Promise<boolean> 
                 <tr>
                   <td style="padding:0 8px;">
                     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="card" style="border-radius:16px; overflow:hidden;">
-                      <!-- Header -->
                       <tr>
                         <td style="background:${red500}; padding:14px 20px;">
                           <table role="presentation" width="100%">
@@ -123,13 +118,11 @@ export async function notifyOrderUpdate(params: NotifyParams): Promise<boolean> 
                         </td>
                       </tr>
 
-                      <!-- Body -->
                       <tr>
                         <td class="text" style="padding:28px 24px 10px 24px;">
                           <h2 style="margin:0 0 8px 0; font-size:22px; line-height:1.3; font-weight:700;">New update on your order</h2>
                           <p class="muted" style="margin:0 0 16px 0; font-size:16px; line-height:1.6;">We’ve added a new comment or status to your order.</p>
 
-                          <!-- Meta -->
                           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0 12px 0;">
                             <tr>
                               <td style="padding:6px 0; font-size:15px;">
@@ -143,7 +136,6 @@ export async function notifyOrderUpdate(params: NotifyParams): Promise<boolean> 
                             </tr>
                           </table>
 
-                          <!-- Message preview -->
                           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:12px 0 4px 0;">
                             <tr>
                               <td align="left" style="text-align:left !important; padding:0;">
@@ -154,7 +146,6 @@ export async function notifyOrderUpdate(params: NotifyParams): Promise<boolean> 
                             </tr>
                           </table>
 
-                          <!-- CTA -->
                           <p style="margin:16px 0 0 0;">
                             <a href="${orderUrl}" target="_blank" rel="noopener"
                                class="btn" style="background:${red500}; color:${black}; font-weight:700; padding:12px 16px; border-radius:999px; text-decoration:none;">
@@ -164,14 +155,12 @@ export async function notifyOrderUpdate(params: NotifyParams): Promise<boolean> 
                         </td>
                       </tr>
 
-                      <!-- Divider -->
                       <tr>
                         <td style="padding:10px 24px 0 24px;">
                           <hr style="border:none; height:1px; background:${red500}; opacity:.4;" />
                         </td>
                       </tr>
 
-                      <!-- Footer -->
                       <tr>
                         <td class="text" style="padding:14px 24px 24px 24px;">
                           <p style="margin:0; font-size:12px; line-height:1.6; opacity:.8;">
@@ -203,19 +192,16 @@ export async function notifyOrderUpdate(params: NotifyParams): Promise<boolean> 
       console.warn('notifyOrderUpdate: Resend returned an error', { orderId, targetUserId, error });
       return false;
     }
-
     if (!data?.id) {
       console.warn('notifyOrderUpdate: Resend response missing data.id', { orderId, targetUserId, data });
       return false;
     }
-
     return true;
   } catch (err) {
     console.error('notifyOrderUpdate: unexpected failure', err);
     return false;
   }
 }
-
 
 /** Minimal HTML escaper to avoid breaking the email markup */
 function escapeHtml(input: string): string {

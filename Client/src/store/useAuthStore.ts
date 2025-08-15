@@ -6,8 +6,8 @@ export interface TAuthUserType {
   id: string;
   email: string;
   username: string;
-  role: UserRole;          // NEW
-  emailVerified: boolean;  // NEW
+  role: UserRole;
+  emailVerified: boolean;
 }
 
 export interface TAuthStateType {
@@ -15,7 +15,6 @@ export interface TAuthStateType {
   token: string | null;
   isAuthenticated: boolean;
   hydrated: boolean;
-  // keep the same signature to avoid cascades
   setUser: (user: TAuthUserType, token: string | null) => void;
   logout: () => void;
   setHydrated: (val: boolean) => void;
@@ -27,7 +26,6 @@ export const useAuthStore: UseBoundStore<StoreApi<TAuthStateType>> = create<TAut
   isAuthenticated: false,
   hydrated: false,
 
-  // NOTE: call sites sometimes pass `null` (casted). We normalize here defensively.
   setUser: (user: TAuthUserType, token: string | null): void => {
     const u = user as unknown as Partial<TAuthUserType> | null;
 
@@ -36,8 +34,8 @@ export const useAuthStore: UseBoundStore<StoreApi<TAuthStateType>> = create<TAut
         id: String(u.id ?? ''),
         email: String(u.email ?? ''),
         username: String(u.username ?? ''),
-        role: (u.role as UserRole) ?? 'user',                 // default safely
-        emailVerified: Boolean(u.emailVerified ?? false),     // default safely
+        role: (u.role as UserRole) ?? 'user',
+        emailVerified: Boolean(u.emailVerified ?? false),
       }
       : null;
 

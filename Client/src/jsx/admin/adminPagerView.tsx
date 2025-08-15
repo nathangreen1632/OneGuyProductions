@@ -72,7 +72,7 @@ export default function AdminPagerView({
           }}
           aria-label="Rows per page"
         >
-          {[10, 20, 30, 50, 100].map((n: number) => (
+          {[10, 20, 30, 50, 100].map((n: number): React.ReactElement => (
             <option key={n} value={n}>
               {n}
             </option>

@@ -1,4 +1,3 @@
-// Server/src/services/admin.service.ts
 import { Transaction } from 'sequelize';
 import { Order, OrderUpdate, sequelize } from '../models/index.js';
 import type { OrderStatus } from '../types/api.types.js';

@@ -30,7 +30,7 @@ export interface AdminOrdersResponse {
 
 export async function getAdminOrders(req: Request, res: Response): Promise<void> {
   const viewerId: number = Number((req as any).user?.id);
-  const parsePagination = (qs: Record<string, string>) => {
+  const parsePagination: (qs: Record<string, string>) => {p: number, ps: number} = (qs: Record<string, string>): {p: number, ps: number} => {
     const p: number = Math.max(parseInt(qs.page ?? '1', 10) || 1, 1);
     const ps: number = Math.min(Math.max(parseInt(qs.pageSize ?? '20', 10) || 20, 1), 100);
     return { p, ps };

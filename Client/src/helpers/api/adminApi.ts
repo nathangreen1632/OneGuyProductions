@@ -11,7 +11,7 @@ async function safeFetch<T>(
 
     if (!res.ok) {
       const errUnknown: unknown = await res.json().catch((): unknown => ({} as unknown));
-      const errorText =
+      const errorText: string | undefined =
         typeof (errUnknown as any)?.error?.res?.statusText === 'string'
           ? (errUnknown as any).error.res.statusText
           : undefined;

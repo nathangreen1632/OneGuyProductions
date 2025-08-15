@@ -8,7 +8,7 @@ import {
   postOrderStatus,
   postAssignOrder,
 } from '../helpers/api/adminApi';
-import type {TSafeFetchResultType} from "../types/api.types.ts";
+import type {TAdminOrdersDataType, TSafeFetchResultType} from "../types/api.types.ts";
 
 interface AdminState {
   rows: AdminOrderRowDto[];
@@ -77,7 +77,7 @@ export const useAdminStore: UseBoundStore<StoreApi<AdminState>> = create<AdminSt
   async fetchList(params): Promise<void> {
     set({ loading: true, lastError: null });
     try {
-      const res = await fetchAdminOrders(params);
+      const res: TSafeFetchResultType<TAdminOrdersDataType> = await fetchAdminOrders(params);
       const ok: boolean = !!res?.ok;
       const rows: AdminOrderRowDto[] = (ok && Array.isArray(res?.data?.rows)) ? res.data.rows : [];
       const total: number = ok && typeof res?.data?.total === 'number' ? res.data.total : rows.length;
@@ -105,9 +105,9 @@ export const useAdminStore: UseBoundStore<StoreApi<AdminState>> = create<AdminSt
       return;
     }
 
-    const findRow = (key: number): AdminOrderRowDto | undefined => get().rows.find((r: AdminOrderRowDto): boolean => r.id === key);
+    const findRow: (key: number) => AdminOrderRowDto | undefined = (key: number): AdminOrderRowDto | undefined => get().rows.find((r: AdminOrderRowDto): boolean => r.id === key);
 
-    const normalizeFromArray = (updatesUnknown: unknown[], key: number): OrderThreadDto => {
+    const normalizeFromArray: (updatesUnknown: unknown[], key: number) => OrderThreadDto = (updatesUnknown: unknown[], key: number): OrderThreadDto => {
       const row: AdminOrderRowDto | undefined = findRow(key);
 
       let firstUpdateCreated: string | undefined;

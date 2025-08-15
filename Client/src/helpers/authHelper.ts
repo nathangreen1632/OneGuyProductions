@@ -73,7 +73,7 @@ export function persistUserFromResponse(data: unknown): boolean {
   };
 
   const { setUser, setHydrated } = useAuthStore.getState();
-  setUser(normalized, null); // HttpOnly cookie is used; no token string expected
+  setUser(normalized, null);
   setHydrated(true);
   return true;
 }

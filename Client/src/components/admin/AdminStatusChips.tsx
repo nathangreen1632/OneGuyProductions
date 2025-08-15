@@ -23,7 +23,7 @@ export default function AdminStatusChips({
   const [busy, setBusy] = useState(false);
   const { updateStatus } = useAdminStore();
 
-  const onStatusClick = async (next: OrderStatus): Promise<void> => {
+  const onStatusClick: (next: OrderStatus) => Promise<void> = async (next: OrderStatus): Promise<void> => {
     if (busy || next === status) return;
     setBusy(true);
     try {

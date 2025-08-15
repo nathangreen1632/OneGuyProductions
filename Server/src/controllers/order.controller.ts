@@ -8,7 +8,7 @@ import type { OrderStatus } from '../types/order.types.js';
 import { OrderInstance } from '../models/order.model.js';
 import {createCommentUpdate } from '../services/orderUpdate.service.js';
 import { markOneRead, markAllRead } from '../services/readReceipt.service.js';
-import { getCustomerOrdersWithUnread } from '../services/inbox.service.js';
+import { getCustomerOrdersWithUnread, getInboxForUser } from '../services/inbox.service.js';
 import { ingestEmailReply } from '../services/emailIngest.service.js';
 import { sanitizeBody } from '../services/contentSafety.service.js';
 import {OrderUpdateModel} from "../models/orderUpdate.model.js";
@@ -389,6 +389,22 @@ export async function getOrderThread(req: Request, res: Response): Promise<void>
   }
 }
 
+export async function getInbox(req: Request, res: Response): Promise<void> {
+  const userIdNum: number = Number((req as any).user?.id);
+  if (!Number.isFinite(userIdNum)) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+  try {
+    const limit = Math.min(200, Math.max(1, Number(req.query.limit ?? 100)));
+    const unreadOnly = ['1', 'true', 'yes'].includes(String(req.query.unreadOnly ?? '').toLowerCase());
+    const items = await getInboxForUser(userIdNum, limit, { unreadOnly });
+    res.status(200).json(items);
+  } catch (err) {
+    console.error('getInbox failed', err);
+    res.status(500).json({ error: 'Failed to load inbox.' });
+  }
+}
 
 /**
  * (Optional) If you wire an email webhook:

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {type ReactElement} from 'react';
 import { useRoutes } from 'react-router-dom';
 import { useAuthStore } from './store/useAuthStore';
 import { useSessionHydration } from './hooks/useSessionHydration';
@@ -11,7 +11,7 @@ export default function AppRoutes(): React.ReactElement {
   const { hydrated, isAuthenticated } = useAuthStore();
   const routeKey = `${hydrated}-${isAuthenticated}`;
 
-  const element = useRoutes([
+  const element: ReactElement | null = useRoutes([
     ...publicRoutes,
     ...adminRoutes,
     { path: '*', element: <NotFoundPage /> },

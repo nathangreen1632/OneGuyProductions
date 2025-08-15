@@ -28,7 +28,8 @@ export default function EditOrderModal(): React.ReactElement | null {
     }
   }, [targetOrder]);
 
-  const handleChange = (
+  const handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+) => void = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ): void => {
     setForm({ ...form, [e.target.name]: e.target.value });
