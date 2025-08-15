@@ -1,15 +1,17 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, {useEffect, useMemo, useState} from 'react';
+import {useNavigate} from 'react-router-dom';
 import md5 from 'blueimp-md5';
-import { LogIn, LogOut, ShieldCheck, UserSquare2 } from 'lucide-react';
-import type { AuthState } from '../types/authState.types';
-import { type NavLink, navLinks } from '../constants/navLinks';
-import { useAppStore } from '../store/useAppStore';
-import { useAuthStore } from '../store/useAuthStore';
-import { logoutUser } from '../helpers/logoutHelper';
+import {Bell, LogIn, LogOut, ShieldCheck, UserSquare2} from 'lucide-react';
+import type {AuthState} from '../types/authState.types';
+import {type NavLink, navLinks} from '../constants/navLinks';
+import {useAppStore} from '../store/useAppStore';
+import {useAuthStore} from '../store/useAuthStore';
+import {logoutUser} from '../helpers/logoutHelper';
+import {useNotificationStore} from '../store/useNotificationStore';
 import NavbarView from '../jsx/navbarView';
 import RedInfoIcon from './RedInfoIcon.tsx';
 import GravatarModal from '../modals/GravatarModal';
+import InboxModal from '../modals/InboxModal';
 
 function getGravatarUrl(email?: string): string {
   if (!email) return '';
@@ -20,6 +22,8 @@ function getGravatarUrl(email?: string): string {
 
 export default function NavbarLogic(): React.ReactElement {
   const navigate: ReturnType<typeof useNavigate> = useNavigate();
+  const [isInboxOpen, setIsInboxOpen] = useState<boolean>(false);
+  const unreadCount: number = useNotificationStore((s) => s.unreadCount());
 
   const {
     menuOpen,
@@ -38,21 +42,20 @@ export default function NavbarLogic(): React.ReactElement {
 
   const dynamicLinks: NavLink[] = useMemo<NavLink[]>((): NavLink[] => {
     const base: NavLink[] = navLinks.slice();
-
     const extras: NavLink[] = [];
 
-    extras.push(
-      isAuthenticated
-        ? ({ label: 'My Portal', path: '/portal', icon: UserSquare2 } as NavLink)
-        : ({ label: 'Login / Register', path: '/auth', icon: LogIn } as NavLink)
-    );
+    // Only render auth-specific links when hydration is complete
+    if (hydrated && isAuthenticated) {
+      // Portal
+      extras.push({ label: 'My Portal', path: '/portal', icon: UserSquare2 } as NavLink);
 
-    const isCompanyEmail: boolean = !!user?.email && user.email.toLowerCase().endsWith('@oneguyproductions.com');
-    if (isAuthenticated && isCompanyEmail) {
-      extras.push({ label: 'Admin', path: '/admin/orders', icon: ShieldCheck } as NavLink);
-    }
+      // Admin (company emails only)
+      const isCompanyEmail: boolean = !!user?.email && user.email.toLowerCase().endsWith('@oneguyproductions.com');
+      if (isCompanyEmail) {
+        extras.push({ label: 'Admin', path: '/admin/orders', icon: ShieldCheck } as NavLink);
+      }
 
-    if (isAuthenticated) {
+      // Logout
       extras.push({
         label: 'Logout',
         path: '#',
@@ -65,14 +68,31 @@ export default function NavbarLogic(): React.ReactElement {
           }
         },
       } as NavLink);
+
+      // Inbox
+      extras.push({
+        label: unreadCount > 0 ? `Inbox (${unreadCount})` : 'Inbox',
+        path: '#',
+        icon: Bell,
+        onClick: (): void => setIsInboxOpen(true),
+      } as NavLink);
+    } else if (hydrated && !isAuthenticated) {
+      // Login/Register (only when hydrated and logged out)
+      extras.push({ label: 'Login / Register', path: '/auth', icon: LogIn } as NavLink);
     }
 
-    return [...base, ...extras] as NavLink[];
-  }, [isAuthenticated, user?.email, logout, navigate]);
+    // Deduplicate (guard in case any view mutates or we re-render across transitions)
+    const merged = [...base, ...extras];
+    return Array.from(
+      new Map(merged.map((l) => [`${l.label}|${l.path}`, l])).values()
+    );
+  }, [isAuthenticated, user?.email, logout, navigate, unreadCount, hydrated]);
 
   return (
     <div className="bg-[var(--theme-surface)] text-[var(--theme-text)] shadow-md">
+      {/* Force remount when auth/hydration flips to clear any internal state in the view */}
       <NavbarView
+        key={`${hydrated ? 'h1' : 'h0'}-${isAuthenticated ? 'auth' : 'anon'}`}
         navLinks={dynamicLinks}
         menuOpen={menuOpen}
         toggleMenu={toggleMenu}
@@ -88,6 +108,12 @@ export default function NavbarLogic(): React.ReactElement {
                 {user.username}
               </span>
             </span>
+
+            <InboxModal
+              open={isInboxOpen}
+              onClose={(): void => setIsInboxOpen(false)}
+              onNavigateToOrder={(): void => { window.location.assign('/portal'); }}
+            />
 
             <img
               src={getGravatarUrl(user.email)}
