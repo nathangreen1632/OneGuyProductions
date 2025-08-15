@@ -1,8 +1,11 @@
 import React, { type ReactElement } from 'react';
-import { Link, NavLink, useLocation } from 'react-router-dom';
+import {Link, NavLink, type NavLinkRenderProps, useLocation} from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import type { NavLink as INavLink } from '../constants/navLinks';
 import type NavbarViewProps from '../types/navbarProps.types';
+import { useNotificationStore } from '../store/useNotificationStore';
+
+type NotificationStoreState = ReturnType<typeof useNotificationStore.getState>;
 
 export default function NavbarView({
                                      navLinks,
@@ -12,19 +15,40 @@ export default function NavbarView({
                                    }: Readonly<NavbarViewProps>): React.ReactElement {
   const loc = useLocation();
 
+  const unreadCount: number = useNotificationStore((s: NotificationStoreState): number => s.unreadCount());
+
   const desktopLinkClass: (isActive: boolean) => string = (isActive: boolean): string =>
-    `flex items-center gap-1 border-b-2 cursor-pointer ${
+    `relative flex items-center gap-1 border-b-2 cursor-pointer ${
       isActive
         ? 'border-[var(--theme-border)] text-[var(--theme-border-red)]'
         : 'border-transparent'
     } hover:underline underline-offset-4 decoration-[var(--theme-border)] transition-colors duration-200`;
 
   const mobileLinkClass: (isActive: boolean) => string = (isActive: boolean): string =>
-    `block py-2 ${
+    `relative block py-2 ${
       isActive
         ? 'text-[var(--theme-border-red)] border-b-2 border-[var(--theme-border)]'
         : 'border-b border-transparent'
     }`;
+
+  const renderLabel: (label: string) => ReactElement = (label: string): ReactElement => {
+    const isInbox: boolean =
+      label.toLowerCase() === 'inbox' || label.toLowerCase().startsWith('inbox ');
+    return (
+      <span className="inline-flex items-center gap-1">
+        <span>{isInbox ? 'Inbox' : label}</span>
+        {isInbox && unreadCount > 0 && (
+          <span
+            aria-hidden="true"
+            className="inline-flex items-center justify-center min-w-[16px] h-4 px-1
+                       rounded-full bg-[var(--theme-border-red)] text-white text-[10px] leading-none"
+          >
+            {unreadCount}
+          </span>
+        )}
+      </span>
+    );
+  };
 
   return (
     <header className="sticky top-0 z-50 bg-[var(--theme-bg)] border-b border-[var(--theme-border-red)] shadow-[0_4px_14px_0_var(--theme-shadow)]">
@@ -34,20 +58,20 @@ export default function NavbarView({
         </Link>
 
         <ul className="hidden lg:flex gap-6 text-sm font-medium">
-          {navLinks.map(({ label, path, icon: Icon, onClick }: INavLink, idx): ReactElement => {
+          {navLinks.map(({ label, path, icon: Icon, onClick }: INavLink, idx: number): ReactElement => {
             const key = `${path}|${label}|d${idx}`;
 
             if (onClick) {
               const isActive: boolean = loc.pathname === path;
               return (
-                <li key={key}>
-                  <button
+                <li key={key} className={label === 'Logout' ? 'ml-16' : ''}>
+                <button
                     type="button"
                     onClick={onClick}
                     className={desktopLinkClass(isActive)}
                   >
                     {Icon && <Icon size={18} />}
-                    {label}
+                    {renderLabel(label)}
                   </button>
                 </li>
               );
@@ -57,11 +81,11 @@ export default function NavbarView({
               <li key={key}>
                 <NavLink
                   to={path}
-                  className={({ isActive }) => desktopLinkClass(isActive)}
+                  className={({ isActive }:NavLinkRenderProps): string => desktopLinkClass(isActive)}
                   end
                 >
                   {Icon && <Icon size={18} />}
-                  {label}
+                  {renderLabel(label)}
                 </NavLink>
               </li>
             );
@@ -80,16 +104,16 @@ export default function NavbarView({
 
       {menuOpen && (
         <ul className="lg:hidden flex flex-col gap-4 px-6 pb-6 text-sm font-medium border-t border-[var(--theme-border)] bg-[var(--theme-bg)]">
-          {navLinks.map(({ label, path, icon: Icon, onClick }: INavLink, idx): ReactElement => {
+          {navLinks.map(({ label, path, icon: Icon, onClick }: INavLink, idx: number): ReactElement => {
             const key = `${path}|${label}|m${idx}`;
 
             if (onClick) {
-              const isActive = loc.pathname === path;
+              const isActive: boolean = loc.pathname === path;
               return (
                 <li key={key}>
                   <button
                     type="button"
-                    onClick={() => {
+                    onClick={(): void => {
                       onClick();
                       closeMenu();
                     }}
@@ -97,7 +121,7 @@ export default function NavbarView({
                   >
                     <span className="inline-flex items-center gap-2">
                       {Icon && <Icon size={18} />}
-                      {label}
+                      {renderLabel(label)}
                     </span>
                   </button>
                 </li>
@@ -109,12 +133,12 @@ export default function NavbarView({
                 <NavLink
                   to={path}
                   onClick={closeMenu}
-                  className={({ isActive }) => mobileLinkClass(isActive)}
+                  className={({ isActive }: NavLinkRenderProps): string => mobileLinkClass(isActive)}
                   end
                 >
                   <span className="inline-flex items-center gap-2">
                     {Icon && <Icon size={18} />}
-                    {label}
+                    {renderLabel(label)}
                   </span>
                 </NavLink>
               </li>
