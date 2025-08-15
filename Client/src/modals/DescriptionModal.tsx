@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, {type RefObject, useEffect, useRef} from 'react';
 import { createPortal } from 'react-dom';
 import DescriptionModalView from '../jsx/descriptionModalView';
 
@@ -21,23 +21,23 @@ export default function DescriptionModal({
                                            onClose,
                                            children,
                                          }: Readonly<DescriptionModalProps>): React.ReactElement | null {
-  const panelRef = useRef<HTMLDialogElement | null>(null);
-  const titleId = useRef(`dialog-title-${generateSecureId()}`).current;
+  const panelRef: RefObject<HTMLDialogElement | null> = useRef<HTMLDialogElement | null>(null);
+  const titleId: string = useRef(`dialog-title-${generateSecureId()}`).current;
 
-  useEffect(() => {
+  useEffect((): (() => void) | undefined => {
     if (!open) return;
-    const prev = document.documentElement.style.overflow;
+    const prev: string = document.documentElement.style.overflow;
     document.documentElement.style.overflow = 'hidden';
-    return () => { document.documentElement.style.overflow = prev; };
+    return (): void => { document.documentElement.style.overflow = prev; };
   }, [open]);
 
-  useEffect(() => {
-    const dlg = panelRef.current;
+  useEffect((): (() => void) | undefined => {
+    const dlg: HTMLDialogElement | null = panelRef.current;
     if (!dlg) return;
 
     if (open) {
-      const handleCancel = (e: Event) => { e.preventDefault(); onClose(); };
-      const handleClose = () => { onClose(); };
+      const handleCancel: (e: Event) => void = (e: Event): void => { e.preventDefault(); onClose(); };
+      const handleClose: () => void = (): void => { onClose(); };
 
       dlg.addEventListener('cancel', handleCancel);
       dlg.addEventListener('close', handleClose);
@@ -52,19 +52,19 @@ export default function DescriptionModal({
     } else if (dlg.open) dlg.close();
   }, [open, onClose]);
 
-  useEffect(() => {
+  useEffect((): (() => void) | undefined => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent): void => {
+    const onKey: (e: KeyboardEvent) => void = (e: KeyboardEvent): void => {
       if (e.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    return (): void => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
   if (!open) return null;
 
-  const onBackdropClick = (): void => { onClose(); };
-  const onBackdropKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>): void => {
+  const onBackdropClick: () => void = (): void => { onClose(); };
+  const onBackdropKeyDown: (e: React.KeyboardEvent<HTMLButtonElement>) => void = (e: React.KeyboardEvent<HTMLButtonElement>): void => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       onClose();
