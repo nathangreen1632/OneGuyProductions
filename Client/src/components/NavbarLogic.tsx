@@ -31,11 +31,11 @@ export default function NavbarLogic(): React.ReactElement {
 
   useEffect((): void => { closeMenu(); }, [location.pathname, closeMenu]);
 
-  const HIDE_ON_ADMIN = useMemo<Set<string>>(
+  const HIDE_ON_ADMIN: Set<string> = useMemo<Set<string>>(
     (): Set<string> => new Set<string>(['Products', 'About', 'Contact', 'Order', 'My Portal', 'Home']),
     []
   );
-  const HIDE_ON_PORTAL = useMemo<Set<string>>(
+  const HIDE_ON_PORTAL: Set<string> = useMemo<Set<string>>(
     (): Set<string> => new Set<string>([]),
     []
   );
