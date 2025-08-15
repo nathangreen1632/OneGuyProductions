@@ -1,6 +1,6 @@
 import React from 'react';
 import DescriptionModal from './DescriptionModal';
-import { useNotificationStore } from '../store/useNotificationStore';
+import {type Notification, useNotificationStore} from '../store/useNotificationStore';
 
 interface InboxModalProps {
   open: boolean;
@@ -14,39 +14,36 @@ export default function InboxModal({
                                      onClose,
                                      onNavigateToOrder,
                                    }: Readonly<InboxModalProps>): React.ReactElement | null {
-  const items = useNotificationStore(s => s.items);
-  const markAllReadForOrder = useNotificationStore(s => s.markAllReadForOrder);
-  const clearRead = useNotificationStore(s => s.clearRead); // NEW
+  const items: Notification[] = useNotificationStore(s => s.items);
+  const markAllReadForOrder: (orderId: number) => void = useNotificationStore(s => s.markAllReadForOrder);
+  const clearRead: () => void = useNotificationStore(s => s.clearRead);
 
-  const handleClick = async (orderId: number): Promise<void> => {
-    // server ack (best‑effort)
+  const handleClick: (orderId: number) => Promise<void> = async (orderId: number): Promise<void> => {
     try {
       await fetch(`/api/order/${orderId}/read`, {
         method: 'POST',
         credentials: 'include',
       });
     } catch {
-      // ignore network errors; we still update local state
+
     }
 
-    // local state + navigate
     markAllReadForOrder(orderId);
     if (onNavigateToOrder) onNavigateToOrder(orderId);
     else window.location.assign('/portal'); // customer land
     onClose();
   };
 
-  const hasAnyRead = items.some(n => n.read); // NEW
+  const hasAnyRead: boolean = items.some(n => n.read);
 
   return (
     <DescriptionModal open={open} onClose={onClose} title="Inbox">
-      {/* NEW: Clear already-read notifications */}
       {hasAnyRead && (
         <div className="mb-3 flex justify-end">
           <button
             type="button"
             onClick={clearRead}
-            className="text-xs px-2 py-1 rounded border border-[var(--theme-border)] hover:bg-black/10"
+            className="text-xs px-2 py-1 rounded border border-[var(--theme-border)] hover:bg-black/10 underline"
           >
             Clear Notifications
           </button>
@@ -61,7 +58,7 @@ export default function InboxModal({
             <li key={n.id} className="py-3">
               <button
                 type="button"
-                onClick={() => handleClick(n.orderId)}
+                onClick={(): Promise<void> => handleClick(n.orderId)}
                 className="w-full text-left"
               >
                 <div className="flex items-start justify-between">
