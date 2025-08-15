@@ -131,7 +131,7 @@ export default function OrderEditModalView(
               value={form.description}
               onChange={handleChange}
               rows={4}
-              className="w-full px-4 py-2 rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] placeholder:text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)] cursor-pointer hover:shadow-[0_0_25px_2px_var(--theme-shadow)] overflow-hidden"
+              className="w-full h-72 px-4 py-2 rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] placeholder:text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)] cursor-pointer hover:shadow-[0_0_25px_2px_var(--theme-shadow)] overflow-hidden"
             />
           </div>
         </div>
