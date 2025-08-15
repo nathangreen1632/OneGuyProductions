@@ -406,8 +406,6 @@ export async function getInbox(req: Request, res: Response): Promise<void> {
   }
 }
 
-
-
 /**
  * (Optional) If you wire an email webhook:
  * POST /api/order/:orderId/email-reply
