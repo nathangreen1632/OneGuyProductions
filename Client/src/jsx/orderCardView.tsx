@@ -4,7 +4,7 @@ import type { Order } from '../types/order.types';
 import { format } from 'date-fns';
 import DescriptionModal from '../modals/DescriptionModal';
 import NotificationBadge from '../common/NotificationBadge';
-import { useNotificationStore } from '../store/useNotificationStore';
+import {type Notification, useNotificationStore} from '../store/useNotificationStore';
 
 interface IOrderCardViewProps {
   orders: Order[];
@@ -28,25 +28,25 @@ export default function OrderCardView({
                                       }: Readonly<IOrderCardViewProps>): React.ReactElement {
   const [modalOrderId, setModalOrderId] = useState<number | null>(null);
 
-  const items = useNotificationStore((s) => s.items);
-  const unreadOrderIds = useMemo<number[]>(
-    () => items.filter((n) => !n.read).map((n) => n.orderId),
+  const items: Notification[] = useNotificationStore((s): Notification[] => s.items);
+  const unreadOrderIds: number[] = useMemo<number[]>(
+    (): number[] => items.filter((n: Notification): boolean => !n.read).map((n: Notification): number => n.orderId),
     [items]
   );
-  const unreadOrderIdsSet = useMemo<Set<number>>(
-    () => new Set<number>(unreadOrderIds),
+  const unreadOrderIdsSet: Set<number> = useMemo<Set<number>>(
+    (): Set<number> => new Set<number>(unreadOrderIds),
     [unreadOrderIds]
   );
 
   const modalOrder: Order | null = useMemo(
-    () => (modalOrderId ? orders.find((o) => o.id === modalOrderId) ?? null : null),
+    (): Order | null => (modalOrderId ? orders.find((o: Order): boolean => o.id === modalOrderId) ?? null : null),
     [modalOrderId, orders]
   );
 
-  const openDescriptionModal = (orderId: number): void => setModalOrderId(orderId);
-  const closeDescriptionModal = (): void => setModalOrderId(null);
+  const openDescriptionModal: (orderId: number) => void = (orderId: number): void => setModalOrderId(orderId);
+  const closeDescriptionModal: () => void = (): void => setModalOrderId(null);
 
-  const hasOrders = orders.length > 0;
+  const hasOrders: boolean = orders.length > 0;
 
   return (
     <>
@@ -57,8 +57,8 @@ export default function OrderCardView({
           {orders.map((order: Order): ReactElement => {
             const isEditable: boolean = isWithin72Hours(order.createdAt);
 
-            const shouldTruncate = order.description.length > 300;
-            const displayDescription = shouldTruncate
+            const shouldTruncate: boolean = order.description.length > 300;
+            const displayDescription: string = shouldTruncate
               ? `${order.description.slice(0, 300)}…`
               : order.description;
 
@@ -71,7 +71,6 @@ export default function OrderCardView({
                     : 'border-[var(--theme-border)]'
                 }`}
               >
-              {/* Red dot */}
                 {unreadOrderIdsSet.has(order.id) && <NotificationBadge />}
 
                 <div className="flex-1">
