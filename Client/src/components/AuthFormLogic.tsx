@@ -20,14 +20,14 @@ type TAuthEndpoint = '/api/auth/login' | '/api/auth/register';
 type TApiResult = { ok: boolean; data: unknown };
 
 const nextPathForEmail: (u: unknown) => string = (u: any): string => {
-  const role = (u?.role as string) || 'user';
-  const verified = Boolean(u?.emailVerified);
+  const role: string = (u?.role as string) || 'user';
+  const verified: boolean = Boolean(u?.emailVerified);
   return role === 'admin' && verified ? '/admin/orders' : '/portal';
 };
 
 function getSafeReturnTo(): string | null {
   const params = new URLSearchParams(window.location.search);
-  const rt = params.get('returnTo') || '';
+  const rt: string = params.get('returnTo') || '';
   if (rt?.startsWith('/')) return rt;
   return null;
 }
