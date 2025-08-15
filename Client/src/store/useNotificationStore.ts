@@ -17,6 +17,7 @@ type Actions = {
   markAllReadForOrder: (orderId: number) => void;
   hasUnreadForOrder: (orderId: number) => boolean;
   unreadCount: () => number;
+  clearRead: () => void;
 };
 
 export const useNotificationStore = create<State & Actions>((set, get) => ({
@@ -31,4 +32,5 @@ export const useNotificationStore = create<State & Actions>((set, get) => ({
   hasUnreadForOrder: (orderId) =>
     get().items.some(n => !n.read && n.orderId === orderId),
   unreadCount: () => get().items.filter(n => !n.read).length,
+  clearRead: () => set({ items: get().items.filter(n => !n.read) }),
 }));
