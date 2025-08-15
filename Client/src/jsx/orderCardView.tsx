@@ -1,8 +1,9 @@
 import React, { type ReactElement, useMemo, useState } from 'react';
 import { ChevronRight } from 'lucide-react';
-// import NotificationBadge from '../common/NotificationBadge'; // 🚫 removed for now
+import NotificationBadge from '../common/NotificationBadge'; // 🚫 removed for now
 import type { Order } from '../types/order.types';
 import { format } from 'date-fns';
+import { useNotificationStore } from '../store/useNotificationStore';
 import DescriptionModal from '../modals/DescriptionModal';
 
 interface IOrderCardViewProps {
@@ -62,6 +63,8 @@ export default function OrderCardView({
               >
                 {/* 🚫 Red-dot removed entirely to avoid any interference */}
                 {/* {isUnread && <NotificationBadge />} */}
+                {useNotificationStore.getState().hasUnreadForOrder(order.id) && <NotificationBadge />}
+
 
                 {/* CONTENT (flex-1) so the actions can hug the bottom */}
                 <div className="flex-1">
@@ -110,7 +113,7 @@ export default function OrderCardView({
                           e.stopPropagation(); // harmless, defensive
                           openDescriptionModal(order.id);
                         }}
-                        className="mt-1 inline-flex items-center gap-1 text-emerald-500 text-xs focus:outline-none hover:underline"
+                        className="mt-1 inline-flex items-center gap-1 text-red-500 text-xs focus:outline-none hover:underline"
                         aria-haspopup="dialog"
                         aria-label={`Show full description for order ${order.id}`}
                       >
