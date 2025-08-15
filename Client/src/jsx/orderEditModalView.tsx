@@ -32,14 +32,15 @@ export default function OrderEditModalView(
     });
   }, [order]);
 
-  const handleChange = (
+  const handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+) => void = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ): void => {
     const { name, value }: { name: string; value: string } = e.target;
     setForm((prev: FormState): FormState => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (): void => {
+  const handleSubmit: () => void = (): void => {
     onSave({ ...order, ...form });
     onClose();
   };
