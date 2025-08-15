@@ -82,7 +82,7 @@ export default function DescriptionModalView({
       <div
         className="
           sticky bottom-0 z-10
-          px-3 py-2 sm:px-4 sm:py-3
+          px-4 py-4 mb-4 pb-4 sm:px-4 sm:py-3
           border-t border-[var(--theme-border-red)]/30
           bg-[var(--theme-surface)]
           flex justify-end
