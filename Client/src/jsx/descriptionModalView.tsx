@@ -99,7 +99,6 @@ export default function DescriptionModalView({
               bg-[var(--theme-button)]
               text-[var(--theme-text-white)]
               hover:bg-[var(--theme-hover)]
-              focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60
               text-sm sm:text-base
             "
           >
