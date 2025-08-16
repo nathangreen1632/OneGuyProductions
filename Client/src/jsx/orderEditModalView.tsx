@@ -138,7 +138,7 @@ export default function OrderEditModalView(
         </div>
 
         {/* Sticky footer inside scrollable panel; includes safe-area padding */}
-        <div className="bottom-0 -mx-6 mt-6 px-6 bg-[var(--theme-surface)]/95 backdrop-blur pt-3 pb-[max(env(safe-area-inset-bottom),0.75rem)]">
+        <div className="bottom-0 -mx-6 mt-6 px-6 bg-[var(--theme-surface)]/95 backdrop-blur pt-3 pb-[max(env(safe-area-inset-bottom),0.25rem)]">
           <div className="flex justify-center gap-3">
             <button
               onClick={handleSubmit}
