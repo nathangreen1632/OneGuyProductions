@@ -49,7 +49,7 @@ export default function OrderEditModalView(
     // Backdrop with safe-area padding (iOS) and mobile-first spacing
     <div className="fixed inset-0 z-50 bg-black/60 px-4 pt-4 pb-0 sm:px-0">
       {/* Scrollable panel capped to visible viewport height (svh) */}
-      <div className="relative mx-auto w-full max-w-lg rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] shadow-[0_4px_14px_0_var(--theme-shadow)] p-6 max-h-[min(90svh)] overflow-y-auto">
+      <div className="relative mx-auto w-full max-w-lg rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] shadow-[0_4px_14px_0_var(--theme-shadow)] p-6 max-h-[min(95svh,50rem)] overflow-y-auto">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-[var(--theme-border-red)] text-xl font-bold hover:text-red-700 focus:outline-none"
@@ -159,5 +159,4 @@ export default function OrderEditModalView(
       </div>
     </div>
   );
-
 }
