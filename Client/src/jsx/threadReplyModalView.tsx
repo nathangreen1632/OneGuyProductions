@@ -39,20 +39,22 @@ export default function ThreadReplyModalView(
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-2 pb-[env(safe-area-inset-bottom)]"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-4 py-4 sm:px-0"
       aria-labelledby="thread-modal-title"
       role="text"
       aria-modal="true"
     >
-      <div
-        className="absolute inset-0 bg-black/50"
-        aria-hidden="true"
+      {/* backdrop */}
+      <button
+        type="button"
+        aria-hidden="false"
         onClick={onClose}
+        className="absolute inset-0 bg-black/60"
       />
 
-      <div
-        className="relative w-full sm:max-w-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] rounded-t-2xl sm:rounded-2xl shadow-[0_6px_24px_0_var(--theme-shadow)] border border-[var(--theme-border)] overflow-hidden"
-      >
+      {/* panel */}
+      <div className="relative w-full sm:max-w-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] rounded-t-2xl sm:rounded-2xl shadow-[0_6px_24px_0_var(--theme-shadow)] border border-[var(--theme-border)] overflow-hidden max-h-[90svh] flex flex-col">
+        {/* header */}
         <div className="p-4 sm:p-6">
           <div className="flex items-start justify-between gap-3">
             <div>
@@ -72,32 +74,32 @@ export default function ThreadReplyModalView(
             </div>
             <button
               onClick={onClose}
-              className="shrink-0 rounded-lg px-3 py-2 text-base sm:text-sm border border-[var(--theme-border)] cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60 min-h-[44px]"
+              className="shrink-0 rounded-lg px-3 py-2 text-base sm:text-sm border border-[var(--theme-border)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60 min-h-[44px]"
             >
               Close
             </button>
           </div>
         </div>
 
-        <div className="px-4 sm:px-6 pb-4 sm:pb-6">
-          <div className="max-h-[50vh] sm:max-h-[60vh] overflow-y-auto pr-1 -mr-1 custom-scrollbar">
-            {messages.length === 0 && (
-              <p className="text-sm text-gray-400 italic">No messages yet.</p>
-            )}
+        {/* messages (scrollable) */}
+        <div className="px-4 sm:px-6 pb-4 sm:pb-6 grow min-h-0 overflow-y-auto pr-1 -mr-1 custom-scrollbar">
+          {messages.length === 0 && (
+            <p className="text-sm text-gray-400 italic">No messages yet.</p>
+          )}
 
-            {messages.map((m) => (
-              <div key={m.id} className="relative pl-4 py-3 border-l-2 border-[var(--theme-border)]">
-                <div className="absolute -left-[7px] top-3 w-3 h-3 rounded-full bg-[var(--theme-border)]" />
-                <div className="flex flex-col gap-0.5">
-                  <p className="text-sm font-semibold">{m.user}</p>
-                  <p className="text-[11px] text-gray-500">{new Date(m.timestamp).toLocaleString()}</p>
-                  <p className="text-sm">{m.message}</p>
-                </div>
+          {messages.map((m) => (
+            <div key={m.id} className="relative pl-4 py-3 border-l-2 border-[var(--theme-border)]">
+              <div className="absolute -left-[7px] top-3 w-3 h-3 rounded-full bg-[var(--theme-border)]" />
+              <div className="flex flex-col gap-0.5">
+                <p className="text-sm font-semibold">{m.user}</p>
+                <p className="text-[11px] text-gray-500">{new Date(m.timestamp).toLocaleString()}</p>
+                <p className="text-sm">{m.message}</p>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
 
+        {/* footer */}
         <div className="border-t border-[var(--theme-border)] bg-[var(--theme-surface)] p-4 sm:p-6">
           <div className="flex flex-col gap-2">
             <label htmlFor="thread-reply" className="text-sm">Reply</label>
@@ -106,22 +108,24 @@ export default function ThreadReplyModalView(
               value={reply}
               onChange={(e: ChangeEvent<HTMLTextAreaElement>): void => onChangeReply(e.target.value)}
               placeholder="Type your message…"
-              className="min-h-[96px] rounded-xl border border-[var(--theme-border-blue)] bg-transparent p-3 text-base sm:text-sm outline-none"
+              className="min-h-[96px] rounded-xl border border-[var(--theme-border-blue)] bg-transparent p-3 text-base sm:text-sm outline-none overflow-y-auto resize-none"
             />
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 pt-1">
-              <button
-                onClick={onClose}
-                className="w-full sm:w-auto px-4 py-3 sm:py-2 rounded-lg text-base sm:text-sm border border-[var(--theme-border)] cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60 min-h-[44px]"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={(): void => { void onSend(); }}
-                disabled={sending || reply.trim().length === 0}
-                className="w-full sm:w-auto px-4 py-3 sm:py-2 rounded-lg text-base sm:text-sm bg-[var(--theme-button)] text-[var(--theme-text-white)] shadow-md cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60 min-h-[44px]"
-              >
-                {sending ? 'Sending…' : 'Send'}
-              </button>
+              <div className=" mx-auto ">
+                <button
+                  onClick={(): void => { void onSend(); }}
+                  disabled={sending || reply.trim().length === 0}
+                  className="w-full sm:w-auto px-4 py-3 sm:py-2 rounded-lg text-base sm:text-sm bg-[var(--theme-button)] text-[var(--theme-text-white)] shadow-md disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60 min-h-[44px]"
+                >
+                  {sending ? 'Sending…' : 'Send'}
+                </button>
+                <button
+                  onClick={onClose}
+                  className="w-full sm:w-auto px-4 py-3 sm:py-2 rounded-lg text-base sm:text-sm border border-[var(--theme-border)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60 min-h-[44px]"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
         </div>
