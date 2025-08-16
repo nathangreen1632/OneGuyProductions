@@ -47,9 +47,9 @@ export default function OrderEditModalView(
 
   return (
     // Backdrop with safe-area padding (iOS) and mobile-first spacing
-    <div className="fixed inset-0 z-50 bg-black/60 px-4 pt-4 pb-[max(env(safe-area-inset-bottom),1rem)] sm:px-0">
+    <div className="fixed inset-0 z-50 bg-black/60 px-4 pt-4 pb-[max(env(safe-area-inset-bottom),0.25rem)] sm:px-0">
       {/* Scrollable panel capped to visible viewport height (svh) */}
-      <div className="relative mx-auto w-full max-w-lg rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] shadow-[0_4px_14px_0_var(--theme-shadow)] p-6 max-h-[min(90svh,44rem)] overflow-y-auto">
+      <div className="relative mx-auto w-full max-w-lg rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] shadow-[0_4px_14px_0_var(--theme-shadow)] p-6 max-h-[min(90svh,88rem)] overflow-y-auto">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-[var(--theme-border-red)] text-xl font-bold hover:text-red-700 focus:outline-none"
@@ -138,7 +138,7 @@ export default function OrderEditModalView(
         </div>
 
         {/* Sticky footer inside scrollable panel; includes safe-area padding */}
-        <div className="bottom-0 -mx-6 mt-6 px-6 bg-[var(--theme-surface)]/95 backdrop-blur pt-3 pb-[max(env(safe-area-inset-bottom),0.25rem)]">
+        <div className="bottom-0 -mx-6 mt-6 px-6 bg-[var(--theme-surface)]/95 backdrop-blur pt-3 pb-[max(env(safe-area-inset-bottom),0.05rem)]">
           <div className="flex justify-center gap-3">
             <button
               onClick={handleSubmit}
