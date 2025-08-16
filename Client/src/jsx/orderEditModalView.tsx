@@ -46,11 +46,13 @@ export default function OrderEditModalView(
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center px-4 mt-4 mb-8 sm:mb-0 sm:px-0">
-      <div className="relative bg-[var(--theme-surface)] text-[var(--theme-text)] w-full max-w-lg rounded-2xl shadow-[0_4px_14px_0_var(--theme-shadow)] p-6">
+    // Backdrop with safe-area padding (iOS) and mobile-first spacing
+    <div className="fixed inset-0 z-50 bg-black/60 px-4 pt-4 pb-[max(env(safe-area-inset-bottom),1rem)] sm:px-0">
+      {/* Scrollable panel capped to visible viewport height (svh) */}
+      <div className="relative mx-auto w-full max-w-lg rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] shadow-[0_4px_14px_0_var(--theme-shadow)] p-6 max-h-[min(90svh,44rem)] overflow-y-auto">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-[var(--theme-border-red)] cursor-pointer text-xl font-bold hover:text-red-700 focus:outline-none"
+          className="absolute top-4 right-4 text-[var(--theme-border-red)] text-xl font-bold hover:text-red-700 focus:outline-none"
           aria-label="Close"
         >
           &times;
@@ -68,7 +70,7 @@ export default function OrderEditModalView(
               name="businessName"
               value={form.businessName}
               onChange={handleChange}
-              className="w-full px-4 py-2 rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] placeholder:text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)] cursor-pointer hover:shadow-[0_0_25px_2px_var(--theme-shadow)] overflow-hidden"
+              className="w-full px-4 py-2 rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] placeholder:text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)] hover:shadow-[0_0_25px_2px_var(--theme-shadow)] overflow-hidden"
             />
           </div>
 
@@ -81,7 +83,7 @@ export default function OrderEditModalView(
               name="projectType"
               value={form.projectType}
               onChange={handleChange}
-              className="w-full px-4 py-2 rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] placeholder:text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)] cursor-pointer hover:shadow-[0_0_25px_2px_var(--theme-shadow)] overflow-hidden"
+              className="w-full px-4 py-2 rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] placeholder:text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)] hover:shadow-[0_0_25px_2px_var(--theme-shadow)] overflow-hidden"
             />
           </div>
 
@@ -96,10 +98,8 @@ export default function OrderEditModalView(
               onChange={handleChange}
               disabled={!isEditable}
               placeholder="e.g. $3000"
-              className={`w-full px-4 py-2 rounded-2xl text-[var(--theme-text)] placeholder:text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)] cursor-pointer hover:shadow-[0_0_25px_2px_var(--theme-shadow)] overflow-hidden ${
-                isEditable
-                  ? 'bg-[var(--theme-surface)]'
-                  : 'bg-gray-300 cursor-not-allowed opacity-70'
+              className={`w-full px-4 py-2 rounded-2xl text-[var(--theme-text)] placeholder:text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)] hover:shadow-[0_0_25px_2px_var(--theme-shadow)] overflow-hidden ${
+                isEditable ? 'bg-[var(--theme-surface)]' : 'bg-gray-300 cursor-not-allowed opacity-70'
               }`}
             />
             {!isEditable && (
@@ -118,7 +118,7 @@ export default function OrderEditModalView(
               name="timeline"
               value={form.timeline}
               onChange={handleChange}
-              className="w-full px-4 py-2 rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] placeholder:text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)] cursor-pointer hover:shadow-[0_0_25px_2px_var(--theme-shadow)] overflow-hidden"
+              className="w-full px-4 py-2 rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] placeholder:text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)] hover:shadow-[0_0_25px_2px_var(--theme-shadow)] overflow-hidden"
             />
           </div>
 
@@ -131,27 +131,33 @@ export default function OrderEditModalView(
               name="description"
               value={form.description}
               onChange={handleChange}
-              rows={4}
-              className="w-full h-72 px-4 py-2 rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] placeholder:text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)] cursor-pointer hover:shadow-[0_0_25px_2px_var(--theme-shadow)] overflow-y-auto"
+              rows={8}
+              className="w-full h-72 px-4 py-2 rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] placeholder:text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)] hover:shadow-[0_0_25px_2px_var(--theme-shadow)] overflow-y-auto resize-none"
             />
           </div>
         </div>
 
-        <div className="flex justify-end mt-6 gap-3">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm rounded cursor-pointer bg-gray-600 hover:bg-gray-700 text-slate-200"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            className="px-4 py-2 text-sm rounded bg-[var(--theme-button)] cursor-pointer hover:bg-[var(--theme-hover)] text-[var(--theme-text-white)] shadow focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60"
-          >
-            Save Changes
-          </button>
+        {/* Sticky footer inside scrollable panel; includes safe-area padding */}
+        <div className="bottom-0 -mx-6 mt-6 px-6 bg-[var(--theme-surface)]/95 backdrop-blur pt-3 pb-[max(env(safe-area-inset-bottom),0.75rem)]">
+          <div className="flex justify-center gap-3">
+            <button
+              onClick={handleSubmit}
+              className="px-4 py-2 text-sm rounded bg-[var(--theme-button)] hover:bg-[var(--theme-hover)] text-[var(--theme-text-white)] shadow focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60"
+            >
+              Save Changes
+            </button>
+          </div>
+          <div className="flex justify-center mt-4 gap-3">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-sm rounded bg-gray-600 hover:bg-gray-700 text-slate-200"
+            >
+              Cancel
+            </button>
+          </div>
         </div>
       </div>
     </div>
   );
+
 }
