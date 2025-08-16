@@ -33,7 +33,7 @@ export default function DescriptionModalView({
       className="
         fixed inset-0 m-auto
         w-[92vw] sm:w-[90vw] md:w-[640px] lg:w-[720px]
-        max-h-[92svh] sm:max-h-[88svh]
+        max-h-[90svh] md:max-h-[88svh]
         bg-[var(--theme-surface)] text-[var(--theme-text)]
         border border-[var(--theme-border)]
         rounded-xl sm:rounded-2xl
@@ -42,6 +42,7 @@ export default function DescriptionModalView({
         flex flex-col
       "
     >
+      {/* invisible backdrop handler for a11y */}
       <button
         type="button"
         aria-label="Close dialog backdrop"
@@ -50,6 +51,7 @@ export default function DescriptionModalView({
         className="sr-only"
       />
 
+      {/* header */}
       <div
         className="
           sticky top-0 z-10
@@ -62,14 +64,19 @@ export default function DescriptionModalView({
         <h2 id={titleId} className="text-base sm:text-lg font-bold">
           {title}
         </h2>
-        <ModalIconButton ariaLabel="Close" onClick={onClose} className="p-2 rounded-xl hover:opacity-80">
-          <X className="h-5 w-5 sm:h-5 sm:w-5 text-red-500" />
+        <ModalIconButton
+          ariaLabel="Close"
+          onClick={onClose}
+          className="p-2 rounded-xl hover:opacity-80"
+        >
+          <X className="h-5 w-5 text-red-500" />
         </ModalIconButton>
       </div>
 
+      {/* content (scrolls) */}
       <div
         className="
-          flex-1
+          flex-1 min-h-0
           p-3 sm:p-4
           overflow-y-auto
           text-sm sm:text-base leading-6
@@ -79,15 +86,15 @@ export default function DescriptionModalView({
         {children}
       </div>
 
+      {/* footer */}
       <div
         className="
           sticky bottom-0 z-10
-          px-4 py-4 mb-4 pb-4 sm:px-4 sm:py-3
+          px-3 py-3 sm:px-4 sm:py-3
           border-t border-[var(--theme-border-red)]/30
           bg-[var(--theme-surface)]
           flex justify-end
         "
-        style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 0px)' }}
       >
         <div className="w-full sm:w-auto">
           <ModalActionButton
