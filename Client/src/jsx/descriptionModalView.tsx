@@ -33,7 +33,7 @@ export default function DescriptionModalView({
       className="
         fixed inset-0 m-auto
         w-[92vw] sm:w-[90vw] md:w-[640px] lg:w-[720px]
-        max-h-[90svh] md:max-h-[88svh]
+        h-[60svh] max-h-[90svh] md:h-[65svh] md:max-h-[88svh]
         bg-[var(--theme-surface)] text-[var(--theme-text)]
         border border-[var(--theme-border)]
         rounded-xl sm:rounded-2xl
