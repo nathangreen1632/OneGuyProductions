@@ -43,14 +43,15 @@ export default function InboxModal({
           <button
             type="button"
             onClick={clearRead}
-            className="self-stretch sm:self-auto text-xs sm:text-[13px] px-3 py-2 rounded border border-[var(--theme-border)] hover:bg-black/10 underline"
+            className="w-full sm:w-auto text-xs sm:text-[13px] px-3 py-2 rounded-lg border border-[var(--theme-border)] hover:bg-black/10 underline"
           >
             Clear Notifications
           </button>
         </div>
       )}
 
-      <div className="max-h-[60vh] sm:max-h-[70vh] md:max-h-[75vh] overflow-y-auto pr-1 sm:pr-2">
+      {/* Scrollable content area */}
+      <div className="max-h-[70vh] sm:max-h-[72vh] md:max-h-[75vh] overflow-y-auto pr-1 sm:pr-2">
         {items.length === 0 ? (
           <p className="text-sm sm:text-[15px] text-gray-500 text-center py-6">No notifications.</p>
         ) : (
@@ -60,10 +61,10 @@ export default function InboxModal({
                 <button
                   type="button"
                   onClick={(): Promise<void> => handleClick(n.orderId)}
-                  className="w-full text-left focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/40 rounded-lg"
+                  className="w-full text-left rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/40"
                 >
-                  <div className="flex items-start justify-between gap-3 sm:gap-4 p-2 sm:p-0">
-                    <div className="flex-1 min-w-0 pr-0 sm:pr-3">
+                  <div className="flex items-start justify-between gap-3 sm:gap-4 p-3 sm:p-2">
+                    <div className="flex-1 min-w-0 pr-2 sm:pr-3">
                       <p className="font-semibold text-sm sm:text-[15px] line-clamp-1">
                         {n.title || `Update on Order #${n.orderId}`}
                       </p>
@@ -82,7 +83,7 @@ export default function InboxModal({
                     {!n.read && (
                       <span
                         aria-hidden
-                        className="mt-1 h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full bg-[var(--theme-border-red)] inline-block flex-shrink-0"
+                        className="mt-1 h-2.5 w-2.5 sm:h-2.5 sm:w-2.5 rounded-full bg-[var(--theme-border-red)] shrink-0"
                       />
                     )}
                   </div>
@@ -94,4 +95,5 @@ export default function InboxModal({
       </div>
     </DescriptionModal>
   );
+
 }
