@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { X } from 'lucide-react';
 import type { Order } from '../types/order.types';
 import { isWithin72Hours } from '../helpers/dateHelper';
 import type { FormState } from '../types/formState.types';
-import {useScrollLock} from "../hooks/useScrollLock.ts";
+import { useScrollLock } from '../hooks/useScrollLock.ts';
 
 interface Props {
   order: Order;
@@ -21,7 +22,7 @@ export default function OrderEditModalView(
     description: order.description,
   });
 
-  // Lock scroll when modal is open
+  // Lock background scroll while modal is open
   useScrollLock(true);
 
   const isEditable: boolean = isWithin72Hours(order.createdAt);
@@ -36,37 +37,53 @@ export default function OrderEditModalView(
     });
   }, [order]);
 
-  const handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-) => void = (
+  const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ): void => {
-    const { name, value }: { name: string; value: string } = e.target;
+    const { name, value } = e.target;
     setForm((prev: FormState): FormState => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit: () => void = (): void => {
+  const handleSubmit = (): void => {
     onSave({ ...order, ...form });
     onClose();
   };
 
   return (
-    // Backdrop with safe-area padding (iOS) and mobile-first spacing
-    <div className="fixed inset-0 z-50 bg-black/60 px-4 pt-4 pb-0 sm:px-0">
-      {/* Scrollable panel capped to visible viewport height (svh) */}
-      <div className="relative mx-auto w-full max-w-lg rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] shadow-[0_4px_14px_0_var(--theme-shadow)] p-6 max-h-[min(95svh,50rem)] overflow-y-auto">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-[var(--theme-border-red)] text-xl font-bold hover:text-red-700 focus:outline-none"
-          aria-label="Close"
-        >
-          &times;
-        </button>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center px-4 sm:px-0"
+      aria-labelledby="edit-order-title"
+      role="text"
+      aria-modal="true"
+    >
+      {/* Backdrop */}
+      <button
+        type="button"
+        aria-hidden="false"
+        onClick={onClose}
+        className="absolute inset-0 bg-black/60"
+      />
 
-        <h2 className="text-xl font-bold mb-4">Edit Order</h2>
+      {/* Panel */}
+      <div className="relative w-full sm:max-w-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] rounded-2xl shadow-[0_6px_24px_0_var(--theme-shadow)] overflow-hidden max-h-[90svh] flex flex-col">
+        {/* Header */}
+        <div className="p-4 sm:p-6 border-b border-[var(--theme-border-red)]/30 flex items-center justify-between">
+          <h2 id="edit-order-title" className="text-lg font-semibold">
+            Edit Order
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1 rounded-full"
+          >
+            <X className="h-5 w-5 text-[var(--theme-border-red)] hover:text-[var(--theme-button-red)]/80 cursor-pointer" />
+          </button>
+        </div>
 
-        <div className="flex flex-col gap-4">
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
           <div>
-            <label htmlFor="businessName" className="text-sm text-[var(--theme-text)] block mb-1">
+            <label htmlFor="businessName" className="text-sm block mb-1">
               Business Name
             </label>
             <input
@@ -74,12 +91,12 @@ export default function OrderEditModalView(
               name="businessName"
               value={form.businessName}
               onChange={handleChange}
-              className="w-full px-4 py-2 rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] placeholder:text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)] hover:shadow-[0_0_25px_2px_var(--theme-shadow)] overflow-hidden"
+              className="w-full px-4 py-2 rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] placeholder:text-[var(--theme-text)] shadow-[0_6px_24px_0_var(--theme-shadow)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30"
             />
           </div>
 
           <div>
-            <label htmlFor="projectType" className="text-sm text-[var(--theme-text)] block mb-1">
+            <label htmlFor="projectType" className="text-sm block mb-1">
               Project Type
             </label>
             <input
@@ -87,12 +104,12 @@ export default function OrderEditModalView(
               name="projectType"
               value={form.projectType}
               onChange={handleChange}
-              className="w-full px-4 py-2 rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] placeholder:text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)] hover:shadow-[0_0_25px_2px_var(--theme-shadow)] overflow-hidden"
+              className="w-full px-4 py-2 rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] shadow-[0_6px_24px_0_var(--theme-shadow)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30"
             />
           </div>
 
           <div>
-            <label htmlFor="budget" className="text-sm text-[var(--theme-text)] block mb-1">
+            <label htmlFor="budget" className="text-sm block mb-1">
               Budget
             </label>
             <input
@@ -102,8 +119,10 @@ export default function OrderEditModalView(
               onChange={handleChange}
               disabled={!isEditable}
               placeholder="e.g. $3000"
-              className={`w-full px-4 py-2 rounded-2xl text-[var(--theme-text)] placeholder:text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)] hover:shadow-[0_0_25px_2px_var(--theme-shadow)] overflow-hidden ${
-                isEditable ? 'bg-[var(--theme-surface)]' : 'bg-gray-300 cursor-not-allowed opacity-70'
+              className={`w-full px-4 py-2 rounded-2xl text-[var(--theme-text)] shadow-[0_6px_24px_0_var(--theme-shadow)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 ${
+                isEditable
+                  ? 'bg-[var(--theme-surface)]'
+                  : 'bg-gray-300 cursor-not-allowed opacity-70'
               }`}
             />
             {!isEditable && (
@@ -114,7 +133,7 @@ export default function OrderEditModalView(
           </div>
 
           <div>
-            <label htmlFor="timeline" className="text-sm text-[var(--theme-text)] block mb-1">
+            <label htmlFor="timeline" className="text-sm block mb-1">
               Timeline
             </label>
             <input
@@ -122,12 +141,12 @@ export default function OrderEditModalView(
               name="timeline"
               value={form.timeline}
               onChange={handleChange}
-              className="w-full px-4 py-2 rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] placeholder:text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)] hover:shadow-[0_0_25px_2px_var(--theme-shadow)] overflow-hidden"
+              className="w-full px-4 py-2 rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_6px_24px_0_var(--theme-shadow)]"
             />
           </div>
 
           <div>
-            <label htmlFor="description" className="text-sm text-[var(--theme-text)] block mb-1">
+            <label htmlFor="description" className="text-sm block mb-1">
               Description
             </label>
             <textarea
@@ -136,29 +155,25 @@ export default function OrderEditModalView(
               value={form.description}
               onChange={handleChange}
               rows={8}
-              className="w-full h-72 px-4 py-2 rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] placeholder:text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)] hover:shadow-[0_0_25px_2px_var(--theme-shadow)] overflow-y-auto resize-none"
+              className="w-full h-72 px-4 py-2 rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] shadow-[0_6px_24px_0_var(--theme-shadow)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 resize-none custom-scrollbar"
             />
           </div>
         </div>
 
-        {/* Sticky footer inside scrollable panel; includes safe-area padding */}
-        <div className="bottom-0 -mx-6 mt-6 px-6 bg-[var(--theme-surface)]/95 backdrop-blur pt-3 pb-[max(env(safe-area-inset-bottom),0.25rem)]">
-          <div className="flex justify-center gap-3">
-            <button
-              onClick={handleSubmit}
-              className="px-4 py-2 text-sm rounded bg-[var(--theme-button)] hover:bg-[var(--theme-hover)] text-[var(--theme-text-white)] shadow focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60"
-            >
-              Save Changes
-            </button>
-          </div>
-          <div className="flex justify-center mt-4 gap-3">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-sm rounded bg-gray-600 hover:bg-gray-700 text-slate-200"
-            >
-              Cancel
-            </button>
-          </div>
+        {/* Footer */}
+        <div className="border-t border-[var(--theme-border-red)]/30 p-4 sm:p-6 flex justify-end gap-3 bg-[var(--theme-surface)]">
+          <button
+            onClick={handleSubmit}
+            className="px-4 py-2 text-sm rounded bg-[var(--theme-button)] hover:bg-[var(--theme-hover)] text-[var(--theme-text-white)] cursor-pointer"
+          >
+            Save Changes
+          </button>
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm rounded bg-[var(--theme-button-red)] hover:bg-[var(--theme-button-red)]/80 text-[var(--theme-text-white)] cursor-pointer"
+          >
+            Cancel
+          </button>
         </div>
       </div>
     </div>
