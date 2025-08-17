@@ -25,6 +25,7 @@ export default function ContactFormView({ formData, submitting, handleChange, ha
             required
             className="w-full px-4 py-2 rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] placeholder:text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)] overflow-hidden"
           />
+
           <input
             name="email"
             type="email"
@@ -34,6 +35,7 @@ export default function ContactFormView({ formData, submitting, handleChange, ha
             required
             className="w-full px-4 py-2 rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] placeholder:text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)] overflow-hidden"
           />
+
           <textarea
             name="message"
             placeholder="Message"
@@ -42,15 +44,17 @@ export default function ContactFormView({ formData, submitting, handleChange, ha
             required
             className="w-full h-32 px-4 py-2 rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] placeholder:text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)] overflow-hidden"
           />
+
           <div className="flex justify-center items-center gap-4">
             <button
               type="submit"
               disabled={submitting || !isRecaptchaReady}
-              className="w-fit bg-[var(--theme-button)] hover:bg-[var(--theme-hover)] text-[var(--theme-text-white)] cursor-pointer font-semibold py-2 px-6 rounded transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-fit bg-[var(--theme-button)] hover:bg-[var(--theme-hover)] text-[var(--theme-text-white)] cursor-pointer py-2 px-6 rounded transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting ? 'Sending...' : 'Send Message'}
             </button>
           </div>
+
           <div className="flex justify-center items-center mt-4">
             {!isRecaptchaReady && (
               <div className="flex items-center gap-2">
