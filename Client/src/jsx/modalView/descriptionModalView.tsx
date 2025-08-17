@@ -1,20 +1,9 @@
 import React from 'react';
 import { X } from 'lucide-react';
-import ModalIconButton from '../common/ModalIconButton';
-import ModalActionButton from '../common/ModalActionButton';
-import { useScrollLock} from "../hooks/useScrollLock.ts";
-
-export interface DescriptionModalViewProps {
-  title: string;
-  titleId: string;
-  children: React.ReactNode;
-
-  onClose: () => void;
-  onBackdropClick: () => void;
-  onBackdropKeyDown: (e: React.KeyboardEvent<HTMLButtonElement>) => void;
-
-  panelRef: React.RefObject<HTMLDialogElement | null>;
-}
+import ModalIconButton from '../../common/ModalIconButton.tsx';
+import ModalActionButton from '../../common/ModalActionButton.tsx';
+import { useScrollLock} from "../../hooks/useScrollLock.ts";
+import type { DescriptionModalViewProps } from '../../types/modal.types.ts';
 
 export default function DescriptionModalView({
                                                title,
@@ -25,7 +14,6 @@ export default function DescriptionModalView({
                                                onBackdropKeyDown,
                                                panelRef,
                                              }: Readonly<DescriptionModalViewProps>): React.ReactElement {
-  // Lock scroll when modal is open
   useScrollLock(true);
 
   return (
@@ -46,7 +34,6 @@ export default function DescriptionModalView({
         flex flex-col
       "
     >
-      {/* invisible backdrop handler for a11y */}
       <button
         type="button"
         aria-label="Close dialog backdrop"
@@ -55,7 +42,6 @@ export default function DescriptionModalView({
         className="sr-only"
       />
 
-      {/* header */}
       <div
         className="
           sticky top-0 z-10
@@ -77,7 +63,6 @@ export default function DescriptionModalView({
         </ModalIconButton>
       </div>
 
-      {/* content (scrolls) */}
       <div
         className="
           flex-1 min-h-0
@@ -90,7 +75,6 @@ export default function DescriptionModalView({
         {children}
       </div>
 
-      {/* footer */}
       <div
         className="
           sticky bottom-0 z-10
