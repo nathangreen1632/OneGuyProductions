@@ -36,6 +36,8 @@ export async function notifyOrderUpdate(params: NotifyParams): Promise<boolean> 
       'noreply@oneguyproductions.com';
 
     const brand = 'One Guy Productions';
+    const link = 'https://www.oneguyproductions.com';
+    const brandLink = `<a href="${link}" target="_blank" rel="noopener noreferrer">${brand}</a>`;
     const red500 = '#ef4444';
     const black = '#000000';
     const white = '#ffffff';
@@ -43,6 +45,14 @@ export async function notifyOrderUpdate(params: NotifyParams): Promise<boolean> 
     const actorLabel: string = actor?.email ?? brand;
     const subject = `Order #${order.id} — New update`;
     const safePreview: string = String(bodyPreview || '').slice(0, 240);
+    const cleanLeading: (s: string) => string = (s: string): string =>
+      String(s ?? '')
+        .replace(/^\uFEFF/, '')
+        .replace(/\r\n/g, '\n')
+        .replace(/^(?:\s*<(?:br)\s*\/?>)+/i, '')
+        .replace(/^(?:&nbsp;|&#160;)+/i, '')
+        .replace(/^[\s\u00A0\u1680\u180E\u2000-\u200B\u202F\u205F\u3000]+/u, '');
+    const previewNormalized: string = cleanLeading(safePreview);
 
     const base = EnvConfig.PUBLIC_BASE_URL ?? 'https://www.oneguyproductions.com';
     const portalPath = `/portal?openOrder=${encodeURIComponent(String(order.id))}`;
@@ -71,7 +81,20 @@ export async function notifyOrderUpdate(params: NotifyParams): Promise<boolean> 
             border-radius:12px;
             padding:16px;
             text-align:left !important;
+            white-space:pre-wrap;
+            word-break:break-word;
+            color:${white};
+            text-indent:0 !important;
           }
+          
+          .message-content {
+            display:block !important;
+            margin:0 !important;
+            padding:0 !important;
+            text-indent:0 !important;
+            line-height:1.6;
+          }
+          
           .btn {
             display:inline-block;
             background:${red500};
@@ -81,6 +104,7 @@ export async function notifyOrderUpdate(params: NotifyParams): Promise<boolean> 
             border-radius:999px;
             text-decoration:none;
           }
+          
           @media (prefers-color-scheme: dark) {
             .bg-page { background:#000 !important; }
             .card { background:#0b0b0b !important; border-color:${red500} !important; }
@@ -88,6 +112,7 @@ export async function notifyOrderUpdate(params: NotifyParams): Promise<boolean> 
             .message-box { background:#111 !important; }
             .link { color:${red500} !important; }
           }
+          
           [data-ogsc] .bg-page { background:#000 !important; }
           [data-ogsc] .card { background:#0b0b0b !important; border-color:${red500} !important; }
           [data-ogsc] .text { color:#ffffff !important; }
@@ -139,8 +164,8 @@ export async function notifyOrderUpdate(params: NotifyParams): Promise<boolean> 
                           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:12px 0 4px 0;">
                             <tr>
                               <td align="left" style="text-align:left !important; padding:0;">
-                                <div class="message-box" style="white-space:pre-wrap; word-break:break-word; color:${white}; text-align:left !important;">
-                                  ${escapeHtml(safePreview)}
+                                <div class="message-box">
+                                  <span class="message-content">${escapeHtml(previewNormalized)}</span>
                                 </div>
                               </td>
                             </tr>
@@ -164,7 +189,7 @@ export async function notifyOrderUpdate(params: NotifyParams): Promise<boolean> 
                       <tr>
                         <td class="text" style="padding:14px 24px 24px 24px;">
                           <p style="margin:0; font-size:12px; line-height:1.6; opacity:.8;">
-                            You’re receiving this because you’re associated with Order #${order.id} on ${brand}.
+                            You’re receiving this because you’re associated with Order #${order.id} on ${brandLink}.
                           </p>
                           <p style="margin:8px 0 0 0; font-size:12px; line-height:1.6; opacity:.6;">
                             © ${new Date().getFullYear()} ${brand}. All rights reserved.
@@ -203,7 +228,6 @@ export async function notifyOrderUpdate(params: NotifyParams): Promise<boolean> 
   }
 }
 
-/** Minimal HTML escaper to avoid breaking the email markup */
 function escapeHtml(input: string): string {
   return input.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
