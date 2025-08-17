@@ -10,7 +10,7 @@ import { useOrderStore } from '../store/useOrderStore';
 import {logoutUser} from '../helpers/logoutHelper';
 import {useNotificationStore} from '../store/useNotificationStore';
 import NavbarView from '../jsx/navbarView';
-import RedInfoIcon from './RedInfoIcon.tsx';
+import RedInfoIcon from '../common/RedInfoIcon.tsx';
 import GravatarModal from '../modals/GravatarModal';
 import InboxModal from '../modals/InboxModal';
 
