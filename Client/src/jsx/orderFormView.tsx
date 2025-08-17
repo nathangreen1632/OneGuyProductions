@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { OrderFormData } from '../types/order.types';
+import { useScrollLock } from '../hooks/useScrollLock.ts';
 
 interface OrderFormViewProps {
   formData: OrderFormData;
@@ -11,6 +12,9 @@ interface OrderFormViewProps {
 export default function OrderFormView(
   { formData, submitting, handleChange, handleSubmit }: Readonly<OrderFormViewProps>
 ): React.ReactElement {
+  const [descFocused, setDescFocused] = useState<boolean>(false);
+  useScrollLock(descFocused);
+
   return (
     <section className="max-w-2xl mx-auto px-4 py-12">
       <div className="bg-[var(--theme-surface)] text-[var(--theme-text)] rounded-2xl focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)] p-6">
@@ -115,13 +119,17 @@ export default function OrderFormView(
             required
             value={formData.description}
             onChange={handleChange}
+            onFocus={(): void => setDescFocused(true)}
+            onBlur={(): void => setDescFocused(false)}
             placeholder={`Tell me about your project... Please be as detailed as possible.
 
 - What problem does it solve?
 - Who is the target audience?
 - What features are essential?
 - Any specific design or tech stack preferences?`}
-            className="w-full h-56 px-4 py-2 rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] placeholder:text-[var(--theme-text)]/60 focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_0_var(--theme-shadow)] overflow-hidden"
+            className="w-full h-56 max-h-[60vh] px-4 py-2 rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)]
+                       placeholder:text-[var(--theme-text)]/60 focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30
+                       shadow-[0_4px_14px_0_var(--theme-shadow)] resize-none overflow-y-auto overscroll-contain custom-scrollbar"
           />
 
           <div className="flex justify-center">
