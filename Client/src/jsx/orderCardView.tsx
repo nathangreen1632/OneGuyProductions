@@ -131,7 +131,7 @@ export default function OrderCardView({
                   <button
                     type="button"
                     onClick={(): void => onEdit(order)}
-                    className="px-4 py-2 bg-[var(--theme-button)] text-[var(--theme-text-white)] cursor-pointer text-sm rounded shadow-md hover:bg-[var(--theme-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60"
+                    className="px-4 py-2 bg-[var(--theme-button)] text-[var(--theme-text-white)] cursor-pointer text-sm rounded shadow-md hover:bg-[var(--theme-hover)]"
                   >
                     Edit
                   </button>
@@ -141,7 +141,7 @@ export default function OrderCardView({
                       type="button"
                       onClick={(): void => onCancel(order)}
                       disabled={order.status === 'cancelled'}
-                      className={`px-4 py-2 text-sm rounded cursor-pointer shadow-md focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60 ${
+                      className={`px-4 py-2 text-sm rounded cursor-pointer shadow-md ${
                         order.status === 'cancelled'
                           ? 'bg-[var(--theme-button-gray)] cursor-not-allowed text-white'
                           : 'bg-[var(--theme-border-red)] hover:bg-[var(--theme-button-red)] text-[var(--theme-text-white)]'
@@ -154,7 +154,7 @@ export default function OrderCardView({
                   <button
                     type="button"
                     onClick={(): void => onDownload(order.id)}
-                    className="px-4 py-2 bg-[var(--theme-card)] text-[var(--theme-text-white)] cursor-pointer text-sm rounded shadow-md hover:bg-[var(--theme-card-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/60"
+                    className="px-4 py-2 bg-[var(--theme-card)] text-[var(--theme-text-white)] cursor-pointer text-sm rounded shadow-md hover:bg-[var(--theme-card-hover)]"
                   >
                     Download Invoice
                   </button>
