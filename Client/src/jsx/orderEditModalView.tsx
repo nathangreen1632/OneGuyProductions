@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import type { Order } from '../types/order.types';
 import { isWithin72Hours } from '../helpers/dateHelper';
 import type { FormState } from '../types/formState.types';
+import {useScrollLock} from "../hooks/useScrollLock.ts";
 
 interface Props {
   order: Order;
@@ -19,6 +20,9 @@ export default function OrderEditModalView(
     timeline: order.timeline,
     description: order.description,
   });
+
+  // Lock scroll when modal is open
+  useScrollLock(true);
 
   const isEditable: boolean = isWithin72Hours(order.createdAt);
 
