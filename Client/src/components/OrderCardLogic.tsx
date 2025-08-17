@@ -3,7 +3,7 @@ import toast from 'react-hot-toast';
 import { useOrderStore } from '../store/useOrderStore';
 import { isWithin72Hours } from '../helpers/dateHelper';
 import type { Order, OrderStatus, OrderState } from '../types/order.types';
-import OrderEditModalView from '../jsx/orderEditModalView';
+import OrderEditModalView from '../jsx/modalView/orderEditModalView.tsx';
 import OrderCardView from '../jsx/orderCardView';
 
 function getStatusTextClasses(status: string): string {
@@ -120,8 +120,8 @@ export default function OrderCardLogic(): React.ReactElement {
       });
 
       if (!res.ok) {
-        const rawMsg = await extractApiErrorMessage(res);
-        const msg = refineMessageForEditWindow(rawMsg, res.status);
+        const rawMsg: string = await extractApiErrorMessage(res);
+        const msg: string = refineMessageForEditWindow(rawMsg, res.status);
         toast.error(msg || 'Update failed.');
         return;
       }
@@ -148,7 +148,7 @@ export default function OrderCardLogic(): React.ReactElement {
       });
 
       if (!res.ok) {
-        const msg = await extractApiErrorMessage(res);
+        const msg: string = await extractApiErrorMessage(res);
         toast.error(msg || 'Failed to cancel order.');
         return;
       }
