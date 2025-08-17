@@ -127,7 +127,7 @@ export default function OrderFormView(
 - Who is the target audience?
 - What features are essential?
 - Any specific design or tech stack preferences?`}
-            className="w-full h-56 max-h-[60vh] px-4 py-2 rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)]
+            className="w-full h-60 max-h-[60vh] px-4 py-2 rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)]
                        placeholder:text-[var(--theme-text)]/60 focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30
                        shadow-[0_4px_14px_0_var(--theme-shadow)] resize-none overflow-y-auto overscroll-contain custom-scrollbar"
           />
