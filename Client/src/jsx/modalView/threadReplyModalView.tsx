@@ -1,34 +1,7 @@
 import React, { type ChangeEvent } from 'react';
 import { X } from 'lucide-react';
-import { useScrollLock } from '../hooks/useScrollLock.ts';
-
-type HeaderInfo = {
-  projectType: string;
-  customerName: string;
-  businessName: string;
-  statusLabel: string;
-  statusClass: string;
-  placedAt: string;
-  orderId: number;
-};
-
-type ThreadMessage = {
-  id: string;
-  user: string;
-  timestamp: string;
-  message: string;
-};
-
-interface Props {
-  isOpen: boolean;
-  onClose: () => void;
-  header: HeaderInfo;
-  messages: ThreadMessage[];
-  reply: string;
-  onChangeReply: (v: string) => void;
-  onSend: () => Promise<void>;
-  sending: boolean;
-}
+import { useScrollLock } from '../../hooks/useScrollLock.ts';
+import type { Props, ThreadMessage } from '../../types/modal.types.ts';
 
 export default function ThreadReplyModalView(
   props: Readonly<Props>
@@ -48,7 +21,6 @@ export default function ThreadReplyModalView(
       role="text"
       aria-modal="true"
     >
-      {/* Backdrop */}
       <button
         type="button"
         aria-hidden="false"
@@ -56,9 +28,7 @@ export default function ThreadReplyModalView(
         className="absolute inset-0 bg-black/60"
       />
 
-      {/* Panel */}
       <div className="relative w-full sm:max-w-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] rounded-2xl shadow-[0_6px_24px_0_var(--theme-shadow)] overflow-hidden max-h-[90svh] flex flex-col">
-        {/* Header */}
         <div className="p-4 sm:p-6 border-b border-[var(--theme-border-red)]/30 bg-[var(--theme-surface)] flex items-center justify-between">
           <div className="min-w-0">
             <h2 id="thread-modal-title" className="text-lg sm:text-xl font-semibold truncate">
@@ -86,13 +56,12 @@ export default function ThreadReplyModalView(
           </button>
         </div>
 
-        {/* Messages (scrollable) */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 pr-1 -mr-1 custom-scrollbar">
           {messages.length === 0 && (
             <p className="text-sm text-gray-400 italic">No messages yet.</p>
           )}
 
-          {messages.map((m) => (
+          {messages.map((m: ThreadMessage): React.ReactElement => (
             <div key={m.id} className="relative pl-4 py-3 border-l-2 border-[var(--theme-border-red)]/30">
               <div className="absolute -left-[7px] top-3 w-3 h-3 rounded-full bg-[var(--theme-border-red)]" />
               <div className="flex flex-col gap-0.5">
@@ -106,7 +75,6 @@ export default function ThreadReplyModalView(
           ))}
         </div>
 
-        {/* Footer */}
         <div className="border-t border-[var(--theme-border-red)]/30 p-4 sm:p-6 bg-[var(--theme-surface)]">
           <div className="flex flex-col gap-2">
             <label htmlFor="thread-reply" className="text-sm">
