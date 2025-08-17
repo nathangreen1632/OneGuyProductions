@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-import type { Order } from '../types/order.types';
-import { isWithin72Hours } from '../helpers/dateHelper';
-import type { FormState } from '../types/formState.types';
-import { useScrollLock } from '../hooks/useScrollLock.ts';
+import type { Order } from '../../types/order.types.ts';
+import { isWithin72Hours } from '../../helpers/dateHelper.ts';
+import type { FormState } from '../../types/formState.types.ts';
+import { useScrollLock } from '../../hooks/useScrollLock.ts';
 
 interface Props {
   order: Order;
@@ -22,7 +22,6 @@ export default function OrderEditModalView(
     description: order.description,
   });
 
-  // Lock background scroll while modal is open
   useScrollLock(true);
 
   const isEditable: boolean = isWithin72Hours(order.createdAt);
@@ -37,14 +36,15 @@ export default function OrderEditModalView(
     });
   }, [order]);
 
-  const handleChange = (
+  const handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+) => void = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ): void => {
     const { name, value } = e.target;
     setForm((prev: FormState): FormState => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (): void => {
+  const handleSubmit: () => void = (): void => {
     onSave({ ...order, ...form });
     onClose();
   };
@@ -56,7 +56,6 @@ export default function OrderEditModalView(
       role="text"
       aria-modal="true"
     >
-      {/* Backdrop */}
       <button
         type="button"
         aria-hidden="false"
@@ -64,9 +63,7 @@ export default function OrderEditModalView(
         className="absolute inset-0 bg-black/60"
       />
 
-      {/* Panel */}
       <div className="relative w-full sm:max-w-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] rounded-2xl shadow-[0_6px_24px_0_var(--theme-shadow)] overflow-hidden max-h-[90svh] flex flex-col">
-        {/* Header */}
         <div className="p-4 sm:p-6 border-b border-[var(--theme-border-red)]/30 flex items-center justify-between">
           <h2 id="edit-order-title" className="text-lg font-semibold">
             Edit Order
@@ -80,7 +77,6 @@ export default function OrderEditModalView(
           </button>
         </div>
 
-        {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
           <div>
             <label htmlFor="businessName" className="text-sm block mb-1">
@@ -160,7 +156,6 @@ export default function OrderEditModalView(
           </div>
         </div>
 
-        {/* Footer */}
         <div className="border-t border-[var(--theme-border-red)]/30 p-4 sm:p-6 flex justify-end gap-3 bg-[var(--theme-surface)]">
           <button
             onClick={handleSubmit}
