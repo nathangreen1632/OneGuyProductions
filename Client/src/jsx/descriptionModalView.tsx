@@ -2,6 +2,7 @@ import React from 'react';
 import { X } from 'lucide-react';
 import ModalIconButton from '../common/ModalIconButton';
 import ModalActionButton from '../common/ModalActionButton';
+import { useScrollLock} from "../hooks/useScrollLock.ts";
 
 export interface DescriptionModalViewProps {
   title: string;
@@ -24,6 +25,9 @@ export default function DescriptionModalView({
                                                onBackdropKeyDown,
                                                panelRef,
                                              }: Readonly<DescriptionModalViewProps>): React.ReactElement {
+  // Lock scroll when modal is open
+  useScrollLock(true);
+
   return (
     <dialog
       ref={panelRef}
