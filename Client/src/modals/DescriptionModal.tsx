@@ -1,6 +1,6 @@
 import React, {type RefObject, useEffect, useRef} from 'react';
 import { createPortal } from 'react-dom';
-import DescriptionModalView from '../jsx/descriptionModalView';
+import DescriptionModalView from '../jsx/modalView/descriptionModalView.tsx';
 
 interface DescriptionModalProps {
   open: boolean;
