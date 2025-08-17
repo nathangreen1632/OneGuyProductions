@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { useEditOrderStore } from '../store/useEditOrderStore';
-import EditOrderModalView from '../jsx/editOrderModalView';
+import EditOrderModalView from '../jsx/modalView/editOrderModalView.tsx';
 import type { EditOrderForm } from '../types/editOrderForm.types';
 
 export default function EditOrderModal(): React.ReactElement | null {
