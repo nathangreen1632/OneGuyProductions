@@ -1,15 +1,8 @@
 import React from 'react';
-import TimelineEditModal from '../modals/TimelineEditModal';
-import type { EditOrderForm } from '../types/editOrderForm.types';
+import TimelineEditModal from '../../modals/TimelineEditModal.tsx';
+import type { EditOrderModalViewProps} from '../../types/editOrderForm.types.ts';
 
-interface EditOrderModalViewProps {
-  modalOpen: boolean;
-  closeModal: () => void;
-  form: EditOrderForm;
-  loading: boolean;
-  handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
-  handleSave: () => void;
-}
+
 
 export default function EditOrderModalView(
   { modalOpen, closeModal, form, loading, handleChange, handleSave }: Readonly<EditOrderModalViewProps>

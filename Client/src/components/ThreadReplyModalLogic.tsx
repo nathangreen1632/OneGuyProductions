@@ -3,7 +3,7 @@ import { format } from 'date-fns';
 import type { Order } from '../types/order.types';
 import { useOrderStore } from '../store/useOrderStore';
 import { useThreadModalStore } from '../store/useThreadModalStore';
-import ThreadReplyModalView from '../jsx/threadReplyModalView';
+import ThreadReplyModalView from '../jsx/modalView/threadReplyModalView.tsx';
 
 type ThreadMessage = { id: string; user: string; timestamp: string; message: string; };
 

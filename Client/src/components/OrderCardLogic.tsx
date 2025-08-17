@@ -3,9 +3,8 @@ import toast from 'react-hot-toast';
 import { useOrderStore } from '../store/useOrderStore';
 import { isWithin72Hours } from '../helpers/dateHelper';
 import type { Order, OrderStatus, OrderState } from '../types/order.types';
-import OrderEditModalView from '../jsx/orderEditModalView';
+import OrderEditModalView from '../jsx/modalView/orderEditModalView.tsx';
 import OrderCardView from '../jsx/orderCardView';
-
 
 function getStatusTextClasses(status: string): string {
   switch (status.toLowerCase()) {
@@ -16,6 +15,71 @@ function getStatusTextClasses(status: string): string {
     case 'pending': return 'text-sky-600';
     default: return 'text-gray-600';
   }
+}
+
+type ApiError = {
+  error?: string;
+  message?: string;
+  details?: string | string[] | Record<string, string>;
+  code?: string | number;
+};
+
+async function extractApiErrorMessage(res: Response): Promise<string> {
+  try {
+    const data = (await res.json()) as ApiError;
+    const e = (data ?? {});
+
+    let detailText: string = '';
+
+    if (Array.isArray(e.details)) {
+      detailText = e.details.join(', ');
+    } else if (typeof e.details === 'string') {
+      detailText = e.details;
+    }
+
+
+    const core = e.error || e.message || '';
+    const combined = [core, detailText].filter(Boolean).join(' — ').trim();
+
+    if (combined) return combined;
+  } catch {
+
+  }
+
+  try {
+    const text = await res.text();
+    if (text && text.trim().length > 0) return text.trim();
+  } catch {
+
+  }
+
+  switch (res.status) {
+    case 400: return 'Your request was invalid. Please check the fields and try again.';
+    case 401: return 'You are not signed in. Please log in and try again.';
+    case 403: return 'You do not have permission to perform this action.';
+    case 404: return 'We could not find that order.';
+    case 409: return 'There was a conflict saving your changes. Please refresh and try again.';
+    case 422: return 'Some fields failed validation. Please review and try again.';
+    case 423: return 'This order is locked — the 72-hour edit window has expired.';
+    case 429: return 'Too many requests. Please wait a moment and try again.';
+    case 500: return 'The server encountered an error. Please try again shortly.';
+    case 503: return 'Service is temporarily unavailable. Please try again shortly.';
+    default: return `Request failed (HTTP ${res.status}).`;
+  }
+}
+
+function refineMessageForEditWindow(msg: string, status: number): string {
+  const normalized = msg.toLowerCase();
+  const looksLocked =
+    status === 423 ||
+    normalized.includes('locked') ||
+    normalized.includes('edit window') ||
+    normalized.includes('72') && normalized.includes('hour');
+
+  if (looksLocked) {
+    return 'This order is locked — the 72-hour edit window has expired. You can still message in the thread, but edits to the order details are disabled.';
+  }
+  return msg;
 }
 
 export default function OrderCardLogic(): React.ReactElement {
@@ -41,6 +105,12 @@ export default function OrderCardLogic(): React.ReactElement {
   const handleSave: (updatedOrder: Partial<Order>) => Promise<void> = async (
     updatedOrder: Partial<Order>
   ): Promise<void> => {
+
+    if (updatedOrder.id == null) {
+      toast.error('Cannot update this order: missing order ID.');
+      return;
+    }
+
     try {
       const res: Response = await fetch(`/api/order/${updatedOrder.id}`, {
         method: 'PATCH',
@@ -50,7 +120,9 @@ export default function OrderCardLogic(): React.ReactElement {
       });
 
       if (!res.ok) {
-        toast.error('Update failed.');
+        const rawMsg: string = await extractApiErrorMessage(res);
+        const msg: string = refineMessageForEditWindow(rawMsg, res.status);
+        toast.error(msg || 'Update failed.');
         return;
       }
 
@@ -61,7 +133,7 @@ export default function OrderCardLogic(): React.ReactElement {
       setEditModalOpen(false);
     } catch (err: unknown) {
       console.error('Error saving order:', err);
-      toast.error('Server error.');
+      toast.error('Network error — please check your connection and try again.');
     }
   };
 
@@ -76,7 +148,8 @@ export default function OrderCardLogic(): React.ReactElement {
       });
 
       if (!res.ok) {
-        toast.error('Failed to cancel order.');
+        const msg: string = await extractApiErrorMessage(res);
+        toast.error(msg || 'Failed to cancel order.');
         return;
       }
 
@@ -89,7 +162,7 @@ export default function OrderCardLogic(): React.ReactElement {
       toast.success('Order canceled.');
     } catch (err: unknown) {
       console.error('Error canceling order:', err);
-      toast.error('Server error while canceling order.');
+      toast.error('Network error while canceling order. Please try again.');
     }
   };
 
