@@ -131,9 +131,9 @@ export default function OrderTimelineView(props: Readonly<OrderTimelineViewProps
             <div className="pt-6 flex gap-3">
               <button
                 onClick={(): void => onOpenThread(order.id)}
-                className="px-4 py-2 bg-sky-600 text-white text-sm rounded shadow-md cursor-pointer hover:bg-sky-700"
+                className="px-4 py-2 bg-[var(--theme-button)] text-[var(--theme-text-white)] text-sm rounded shadow-md cursor-pointer hover:bg-[var(--theme-hover)] transition-colors duration-200"
               >
-                View thread
+                Reply to Thread
               </button>
             </div>
           </div>
