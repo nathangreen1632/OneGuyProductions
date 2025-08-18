@@ -37,12 +37,15 @@ export default function AboutSectionView(): ReactElement {
 
         <div className="space-y-4 text-left">
           <blockquote className="border-l-4 border-[var(--theme-accent)] pl-4 italic text-[var(--theme-text)]/60">
-            • Full-stack developer: React, TypeScript, Node.js, Express, PostgreSQL, Sequelize<br />
-            • Frontend: Vite, Zustand, TailwindCSS, Framer Motion<br />
-            • Backend: FastAPI (Python), OpenAI, LangChain, Redis, JWT<br />
-            • Deployed on: Render, Supabase, Railway<br />
-            • Creator of: CVitaePRO, LeaseClarityPRO, CareerGistPRO, and PyDataPRO
+            • Full-stack: JavaScript/TypeScript, React, Next.js, Node.js, Express, Python (FastAPI), SQL (PostgreSQL), Sequelize<br />
+            • Frontend: Vite, Zustand, TailwindCSS v4, Framer Motion, lucide-react, Open Graph/SSR<br />
+            • Backend & AI: OpenAI SDK, LangChain, spaCy v3, Redis, JWT, bcrypt<br />
+            • Security & Auth: HttpOnly JWT cookies, OTP (Resend), reCAPTCHA Enterprise v3, rate limiting<br />
+            • DevOps & Data: PostgreSQL, PgAdmin, Render, Supabase, Railway, monorepo tooling (concurrently, nodemon)<br />
+            • Creator of: CVitaePRO, LeaseClarityPRO, CareerGistPRO, PyDataPRO<br />
+            • Also exploring: Swift
           </blockquote>
+
         </div>
 
         <Link
