@@ -64,7 +64,7 @@ export default function AboutSectionView(): React.ReactElement {
 
       <div className="flex flex-col items-center space-y-8">
         <img
-          src="/me.webp"
+          src="/me2.webp"
           alt="Nathan - One Guy Productions"
           className="w-48 h-48 rounded-full focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 shadow-[0_4px_14px_4px_var(--theme-shadow)]"
         />
