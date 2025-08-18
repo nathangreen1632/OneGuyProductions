@@ -49,12 +49,12 @@ export async function notifyOrderUpdate(params: NotifyParams): Promise<boolean> 
       String(s ?? '')
         .replace(/^\uFEFF/, '')
         .replace(/\r\n/g, '\n')
-        .replace(/^(?:\s*<(?:br)\s*\/?>)+/i, '')
+        .replace(/^(?:\s*<br\s*\/?>)+/i, '')
         .replace(/^(?:&nbsp;|&#160;)+/i, '')
         .replace(/^[\s\u00A0\u1680\u180E\u2000-\u200B\u202F\u205F\u3000]+/u, '');
     const previewNormalized: string = cleanLeading(safePreview);
 
-    const base = EnvConfig.PUBLIC_BASE_URL ?? 'https://www.oneguyproductions.com';
+    const base: string = EnvConfig.PUBLIC_BASE_URL ?? 'https://www.oneguyproductions.com';
     const portalPath = `/portal?openOrder=${encodeURIComponent(String(order.id))}`;
     const orderUrl: string = `${base}/auth?returnTo=${encodeURIComponent(portalPath)}`;
 
