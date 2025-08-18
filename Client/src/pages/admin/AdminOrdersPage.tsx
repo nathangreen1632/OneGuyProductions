@@ -13,14 +13,21 @@ export default function AdminOrdersPage(): React.ReactElement {
   const ui: AdminUiState = useAdminUiStore();
 
   useEffect((): void => {
-    void fetchList({
-      q: ui.q,
-      status: ui.status,
-      assigned: ui.assigned,
-      updatedWithin: ui.updatedWithin,
-      page: ui.page,
-      pageSize: ui.pageSize,
-    });
+    void (async (): Promise<void> => {
+      try {
+        await fetchList({
+          q: ui.q,
+          status: ui.status,
+          assigned: ui.assigned,
+          updatedWithin: ui.updatedWithin,
+          page: ui.page,
+          pageSize: ui.pageSize,
+        });
+      } catch (err) {
+        console.error('AdminOrdersPage: fetchList failed', err);
+      }
+    })();
+
   }, [ui.q, ui.status, ui.assigned, ui.updatedWithin, ui.page, ui.pageSize, fetchList]);
 
   return (
