@@ -133,7 +133,7 @@ export default function OrderCardView({
                     onClick={(): void => onEdit(order)}
                     className="px-4 py-2 bg-[var(--theme-button)] text-[var(--theme-text-white)] cursor-pointer text-sm rounded shadow-md hover:bg-[var(--theme-hover)]"
                   >
-                    Edit
+                    Edit Order
                   </button>
 
                   {isEditable && (
@@ -147,7 +147,7 @@ export default function OrderCardView({
                           : 'bg-[var(--theme-border-red)] hover:bg-[var(--theme-button-red)] text-[var(--theme-text-white)]'
                       }`}
                     >
-                      {order.status === 'cancelled' ? 'Cancelled' : 'Cancel'}
+                      {order.status === 'cancelled' ? 'Order Cancelled' : 'Cancel Order'}
                     </button>
                   )}
 
