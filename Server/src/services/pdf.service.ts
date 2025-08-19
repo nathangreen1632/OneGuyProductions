@@ -79,7 +79,14 @@ export async function generatePdfBuffer(order: OrderInstance): Promise<Buffer> {
 
   doPaintHeaderFooter();
 
-  const safe: (v: unknown) => string = (v: unknown): string => sanitizeInline(String(v ?? ''));
+  function safe(v: string | number | boolean | Date | null | undefined): string {
+    if (v == null) return '';
+    if (typeof v === 'string') return sanitizeInline(v);
+    if (typeof v === 'number' || typeof v === 'boolean') {
+      return String(v);
+    }
+    return Number.isNaN(v.getTime()) ? '' : sanitizeInline(v.toLocaleString());
+  }
 
   drawTwoAddressColumns({
     pageRef, cursor, newPage, bottom: BOTTOM_CONTENT,
