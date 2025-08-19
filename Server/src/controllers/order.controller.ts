@@ -1,28 +1,28 @@
-import type { Request, Response } from 'express';
-import { handleNewOrder } from '../services/order.service.js';
-import { HandleOrderResult, validOrderStatuses } from '../types/order.types.js';
-import { Order, OrderUpdate, User } from '../models/index.js';
-import { isWithin72Hours } from '../utils/time.js';
-import { generatePdfBuffer } from '../services/pdf.service.js';
-import type { OrderStatus } from '../types/order.types.js';
-import { OrderInstance } from '../models/order.model.js';
-import {createCommentUpdate } from '../services/orderUpdate.service.js';
-import { markOneRead, markAllRead } from '../services/readReceipt.service.js';
-import { getCustomerOrdersWithUnread, getInboxForUser } from '../services/inbox.service.js';
-import { ingestEmailReply } from '../services/emailIngest.service.js';
-import { sanitizeBody } from '../services/contentSafety.service.js';
+import type {Request, Response} from 'express';
+import {handleNewOrder} from '../services/order.service.js';
+import type {OrderStatus} from '../types/order.types.js';
+import {HandleOrderResult, validOrderStatuses} from '../types/order.types.js';
+import {Order, OrderUpdate, User} from '../models/index.js';
+import {isWithin72Hours} from '../utils/time.js';
+import {generatePdfBuffer} from '../services/pdf.service.js';
+import {OrderInstance} from '../models/order.model.js';
+import {createCommentUpdate} from '../services/orderUpdate.service.js';
+import {markAllRead, markOneRead} from '../services/readReceipt.service.js';
+import {getCustomerOrdersWithUnread, getInboxForUser} from '../services/inbox.service.js';
+import {ingestEmailReply} from '../services/emailIngest.service.js';
+import {sanitizeBody} from '../services/contentSafety.service.js';
 import {OrderUpdateModel} from "../models/orderUpdate.model.js";
 import {
-  parseAndValidateIds,
-  sanitizeAndValidateBody,
-  fetchActorAndOrder,
   deriveRoles,
   ensureAuthorized,
+  fetchActorAndOrder,
   finalRequiresCustomerResponseFlag,
   handleCreateUpdateError,
+  parseAndValidateIds,
   resolveTargetUserId,
   safeNotify,
-} from '../utils/orderUpdate.helpers.js';
+  sanitizeAndValidateBody,
+} from '../helpers/orderUpdate.helper.js';
 
 export async function submitOrder(req: Request, res: Response): Promise<void> {
   const {
@@ -201,26 +201,60 @@ export async function cancelOrder(req: Request, res: Response): Promise<void> {
   }
 }
 
-export async function downloadInvoice(req: Request, res: Response): Promise<void> {
-  const userId: any = (req as any).user?.id;
-  const orderId: number = parseInt(req.params.id, 10);
-
-  if (!userId) { res.status(401).json({ error: 'Unauthorized' }); return; }
-
+export async function downloadOrderInvoice(req: Request, res: Response): Promise<void> {
   try {
-    const order: OrderInstance | null = await Order.findOne({ where: { id: orderId, customerId: userId } });
-    if (!order) { res.status(404).json({ error: 'Order not found.' }); return; }
+    const orderId: number = Number(req.params.id);
+    if (!Number.isFinite(orderId)) {
+      res.status(400).json({ error: 'Invalid order id.' });
+      return;
+    }
+
+    const authUser = (req as any).user ?? null;
+    if (!authUser?.id) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    const order: OrderInstance | null = await Order.unscoped().findByPk(orderId, {
+      include: [
+        {
+          model: User,
+          as: 'customer',
+          attributes: ['id', 'username', 'email'],
+          required: false,
+        },
+      ],
+      attributes: ['id','name','email','businessName','projectType','budget','timeline','customerId','status','createdAt','updatedAt','assignedAdminId','description'],
+    });
+
+    if (!order) {
+      res.status(404).json({ error: 'Order not found.' });
+      return;
+    }
+
+    const isOwner: boolean = (order as any).customerId === authUser.id;
+    const isAdmin: boolean = authUser.role === 'admin' || authUser.isAdmin === true;
+    if (!isOwner && !isAdmin) {
+      res.status(403).json({ error: 'Forbidden' });
+      return;
+    }
+
+    (order as any).customerName = (order as any).name?.trim() ||
+      (order as any).customer?.username?.trim() ||
+      (order as any).email?.trim() ||
+      'Customer';
 
     const pdfBuffer: Buffer<ArrayBufferLike> = await generatePdfBuffer(order);
+
+    const filename = `OneGuyProductions_Order_${order.id}.pdf`;
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename=invoice-${order.id}.pdf`);
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.send(pdfBuffer);
   } catch (err) {
-    console.error('Invoice Generation Error:', err);
-    res.status(500).json({ error: 'Failed to generate invoice.' });
+    console.error('downloadOrderInvoice error:', err);
+    res.status(500).json({ error: 'Failed to generate invoice PDF.' });
   }
 }
-
 
 export async function addOrderUpdate(req: Request, res: Response): Promise<void> {
   const ids = parseAndValidateIds(req, res);
