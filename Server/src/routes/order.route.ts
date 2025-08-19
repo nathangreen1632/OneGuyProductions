@@ -4,7 +4,7 @@ import {
   getMyOrders,
   updateOrder,
   cancelOrder,
-  downloadInvoice,
+  downloadOrderInvoice,
   linkOrderToCurrentUser,
   getOrderThread,
   addOrderUpdate,
@@ -25,7 +25,7 @@ router.get('/inbox', authenticateToken, getInbox);
 router.patch('/:id', authenticateToken, updateOrder);
 router.patch('/:id/cancel', authenticateToken, cancelOrder);
 router.patch('/:id/link-user', authenticateToken, linkOrderToCurrentUser);
-router.get('/:id/invoice', authenticateToken, downloadInvoice);
+router.get('/:id/invoice', authenticateToken, downloadOrderInvoice);
 
 router.get('/:orderId/updates', authenticateToken, getOrderThread);
 router.post('/:orderId/updates', authenticateToken, addOrderUpdate);
