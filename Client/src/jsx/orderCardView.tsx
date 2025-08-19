@@ -56,6 +56,7 @@ export default function OrderCardView({
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-6 max-w-[85vw] mx-auto items-start">
           {orders.map((order: Order): ReactElement => {
             const isEditable: boolean = isWithin72Hours(order.createdAt);
+            const editDisabled: boolean = !isEditable;
 
             const shouldTruncate: boolean = order.description.length > 300;
             const displayDescription: string = shouldTruncate
@@ -130,11 +131,22 @@ export default function OrderCardView({
                 <div className="mt-6 flex flex-wrap gap-3">
                   <button
                     type="button"
-                    onClick={(): void => onEdit(order)}
-                    className="px-4 py-2 bg-[var(--theme-button)] text-[var(--theme-text-white)] cursor-pointer text-sm rounded shadow-md hover:bg-[var(--theme-hover)]"
+                    disabled={editDisabled}
+                    aria-disabled={editDisabled}
+                    onClick={(): void => {
+                      if (editDisabled) return;
+                      onEdit(order);
+                    }}
+                    className={`px-4 py-2 text-sm rounded shadow-md ${
+                      editDisabled
+                        ? 'bg-[var(--theme-button-gray)] text-white cursor-not-allowed'
+                        : 'bg-[var(--theme-button)] text-[var(--theme-text-white)] hover:bg-[var(--theme-hover)] cursor-pointer'
+                    }`}
+                    title={editDisabled ? 'Editing disabled after 72 hours' : 'Edit this order'}
                   >
                     Edit Order
                   </button>
+
 
                   {isEditable && (
                     <button
@@ -144,7 +156,7 @@ export default function OrderCardView({
                       className={`px-4 py-2 text-sm rounded cursor-pointer shadow-md ${
                         order.status === 'cancelled'
                           ? 'bg-[var(--theme-button-gray)] cursor-not-allowed text-white'
-                          : 'bg-[var(--theme-border-red)] hover:bg-[var(--theme-button-red)] text-[var(--theme-text-white)]'
+                          : 'bg-[var(--theme-button-red)] hover:bg-[var(--theme-button-red-hover)] text-[var(--theme-text-white)]'
                       }`}
                     >
                       {order.status === 'cancelled' ? 'Order Cancelled' : 'Cancel Order'}
@@ -153,8 +165,11 @@ export default function OrderCardView({
 
                   <button
                     type="button"
-                    onClick={(): void => onDownload(order.id)}
-                    className="px-4 py-2 bg-[var(--theme-card)] text-[var(--theme-text-white)] cursor-pointer text-sm rounded shadow-md hover:bg-[var(--theme-card-hover)]"
+                    onClick={(e): void => {
+                      e.stopPropagation();
+                      onDownload(order.id);
+                    }}
+                    className="px-4 py-2 bg-[var(--theme-button-blue)] text-[var(--theme-text-white)] cursor-pointer text-sm rounded shadow-md hover:bg-[var(--theme-button-blue-hover)]"
                   >
                     Download Invoice
                   </button>
