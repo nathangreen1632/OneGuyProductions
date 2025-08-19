@@ -63,7 +63,6 @@ export default function AdminComposerView({
             bg-[var(--theme-button)]
             hover:bg-[var(--theme-hover)]
             text-[var(--theme-text-white)]
-            font-semibold
             py-2 px-6
             rounded-2xl
             transition-all duration-150

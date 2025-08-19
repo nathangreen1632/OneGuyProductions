@@ -166,8 +166,41 @@ export default function OrderCardLogic(): React.ReactElement {
     }
   };
 
-  const handleDownload: (orderId: number) => void = (orderId: number): void => {
-    console.log('Downloading invoice for:', orderId);
+  const handleDownload: (orderId: number) => Promise<void> = async (orderId: number): Promise<void> => {
+    try {
+      const res: Response = await fetch(`/api/order/${orderId}/invoice`, {
+        method: 'GET',
+        credentials: 'include',
+      });
+
+      if (!res.ok) {
+        const msg: string = await extractApiErrorMessage(res);
+        toast.error(msg || 'Failed to download invoice.');
+        return;
+      }
+
+      const blob: Blob = await res.blob();
+      const url: string = URL.createObjectURL(blob);
+
+      // Default filename mirrors server naming for consistency
+      const filename = `OneGuyProductions_Order_${orderId}.pdf`;
+
+      // Create a temporary anchor to trigger download
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+
+      // Cleanup
+      a.remove();
+      URL.revokeObjectURL(url);
+
+      toast.success('Invoice downloaded.');
+    } catch (err) {
+      console.error('Error downloading invoice:', err);
+      toast.error('Network error — please check your connection and try again.');
+    }
   };
 
   return (
