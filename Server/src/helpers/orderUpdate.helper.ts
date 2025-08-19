@@ -1,4 +1,3 @@
-// Server/src/utils/orderUpdate.helpers.ts
 import type { Request, Response } from 'express';
 import { Order, User } from '../models/index.js';
 import type { OrderInstance } from '../models/order.model.js';
@@ -6,7 +5,6 @@ import { sanitizeBody } from '../services/contentSafety.service.js';
 import { notifyOrderUpdate } from '../services/notification.service.js';
 import type { CreateCommentUpdateResult } from '../services/orderUpdate.service.js';
 
-/** Parse and validate required numeric IDs from request. Responds on error. */
 export function parseAndValidateIds(
   req: Request,
   res: Response
@@ -21,7 +19,6 @@ export function parseAndValidateIds(
   return { orderIdNum, actorUserId };
 }
 
-/** Sanitize and validate message body. Responds on error. */
 export function sanitizeAndValidateBody(rawBody: unknown, res: Response): string | null {
   const raw = typeof rawBody === 'string' ? rawBody.trim() : '';
   if (!raw) {
@@ -36,10 +33,8 @@ export function sanitizeAndValidateBody(rawBody: unknown, res: Response): string
   return safe;
 }
 
-/** Minimal shape we need from a user record. */
 type UserEmailOnly = { email?: string | null } | null;
 
-/** Fetch actor & order in parallel. */
 export async function fetchActorAndOrder(
   actorUserId: number,
   orderIdNum: number
@@ -48,26 +43,24 @@ export async function fetchActorAndOrder(
     User.findByPk(actorUserId),
     Order.findByPk(orderIdNum),
   ]);
-  // We only consume actor.email; keep type minimal and strict.
+
   const actorEmailOnly: UserEmailOnly = actor
     ? { email: (actor as any).email as string | null | undefined }
     : null;
   return { actor: actorEmailOnly, order };
 }
 
-/** Basic role/ownership derivation. */
 export function deriveRoles(
   actor: UserEmailOnly,
   order: OrderInstance | null,
   actorUserId: number
 ): { isAdmin: boolean; isOwner: boolean } {
-  const actorEmail = (actor?.email ?? '').toLowerCase();
-  const isAdmin = actorEmail.endsWith('@oneguyproductions.com');
-  const isOwner = order ? Number(order.customerId) === actorUserId : false;
+  const actorEmail: string = (actor?.email ?? '').toLowerCase();
+  const isAdmin: boolean = actorEmail.endsWith('@oneguyproductions.com');
+  const isOwner: boolean = order ? Number(order.customerId) === actorUserId : false;
   return { isAdmin, isOwner };
 }
 
-/** Enforce authorization. Responds on error. */
 export function ensureAuthorized(isAdmin: boolean, isOwner: boolean, res: Response): boolean {
   if (!isAdmin && !isOwner) {
     res.status(403).json({ error: 'Not authorized for this order.' });
@@ -76,18 +69,18 @@ export function ensureAuthorized(isAdmin: boolean, isOwner: boolean, res: Respon
   return true;
 }
 
-/** Only admins may require customer response. */
 export function finalRequiresCustomerResponseFlag(requested: unknown, isAdmin: boolean): boolean {
   return isAdmin ? Boolean(requested) : false;
 }
 
-/** Map service error to HTTP response. Returns true if an error response was sent. */
+type UpdateError = 'NOT_FOUND' | 'ORDER_CLOSED' | 'RATE_LIMIT' | 'VALIDATION_ERROR' | 'FK_VIOLATION' | 'DB_ERROR';
+
 export function handleCreateUpdateError(
   res: Response,
   result: CreateCommentUpdateResult | undefined | null
 ): boolean {
   if (result?.ok) return false;
-  const code = result?.code ?? 'DB_ERROR';
+  const code: UpdateError = result?.code ?? 'DB_ERROR';
 
   switch (code) {
     case 'NOT_FOUND':
@@ -110,7 +103,6 @@ export function handleCreateUpdateError(
   }
 }
 
-/** Resolve the notification target user id based on actor role and order fields. */
 export function resolveTargetUserId(
   isAdmin: boolean,
   order: OrderInstance | null
@@ -120,7 +112,6 @@ export function resolveTargetUserId(
   return typeof rawTarget === 'number' && Number.isFinite(rawTarget) && rawTarget > 0 ? rawTarget : undefined;
 }
 
-/** Fire-and-forget notification; never throws. */
 export async function safeNotify(
   orderId: number,
   actorUserId: number,
@@ -132,10 +123,10 @@ export async function safeNotify(
     await notifyOrderUpdate({
       orderId,
       actorUserId,
-      targetUserId, // strictly a number here
+      targetUserId,
       bodyPreview,
     });
   } catch {
-    // swallow notify errors per project style (write success should still return 201)
+
   }
 }
