@@ -4,7 +4,7 @@ import type { Order } from '../types/order.types';
 import { format } from 'date-fns';
 import DescriptionModal from '../modals/DescriptionModal';
 import NotificationBadge from '../common/NotificationBadge';
-import {type Notification, useNotificationStore} from '../store/useNotificationStore';
+import {type Notification, useNotificationStore} from '../store/useNotification.store';
 
 interface IOrderCardViewProps {
   orders: Order[];
