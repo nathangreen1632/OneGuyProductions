@@ -1,22 +1,52 @@
 import { useEffect } from 'react';
-import {type NavigateFunction, useLocation, useNavigate} from 'react-router-dom';
-import { useAuthStore, type TAuthUserType } from '../store/useAuthStore';
-import { persistUserFromResponse } from '../helpers/authHelper';
-import { nextPathForUser } from '../helpers/nextPathForUser';
+import { type NavigateFunction, useLocation, useNavigate } from 'react-router-dom';
+import type { AuthMeResponse, AuthMeUser, MeResult } from '../types/hook.types';
+import { useAuthStore, type TAuthUserType } from '../store/useAuth.store';
+import { persistUserFromResponse } from '../helpers/auth.helper';
+import { nextPathForUser } from '../helpers/nextPathForUser.helper';
 
-type AuthMeUser = Pick<TAuthUserType, 'id' | 'email' | 'role' | 'emailVerified'> &
-  Partial<Pick<TAuthUserType, 'username'>>;
-
-type AuthMeResponse = { user?: AuthMeUser } | null;
+const DEFAULT_TIMEOUT_MS = 15_000;
 
 function isEntry(pathname: string): boolean {
   return pathname === '/' || pathname === '/auth';
 }
 
-type MeResult = {
-  reachedServer: boolean;
-  user: AuthMeUser | null;
-};
+function withAbortTimeout(ms: number): { controller: AbortController; cancel: () => void } {
+  const controller = new AbortController();
+  const id: number = setTimeout((): void => {
+    try { controller.abort(); } catch { }
+  }, ms);
+  return { controller, cancel: (): void => clearTimeout(id) };
+}
+
+function persistSafely(user: AuthMeUser | null, setUser: (u: TAuthUserType, token: string | null) => void): void {
+  if (!user) return;
+  try {
+    const ok: boolean = persistUserFromResponse({ user });
+    if (!ok) setUser(user as TAuthUserType, null);
+  } catch (err) {
+    console.error('useSessionHydration: persistUserFromResponse failed', err);
+    try { setUser(user as TAuthUserType, null); } catch (e) {
+      console.error('useSessionHydration: setUser fallback failed', e);
+    }
+  }
+}
+
+function redirectIfNeeded(
+  user: AuthMeUser | null,
+  pathname: string,
+  search: string,
+  navigate: NavigateFunction
+): void {
+  if (!isEntry(pathname)) return;
+  const dest: string = nextPathForUser(user ?? undefined);
+  const current: string = pathname + search;
+  if (dest && dest !== current) {
+    try { navigate(dest, { replace: true }); } catch (err) {
+      console.error('useSessionHydration: navigate failed', err);
+    }
+  }
+}
 
 async function loadMe(signal: AbortSignal): Promise<MeResult> {
   try {
@@ -24,27 +54,28 @@ async function loadMe(signal: AbortSignal): Promise<MeResult> {
 
     if (res.status === 204) return { reachedServer: true, user: null };
 
-    const ct: string = res.headers.get('content-type') ?? '';
-    if (!ct.includes('application/json')) {
-      return { reachedServer: res.ok, user: null };
-    }
+    const ct: string = (res.headers.get('content-type') ?? '').toLowerCase();
+    if (!ct.includes('application/json')) return { reachedServer: res.ok, user: null };
 
-    const body: string = await res.text();
+    const body: string = await res.text().catch((): string => '');
     if (!body) return { reachedServer: res.ok, user: null };
 
     let parsed: AuthMeResponse = null;
     try {
       parsed = JSON.parse(body) as AuthMeResponse;
-    } catch {
+    } catch (err) {
+      console.warn('useSessionHydration: invalid JSON from /api/auth/me', err);
       return { reachedServer: res.ok, user: null };
     }
 
-    const user: AuthMeUser | null =
-      parsed && typeof parsed === 'object' && parsed.user ? parsed.user : null;
-
+    const user: AuthMeUser | null = parsed && typeof parsed === 'object' && parsed.user ? parsed.user : null;
     return { reachedServer: res.ok, user };
-  } catch {
-
+  } catch (err: any) {
+    if (err?.name === 'AbortError') {
+      console.error('useSessionHydration: /api/auth/me aborted/timeout');
+    } else {
+      console.error('useSessionHydration: network error calling /api/auth/me', err);
+    }
     return { reachedServer: false, user: null };
   }
 }
@@ -54,34 +85,37 @@ export function useSessionHydration(): void {
   const navigate: NavigateFunction = useNavigate();
   const location = useLocation();
 
-  useEffect(():(() => void) | undefined => {
+  useEffect((): (() => void) | undefined => {
     if (hydrated) return;
 
     let cancelled: boolean = false;
-    const controller = new AbortController();
+    const { controller, cancel } = withAbortTimeout(DEFAULT_TIMEOUT_MS);
 
-    (async (): Promise<void> => {
-      try {
-        const { reachedServer, user } = await loadMe(controller.signal);
-        if (cancelled) return;
+    const run: () => Promise<void> = async (): Promise<void> => {
+      const { reachedServer, user } = await loadMe(controller.signal);
+      if (cancelled) return;
 
-        if (reachedServer) {
-          const persisted: boolean = persistUserFromResponse({ user });
-          if (!persisted && user) setUser(user as TAuthUserType, null);
+      if (reachedServer) persistSafely(user, setUser);
+      redirectIfNeeded(user, String(location.pathname), String(location.search ?? ''), navigate);
+
+      if (!cancelled) {
+        try { setHydrated(true); } catch (err) {
+          console.error('useSessionHydration: setHydrated failed', err);
         }
-
-        if (isEntry(location.pathname)) {
-          const dest: string = nextPathForUser(user ?? undefined);
-          navigate(dest, { replace: true });
-        }
-      } finally {
-        if (!cancelled) setHydrated(true);
       }
-    })();
+    };
+
+    run().catch((err: any): void => {
+      console.error('useSessionHydration: unexpected error in hydration task', err);
+      try { setHydrated(true); } catch (e) {
+        console.error('useSessionHydration: setHydrated failed after error', e);
+      }
+    });
 
     return (): void => {
       cancelled = true;
-      controller.abort();
+      try { controller.abort(); } catch { }
+      cancel();
     };
-  }, [setUser, setHydrated, hydrated, location.pathname, navigate]);
+  }, [hydrated, setUser, setHydrated, navigate, location.pathname, location.search]);
 }
