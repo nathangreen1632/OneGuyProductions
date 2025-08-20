@@ -33,9 +33,9 @@ function record(
   try {
     const at: number = Date.now();
     set({ lastEvent: event, lastEventAt: at });
-    console.debug(`${LOG_PREFIX}: event`, { event, at, ...(meta ?? {}) });
+
   } catch (err) {
-    console.warn(`${LOG_PREFIX}: telemetry_failed`, err, { event, meta });
+    console.error(`${LOG_PREFIX}: telemetry_failed`, err, { event, meta });
   }
 }
 
@@ -116,10 +116,9 @@ export const useSignupPromptStore: UseBoundStore<StoreApi<TSignupPromptStateType
         if (!list.includes(normalized)) {
           list.push(normalized);
           writeList(list);
-          console.debug(`${LOG_PREFIX}: marked`, { emailMasked: '***' });
           record(set, 'signup_prompt:marked', { size: list.length });
         } else {
-          console.debug(`${LOG_PREFIX}: already_marked`, { emailMasked: '***' });
+          console.error(`${LOG_PREFIX}: already_marked`, { emailMasked: '***' });
           record(set, 'signup_prompt:already_marked');
         }
       } catch (err) {
