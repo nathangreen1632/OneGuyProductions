@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAdminUiStore } from '../../store/useAdminUiStore';
+import { useAdminUiStore } from '../../store/useAdminUi.store';
 import type { AdminUiState } from '../../types/dto.types';
 import AdminFiltersView from '../../jsx/admin/adminFiltersView';
 
