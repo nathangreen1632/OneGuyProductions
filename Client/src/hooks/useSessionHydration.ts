@@ -32,20 +32,12 @@ function persistSafely(user: AuthMeUser | null, setUser: (u: TAuthUserType, toke
   }
 }
 
-function redirectIfNeeded(
-  user: AuthMeUser | null,
-  pathname: string,
-  search: string,
-  navigate: NavigateFunction
-): void {
+function redirectIfNeeded(user: AuthMeUser | null, pathname: string, search: string, navigate: NavigateFunction): void {
   if (!isEntry(pathname)) return;
-  const dest: string = nextPathForUser(user ?? undefined);
+  if (!user) return;
+  const dest: string = nextPathForUser(user);
   const current: string = pathname + search;
-  if (dest && dest !== current) {
-    try { navigate(dest, { replace: true }); } catch (err) {
-      console.error('useSessionHydration: navigate failed', err);
-    }
-  }
+  if (dest && dest !== current) navigate(dest, { replace: true });
 }
 
 async function loadMe(signal: AbortSignal): Promise<MeResult> {
