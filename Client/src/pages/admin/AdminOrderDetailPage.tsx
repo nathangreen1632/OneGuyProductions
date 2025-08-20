@@ -1,11 +1,37 @@
 import React, { useEffect, useState } from 'react';
-import {useParams, useNavigate, type NavigateFunction} from 'react-router-dom';
+import toast from 'react-hot-toast';
+import { useParams, useNavigate, type NavigateFunction } from 'react-router-dom';
 import AdminTimeline from '../../components/admin/AdminTimeline';
 import AdminStatusChips from '../../components/admin/AdminStatusChips';
 import AdminComposer from '../../components/admin/AdminComposer';
-import { useAdminStore } from '../../store/useAdminStore';
+import { useAdminStore } from '../../store/useAdmin.store';
 import type { OrderThreadDto, TDetailsType } from '../../types/admin.types';
 import type { OrderStatus } from '../../types/order.types';
+
+const LOG_PREFIX = 'AdminOrderDetailPage';
+
+function isNonEmptyString(v: unknown): v is string {
+  return typeof v === 'string' && v.trim().length > 0;
+}
+
+function offlineHint(): string {
+  try {
+    return typeof navigator !== 'undefined' && 'onLine' in navigator && (navigator).onLine
+      ? ' You appear to be offline.'
+      : '';
+  } catch {
+    return '';
+  }
+}
+
+function safeNavigate(nav: NavigateFunction, to: string | number): void {
+  try {
+    nav(to as any);
+  } catch (err) {
+    console.error(`${LOG_PREFIX}: navigation failed`, err);
+    toast('Navigation failed. Please try again or use your browser back button.', { icon: 'ℹ️' });
+  }
+}
 
 function statusClass(s: OrderStatus): string {
   switch (s) {
@@ -19,20 +45,22 @@ function statusClass(s: OrderStatus): string {
 }
 
 function toDetails(o: unknown): TDetailsType {
-  const x = (o ?? {}) as Record<string, unknown>;
-
-  const name: string = (x.customerName as string) ?? (x.name as string) ?? '';
-  const email: string = (x.customerEmail as string) ?? (x.email as string) ?? '';
-  const projectType: string = (x.projectType as string) ?? '';
-  const status: OrderStatus = ((x.status as OrderStatus) ?? 'pending');
-  const timeline: string = (x.timeline as string) ?? '';
-  const description: string = (x.description as string) ?? '';
-  const businessName: string = (x.businessName as string) ?? '';
-  const budget: string = (x.budget as string) ?? '';
-  const customerId: number | null =
-    typeof x.customerId === 'number' ? (x.customerId) : null;
-
-  return { name, email, projectType, status, timeline, description, businessName, budget, customerId };
+  try {
+    const x = (o ?? {}) as Record<string, unknown>;
+    const name: string = (x.customerName as string) ?? (x.name as string) ?? '';
+    const email: string = (x.customerEmail as string) ?? (x.email as string) ?? '';
+    const projectType: string = (x.projectType as string) ?? '';
+    const status: OrderStatus = ((x.status as OrderStatus) ?? 'pending');
+    const timeline: string = (x.timeline as string) ?? '';
+    const description: string = (x.description as string) ?? '';
+    const businessName: string = (x.businessName as string) ?? '';
+    const budget: string = (x.budget as string) ?? '';
+    const customerId: number | null = typeof x.customerId === 'number' ? x.customerId : null;
+    return { name, email, projectType, status, timeline, description, businessName, budget, customerId };
+  } catch (err) {
+    console.error(`${LOG_PREFIX}: failed to normalize order details`, err);
+    return { name: '', email: '', projectType: '', status: 'pending', timeline: '', description: '', businessName: '', budget: '', customerId: null };
+  }
 }
 
 export default function AdminOrderDetailPage(): React.ReactElement {
@@ -41,24 +69,38 @@ export default function AdminOrderDetailPage(): React.ReactElement {
   const nav: NavigateFunction = useNavigate();
 
   const { threads, fetchThread, sendUpdate } = useAdminStore();
-  const data: OrderThreadDto | undefined =
-    Number.isFinite(orderId)
-      ? (threads[orderId] ?? (threads as any)[String(orderId)])
+
+  // Be defensive when reading by both numeric and string keys
+  let data: OrderThreadDto | undefined;
+  try {
+    data = Number.isFinite(orderId)
+      ? (threads[orderId] ?? (threads as Record<string, OrderThreadDto | undefined>)[String(orderId)])
       : undefined;
+  } catch (err) {
+    console.error(`${LOG_PREFIX}: failed to read thread from store`, err);
+  }
 
   const [sending, setSending] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(!data);
 
-  useEffect((): () => void => {
+  useEffect((): (() => void) => {
     let active: boolean = true;
+
     (async (): Promise<void> => {
       if (!Number.isFinite(orderId) || orderId <= 0) return;
-      if (!data) {
-        setLoading(true);
-        try { await fetchThread(orderId); }
-        finally { if (active) setLoading(false); }
+      if (data) return;
+
+      setLoading(true);
+      try {
+        await fetchThread(orderId);
+      } catch (err) {
+        console.error(`${LOG_PREFIX}: fetchThread failed`, err);
+        toast.error(`Unable to load order #${orderId}.${offlineHint()}`);
+      } finally {
+        if (active) setLoading(false);
       }
     })();
+
     return (): void => { active = false; };
 
   }, [orderId, fetchThread]);
@@ -88,7 +130,7 @@ export default function AdminOrderDetailPage(): React.ReactElement {
         <span>Could not load this order.</span>
         <button
           className="ml-3 inline-flex items-center rounded-2xl px-3 py-1 text-[var(--theme-text)] transition hover:bg-[var(--theme-card-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30"
-          onClick={(): void | Promise<void> => nav('/admin/orders')}
+          onClick={(): void => safeNavigate(nav, '/admin/orders')}
         >
           Back to orders
         </button>
@@ -96,13 +138,13 @@ export default function AdminOrderDetailPage(): React.ReactElement {
     );
   }
 
-  const canPost: boolean = data.canPost;
+  const canPost: boolean = Boolean(data.canPost);
 
   return (
     <div className="grid gap-4 md:grid-cols-5 text-[var(--theme-text)]">
       <div className="md:col-span-5">
         <button
-          onClick={(): void | Promise<void> => nav(-1)}
+          onClick={(): void => safeNavigate(nav, -1)}
           aria-label="Back to orders"
           className="
             inline-flex items-center gap-2 rounded-lg
@@ -125,7 +167,7 @@ export default function AdminOrderDetailPage(): React.ReactElement {
           p-3 sm:p-4
         "
       >
-        <div className="mb-3 h-0.5 w-full"/>
+        <div className="mb-3 h-0.5 w-full" />
         <AdminTimeline updates={data.updates ?? []} />
       </section>
 
@@ -148,7 +190,7 @@ export default function AdminOrderDetailPage(): React.ReactElement {
               {details.name && details.email && <span className="opacity-70"> · {details.email}</span>}
             </div>
 
-            {Boolean(details.businessName) && (
+            {isNonEmptyString(details.businessName) && (
               <div className="truncate">
                 <span className="opacity-70 mr-1">Business:</span>
                 <span className="font-medium">{details.businessName}</span>
@@ -211,9 +253,17 @@ export default function AdminOrderDetailPage(): React.ReactElement {
             disabled={!canPost || sending}
             onSend={async (body: string, requiresResponse: boolean): Promise<boolean> => {
               setSending(true);
-              const ok: boolean = await sendUpdate(orderId, body, requiresResponse);
-              setSending(false);
-              return ok;
+              try {
+                const ok = await sendUpdate(orderId, body, requiresResponse);
+                if (!ok) toast.error('Failed to post update.');
+                return ok;
+              } catch (err) {
+                console.error(`${LOG_PREFIX}: sendUpdate failed`, err);
+                toast.error(`Unable to post update.${offlineHint()}`);
+                return false;
+              } finally {
+                setSending(false);
+              }
             }}
           />
         </div>
