@@ -56,9 +56,9 @@ export const useResetPasswordStore: UseBoundStore<StoreApi<ResetPasswordState>> 
           lastEvent: event,
           lastEventAt: at,
         });
-        console.debug(`${LOG_PREFIX}: event`, { event, at, ...(meta ?? {}) });
+
       } catch (err) {
-        console.warn(`${LOG_PREFIX}: telemetry_failed`, err, { event, meta });
+        console.error(`${LOG_PREFIX}: record failed`, err, { event, meta });
       }
     };
 
