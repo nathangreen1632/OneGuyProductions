@@ -1,7 +1,19 @@
 import React from 'react';
-import {type NavigateFunction, useNavigate} from 'react-router-dom';
+import toast from 'react-hot-toast';
+import { type NavigateFunction, useNavigate } from 'react-router-dom';
 import TimelineEditModal from './TimelineEditModal';
-import { useSignupPromptStore } from '../store/useSignupPromptStore';
+import { useSignupPromptStore } from '../store/useSignupPrompt.store';
+
+const LOG_PREFIX = 'SignupPromptModal';
+
+function setSessionItemSafe(key: string, value: string): void {
+  try {
+    if (typeof window === 'undefined' || !window.sessionStorage) return;
+    window.sessionStorage.setItem(key, value);
+  } catch (err) {
+    console.warn(`${LOG_PREFIX}: failed to set sessionStorage item "${key}"`, err);
+  }
+}
 
 export default function SignupPromptModal(): React.ReactElement | null {
   const { open, email, orderId, closePrompt, markPrompted } = useSignupPromptStore();
@@ -10,20 +22,54 @@ export default function SignupPromptModal(): React.ReactElement | null {
   if (!open) return null;
 
   const goSignup: () => void = (): void => {
-    if (email) markPrompted(email);
-    if (orderId != null) {
-      sessionStorage.setItem('linkOrderId', String(orderId));
+    try {
+      if (email) {
+        try {
+          markPrompted(email);
+        } catch (err) {
+          console.error(`${LOG_PREFIX}: markPrompted threw`, err);
+        }
+        setSessionItemSafe('prefillEmail', email);
+      }
+      if (orderId != null) setSessionItemSafe('linkOrderId', String(orderId));
+
+      try {
+        closePrompt();
+      } catch (err) {
+        console.error(`${LOG_PREFIX}: closePrompt threw`, err);
+      }
+
+      try {
+        navigate('/auth?mode=register');
+      } catch (err) {
+        console.error(`${LOG_PREFIX}: navigation to /auth failed`, err);
+        toast('We saved your info, but could not open the sign‑up page. Please try again from the menu.', { icon: 'ℹ️' });
+      }
+    } catch (err) {
+      console.error(`${LOG_PREFIX}: unexpected error in goSignup`, err);
+      toast.error('Something went wrong preparing your sign‑up. Please try again.');
     }
-    if (email) {
-      sessionStorage.setItem('prefillEmail', email);
-    }
-    closePrompt();
-    navigate('/auth?mode=register');
   };
 
   const skip: () => void = (): void => {
-    if (email) markPrompted(email);
-    closePrompt();
+    try {
+      if (email) {
+        try {
+          markPrompted(email);
+        } catch (err) {
+          console.error(`${LOG_PREFIX}: markPrompted threw (skip)`, err);
+        }
+      }
+      try {
+        closePrompt();
+      } catch (err) {
+        console.error(`${LOG_PREFIX}: closePrompt threw (skip)`, err);
+        toast.error('Could not close this prompt. You can refresh the page to dismiss it.');
+      }
+    } catch (err) {
+      console.error(`${LOG_PREFIX}: unexpected error in skip`, err);
+      toast.error('Something went wrong. Please try again.');
+    }
   };
 
   const buttonClass: string =
