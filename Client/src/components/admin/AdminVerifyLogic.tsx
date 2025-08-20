@@ -2,24 +2,13 @@ import React from 'react';
 import { type NavigateFunction, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import AdminVerifyView from '../../jsx/admin/adminVerifyView';
-
-function readPrefillEmail(): string {
-  try {
-    const v = sessionStorage.getItem('prefillEmail');
-    return typeof v === 'string' ? v : '';
-  } catch (err) {
-    console.warn('AdminVerify: failed to read prefillEmail from sessionStorage.', err);
-    toast.error('Could not load saved email (session storage)');
-    return '';
-  }
-}
-
-function isLikelyEmail(s: string): boolean {
-  if (!s.includes('@')) return false;
-  const [local, domain] = s.split('@');
-  return !(!local || !domain?.includes('.'));
-}
-
+import {
+  readPrefillEmail,
+  isLikelyEmail,
+  postJson,
+  pickErrorMessage,
+  type JsonResult,
+} from '../../helpers/admin/adminVerify.helper';
 
 export default function AdminVerifyLogic(): React.ReactElement {
   const navigate: NavigateFunction = useNavigate();
@@ -32,27 +21,24 @@ export default function AdminVerifyLogic(): React.ReactElement {
     try {
       e.preventDefault();
 
-      const trimmedEmail = (email ?? '').trim();
-      const trimmedOtp = (otp ?? '').trim();
+      const trimmedEmail: string = (email ?? '').trim();
+      const trimmedOtp: string = (otp ?? '').trim();
 
       if (!trimmedEmail || !trimmedOtp) {
         console.warn('AdminVerify: missing email or OTP.');
         toast.error('Please enter your email and verification code.');
         return;
       }
-
       if (!isLikelyEmail(trimmedEmail)) {
         console.warn('AdminVerify: invalid email format.', trimmedEmail);
         toast.error('Invalid email format.');
         return;
       }
-
       if (trimmedOtp.length < 4) {
         console.warn('AdminVerify: OTP too short.');
         toast.error('Verification code looks too short.');
         return;
       }
-
       if (loading) {
         console.warn('AdminVerify: verify blocked while loading.');
         toast.error('Please wait… verifying your code.');
@@ -61,32 +47,14 @@ export default function AdminVerifyLogic(): React.ReactElement {
 
       setLoading(true);
 
-      let res: Response | null = null;
-      try {
-        res = await fetch('/api/auth/verify-email', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ email: trimmedEmail, otp: trimmedOtp }),
-        });
-      } catch (err) {
-        console.error('AdminVerify: network error during verify.', err);
-        toast.error('Network error while verifying. Please try again.');
-        return;
-      }
+      const result: JsonResult<any> = await postJson('/api/auth/verify-email', {
+        email: trimmedEmail,
+        otp: trimmedOtp,
+      });
 
-      let data: any;
-      try {
-        data = await res.json();
-      } catch {
-        data = {};
-      }
-
-      if (!res.ok) {
-        const msg: string =
-          (data && typeof data.error === 'string' && data.error) ||
-          `Verification failed (HTTP ${res.status}).`;
-        console.warn('AdminVerify: verification failed.', { status: res.status, msg });
+      if (!result.ok) {
+        const msg: string = pickErrorMessage(result, `Verification failed (HTTP ${result.status}).`);
+        console.warn('AdminVerify: verification failed.', { status: result.status, msg });
         toast.error(msg);
         return;
       }
@@ -115,13 +83,11 @@ export default function AdminVerifyLogic(): React.ReactElement {
         toast.error('Enter your @oneguyproductions.com email.');
         return;
       }
-
       if (!isLikelyEmail(trimmedEmail)) {
         console.warn('AdminVerify: invalid email format on resend.', trimmedEmail);
         toast.error('Invalid email format.');
         return;
       }
-
       if (loading) {
         console.warn('AdminVerify: resend blocked while loading.');
         toast.error('Please wait… sending a new code.');
@@ -130,32 +96,13 @@ export default function AdminVerifyLogic(): React.ReactElement {
 
       setLoading(true);
 
-      let res: Response | null = null;
-      try {
-        res = await fetch('/api/auth/request-admin-otp', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ email: trimmedEmail }),
-        });
-      } catch (err) {
-        console.error('AdminVerify: network error during resend.', err);
-        toast.error('Network error while requesting a new code.');
-        return;
-      }
+      const result: JsonResult<any> = await postJson('/api/auth/request-admin-otp', {
+        email: trimmedEmail,
+      });
 
-      let data: any;
-      try {
-        data = await res.json();
-      } catch {
-        data = {};
-      }
-
-      if (!res.ok) {
-        const msg: string =
-          (data && typeof data.error === 'string' && data.error) ||
-          `Could not send a new code (HTTP ${res.status}).`;
-        console.warn('AdminVerify: resend failed.', { status: res.status, msg });
+      if (!result.ok) {
+        const msg: string = pickErrorMessage(result, `Could not send a new code (HTTP ${result.status}).`);
+        console.warn('AdminVerify: resend failed.', { status: result.status, msg });
         toast.error(msg);
         return;
       }
