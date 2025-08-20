@@ -124,13 +124,32 @@ export function persistUserFromResponse(data: unknown): boolean {
     }
 
     const u = serverUser as Record<string, unknown>;
+
+    let id: string = '';
+    if (typeof u.id === 'string') {
+      id = u.id;
+    } else if (typeof u.id === 'number') {
+      id = String(u.id);
+    }
+
+    let email: string = '';
+    if (typeof u.email === 'string') {
+      email = u.email;
+    }
+
+    let username: string = '';
+    if (typeof u.username === 'string') {
+      username = u.username;
+    }
+
     const normalized: TAuthUserType = {
-      id: String(u.id ?? ''),
-      email: String(u.email ?? ''),
-      username: String(u.username ?? ''),
+      id,
+      email,
+      username,
       role: (u.role as TAuthUserType['role']) ?? 'user',
-      emailVerified: Boolean(u.emailVerified ?? false),
+      emailVerified: u.emailVerified === true,
     };
+
 
     if (!normalized.id || !normalized.email) {
       console.warn('authHelper: user object missing id/email', { normalized, raw: u });
@@ -224,7 +243,6 @@ export async function linkPendingOrderIfAny(): Promise<void> {
         (linkData && (linkData.error || linkData.message)) ||
         `Failed to link order (HTTP ${linkRes.status}).`;
       console.warn('authHelper: failed to link order', { orderId: idNum, msg, linkData });
-      // No toast on failure by design—link is a best-effort post-login step.
     }
   } catch (err) {
     console.error('authHelper: unexpected error in linkPendingOrderIfAny', err);
