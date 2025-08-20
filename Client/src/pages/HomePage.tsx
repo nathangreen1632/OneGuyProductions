@@ -4,7 +4,7 @@ import PhilosophyView from '../jsx/philosophyView';
 
 export default function HomePage(): React.ReactElement {
   return (
-    <main className="bg-[var(--theme-bg)] text-[var(--theme-text)] min-h-screen flex flex-col">
+    <main className="bg-[var(--theme-bg)] text-[var(--theme-text)] min-h-[65vh] flex flex-col">
       <div className="flex-grow">
         <HeroSectionView />
         <PhilosophyView />
