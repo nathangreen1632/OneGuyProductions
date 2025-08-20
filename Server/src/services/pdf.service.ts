@@ -95,7 +95,7 @@ export async function generatePdfBuffer(order: OrderInstance): Promise<Buffer> {
     bodyColor: COLOR_BLACK,
     xLeft: SIDE,
     xRight: SIDE + 260,
-    left:  { heading: 'From',   lines: ['One Guy Productions', 'support@oneguyproductions.com'] },
+    left:  { heading: 'From',   lines: ['One Guy Productions', 'orders@oneguyproductions.com'] },
     right: { heading: 'Bill To', lines: [safe((order as any).name ?? (order as any).customer?.name ?? ''),
         safe((order as any).email ?? (order as any).customer?.email ?? '')] },
   });
