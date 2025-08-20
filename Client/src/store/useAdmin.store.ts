@@ -1,14 +1,14 @@
-import { create, type StoreApi, type UseBoundStore } from 'zustand';
-import type { AdminOrderRowDto, OrderThreadDto } from '../types/admin.types.ts';
-import type { OrderStatus } from '../types/order.types';
+import {create, type StoreApi, type UseBoundStore} from 'zustand';
+import type {AdminOrderRowDto, OrderThreadDto} from '../types/admin.types.ts';
+import type {OrderStatus} from '../types/order.types';
 import {
   fetchAdminOrders,
   fetchOrderThread,
   postAdminUpdate,
-  postOrderStatus,
   postAssignOrder,
+  postOrderStatus,
 } from '../helpers/api/adminApi';
-import type {TAdminOrdersDataType, TSafeFetchResultType} from "../types/api.types.ts";
+import type {TAdminOrdersDataType, TSafeFetchResultType} from '../types/api.types.ts';
 
 interface AdminState {
   rows: AdminOrderRowDto[];
@@ -32,6 +32,58 @@ interface AdminState {
   assign: (orderId: number, adminUserId: number) => Promise<boolean>;
 }
 
+const LOG_PREFIX = 'useAdminStore';
+
+function offlineHint(): string {
+  try {
+    return typeof navigator !== 'undefined' && 'onLine' in navigator && (navigator).onLine === false
+      ? ' You appear to be offline.'
+      : '';
+  } catch {
+    return '';
+  }
+}
+
+function extractReason(res: unknown): string | undefined {
+  try {
+    const r: any = res ?? {};
+    if (typeof r === 'string') return r;
+    if (typeof r?.error?.message === 'string' && r.error.message.trim()) return r.error.message;
+    if (typeof r?.error === 'string' && r.error.trim()) return r.error;
+    if (typeof r?.message === 'string' && r.message.trim()) return r.message;
+    if (typeof r?.statusText === 'string' && r.statusText.trim()) return r.statusText;
+  } catch {
+
+  }
+  return undefined;
+}
+
+function statusAware(defaultMsg: string, res?: { status?: number } | null): string {
+  const status: number | undefined = typeof res?.status === 'number' ? res.status : undefined;
+  if (status == null) return defaultMsg;
+  if (status >= 500) return `Server error. ${defaultMsg}`;
+  if (status === 429) return `Rate limited. ${defaultMsg}`;
+  if (status === 404) return `Not found. ${defaultMsg}`;
+  if (status === 401 || status === 403) return `Not authorized. ${defaultMsg}`;
+  if (status === 400) return `Invalid request. ${defaultMsg}`;
+  return defaultMsg;
+}
+
+function finalizeError(_prefix: string, baseMsg: string, res?: unknown): string {
+  const reason: string | undefined = extractReason(res);
+
+  let out: string = statusAware(
+    baseMsg,
+    (res as { status?: number } | null) ?? null
+  );
+
+  if (reason && reason.trim().length > 0) {
+    out += ' (' + reason + ')';
+  }
+  out += offlineHint();
+  return out;
+}
+
 function canPostByStatus(s: OrderStatus): boolean {
   return s !== 'cancelled' && s !== 'complete';
 }
@@ -42,29 +94,44 @@ function safeNumber(n: unknown, fallback: number): number {
 }
 
 function synthesizeOrderFromRow(orderId: number, row?: AdminOrderRowDto) {
-  const createdAt: string =
-    row?.latestUpdateAt ??
-    row?.lastUpdateAt ??
-    row?.updatedAt ??
-    new Date(0).toISOString();
+  try {
+    const createdAt: string =
+      row?.latestUpdateAt ??
+      row?.lastUpdateAt ??
+      row?.updatedAt ??
+      new Date(0).toISOString();
 
-  const updatedAt: string =
-    row?.updatedAt ??
-    row?.latestUpdateAt ??
-    row?.lastUpdateAt ??
-    createdAt;
+    const updatedAt: string =
+      row?.updatedAt ??
+      row?.latestUpdateAt ??
+      row?.lastUpdateAt ??
+      createdAt;
 
-  return {
-    id: orderId,
-    status: row?.status ?? 'pending',
-    projectType: row?.projectType ?? '',
-    customerName: row?.name ?? '',
-    customerEmail: row?.customerEmail ?? '',
-    assignedAdminId: row?.assignedAdminId ?? null,
-    assignedAdminName: row?.assignedAdminName ?? null,
-    createdAt,
-    updatedAt,
-  } as OrderThreadDto['order'];
+    return {
+      id: orderId,
+      status: row?.status ?? 'pending',
+      projectType: row?.projectType ?? '',
+      customerName: row?.name ?? '',
+      customerEmail: row?.customerEmail ?? '',
+      assignedAdminId: row?.assignedAdminId ?? null,
+      assignedAdminName: row?.assignedAdminName ?? null,
+      createdAt,
+      updatedAt,
+    } as OrderThreadDto['order'];
+  } catch (err) {
+    console.error(`${LOG_PREFIX}: synthesizeOrderFromRow failed`, err);
+    return {
+      id: orderId,
+      status: 'pending',
+      projectType: '',
+      customerName: '',
+      customerEmail: '',
+      assignedAdminId: null,
+      assignedAdminName: null,
+      createdAt: new Date(0).toISOString(),
+      updatedAt: new Date(0).toISOString(),
+    } as OrderThreadDto['order'];
+  }
 }
 
 export const useAdminStore: UseBoundStore<StoreApi<AdminState>> = create<AdminState>((set, get: () => AdminState) => ({
@@ -82,9 +149,17 @@ export const useAdminStore: UseBoundStore<StoreApi<AdminState>> = create<AdminSt
       const rows: AdminOrderRowDto[] = (ok && Array.isArray(res?.data?.rows)) ? res.data.rows : [];
       const total: number = ok && typeof res?.data?.total === 'number' ? res.data.total : rows.length;
 
-      set({ rows, total, loading: false, lastError: ok ? null : 'Unable to load admin orders.' });
-    } catch {
-      set({ rows: [], total: 0, loading: false, lastError: 'Network or server error while loading admin orders.' });
+      if (!ok) {
+        const msg: string = finalizeError(LOG_PREFIX, 'Unable to load admin orders.', res);
+        console.warn(`${LOG_PREFIX}: fetchList failed`, res);
+        set({ rows, total, loading: false, lastError: msg });
+        return;
+      }
+
+      set({ rows, total, loading: false, lastError: null });
+    } catch (err) {
+      console.error(`${LOG_PREFIX}: fetchList threw`, err);
+      set({ rows: [], total: 0, loading: false, lastError: `Network or server error while loading admin orders.${offlineHint()}` });
     }
   },
 
@@ -105,7 +180,8 @@ export const useAdminStore: UseBoundStore<StoreApi<AdminState>> = create<AdminSt
       return;
     }
 
-    const findRow: (key: number) => AdminOrderRowDto | undefined = (key: number): AdminOrderRowDto | undefined => get().rows.find((r: AdminOrderRowDto): boolean => r.id === key);
+    const findRow: (key: number) => AdminOrderRowDto | undefined = (key: number): AdminOrderRowDto | undefined =>
+      get().rows.find((r: AdminOrderRowDto): boolean => r.id === key);
 
     const normalizeFromArray: (updatesUnknown: unknown[], key: number) => OrderThreadDto = (updatesUnknown: unknown[], key: number): OrderThreadDto => {
       const row: AdminOrderRowDto | undefined = findRow(key);
@@ -143,26 +219,21 @@ export const useAdminStore: UseBoundStore<StoreApi<AdminState>> = create<AdminSt
 
       return {
         order: synthesizedOrder,
-        updates: updatesUnknown as any[],
+        updates: Array.isArray(updatesUnknown) ? (updatesUnknown as any[]) : [],
         canPost: canPostByStatus(synthesizedOrder.status),
       };
     };
 
     const normalizeFromObject: (obj: any, key: number) => OrderThreadDto = (obj: any, key: number): OrderThreadDto => {
       let updates: any[] = [];
-      if (Array.isArray(obj?.updates)) {
-        updates = obj.updates;
-      } else if (Array.isArray(obj?.messages)) {
-        updates = obj.messages;
-      }
+      if (Array.isArray(obj?.updates)) updates = obj.updates;
+      else if (Array.isArray(obj?.messages)) updates = obj.messages;
 
       const row: AdminOrderRowDto | undefined = findRow(key);
       const orderBlock: OrderThreadDto['order'] = obj?.order ?? synthesizeOrderFromRow(key, row);
 
       const canPost =
-        typeof obj?.canPost === 'boolean'
-          ? obj.canPost
-          : canPostByStatus(orderBlock.status);
+        typeof obj?.canPost === 'boolean' ? obj.canPost : canPostByStatus(orderBlock.status);
 
       return {
         ...obj,
@@ -188,7 +259,7 @@ export const useAdminStore: UseBoundStore<StoreApi<AdminState>> = create<AdminSt
               canPost: canPostByStatus(synthesized.status),
             },
           },
-          lastError: 'Thread not available for this order yet.',
+          lastError: finalizeError(LOG_PREFIX, 'Thread not available for this order yet.', res),
         }));
         return;
       }
@@ -204,8 +275,9 @@ export const useAdminStore: UseBoundStore<StoreApi<AdminState>> = create<AdminSt
         threads: { ...s.threads, [numericKey]: normalized },
         lastError: null,
       }));
-    } catch {
-      const row: AdminOrderRowDto | undefined = get().rows.find((r) => r.id === orderId);
+    } catch (err) {
+      console.error(`${LOG_PREFIX}: fetchThread threw`, err);
+      const row: AdminOrderRowDto | undefined = get().rows.find((r: AdminOrderRowDto): boolean => r.id === orderId);
       const synthesized = synthesizeOrderFromRow(orderId, row);
 
       set((s: AdminState) => ({
@@ -217,32 +289,36 @@ export const useAdminStore: UseBoundStore<StoreApi<AdminState>> = create<AdminSt
             canPost: canPostByStatus(synthesized.status),
           },
         },
-        lastError: 'Network or server error while loading the thread.',
+        lastError: `Network or server error while loading the thread.${offlineHint()}`,
       }));
     }
   },
-
 
   async sendUpdate(orderId: number, body: string, requiresResponse: boolean): Promise<boolean> {
     try {
       const res: TSafeFetchResultType<void> = await postAdminUpdate(orderId, { body, requiresResponse });
       if (!res?.ok) {
-        set({ lastError: 'Failed to post update.' });
+        const msg: string = finalizeError(LOG_PREFIX, 'Failed to post update.', res);
+        console.warn(`${LOG_PREFIX}: sendUpdate failed`, res);
+        set({ lastError: msg });
         return false;
       }
       await get().fetchThread(orderId);
       return true;
-    } catch {
-      set({ lastError: 'Network or server error while posting update.' });
+    } catch (err) {
+      console.error(`${LOG_PREFIX}: sendUpdate threw`, err);
+      set({ lastError: `Network or server error while posting update.${offlineHint()}` });
       return false;
     }
   },
 
-  async updateStatus(orderId:number, status: OrderStatus): Promise<boolean> {
+  async updateStatus(orderId: number, status: OrderStatus): Promise<boolean> {
     try {
       const res: TSafeFetchResultType<void> = await postOrderStatus(orderId, status);
       if (!res?.ok) {
-        set({ lastError: 'Failed to update order status.' });
+        const msg: string = finalizeError(LOG_PREFIX, 'Failed to update order status.', res);
+        console.warn(`${LOG_PREFIX}: updateStatus failed`, res);
+        set({ lastError: msg });
         return false;
       }
 
@@ -267,10 +343,10 @@ export const useAdminStore: UseBoundStore<StoreApi<AdminState>> = create<AdminSt
       });
 
       void get().fetchThread(orderId);
-
       return true;
-    } catch {
-      set({ lastError: 'Network or server error while updating status.' });
+    } catch (err) {
+      console.error(`${LOG_PREFIX}: updateStatus threw`, err);
+      set({ lastError: `Network or server error while updating status.${offlineHint()}` });
       return false;
     }
   },
@@ -279,13 +355,16 @@ export const useAdminStore: UseBoundStore<StoreApi<AdminState>> = create<AdminSt
     try {
       const res: TSafeFetchResultType<void> = await postAssignOrder(orderId, adminUserId);
       if (!res?.ok) {
-        set({ lastError: 'Failed to assign order.' });
+        const msg: string = finalizeError(LOG_PREFIX, 'Failed to assign order.', res);
+        console.warn(`${LOG_PREFIX}: assign failed`, res);
+        set({ lastError: msg });
         return false;
       }
       await get().fetchThread(orderId);
       return true;
-    } catch {
-      set({ lastError: 'Network or server error while assigning order.' });
+    } catch (err) {
+      console.error(`${LOG_PREFIX}: assign threw`, err);
+      set({ lastError: `Network or server error while assigning order.${offlineHint()}` });
       return false;
     }
   },

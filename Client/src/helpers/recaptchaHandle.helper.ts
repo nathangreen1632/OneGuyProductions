@@ -1,9 +1,14 @@
 import toast from 'react-hot-toast';
-import {getRecaptchaTokenHelper} from './getRecaptchaTokenHelper';
-
-const RECAPTCHA_SITE_KEY: string = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
+import { getRecaptchaTokenHelper } from './getRecaptchaToken.helper.ts';
+import { RECAPTCHA_SITE_KEY } from '../constants/env';
 
 export async function executeRecaptchaFlow(action: string): Promise<string | null> {
+  if (!RECAPTCHA_SITE_KEY) {
+    console.error('reCAPTCHA: VITE_RECAPTCHA_SITE_KEY is missing.');
+    toast.error('Security config missing. Please try again later.');
+    return null;
+  }
+
   if (
     typeof window === 'undefined' ||
     !window.grecaptcha?.enterprise ||
