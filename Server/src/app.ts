@@ -13,7 +13,10 @@ const __filename: string = fileURLToPath(import.meta.url);
 const __dirname: string = path.dirname(__filename);
 
 const app: Express = express();
-const isProd = process.env.NODE_ENV === 'production';
+
+app.set('trust proxy', 1);
+
+const isProd: boolean = process.env.NODE_ENV === 'production';
 
 app.disable('x-powered-by');
 
