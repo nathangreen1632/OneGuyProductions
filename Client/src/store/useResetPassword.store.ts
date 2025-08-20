@@ -33,12 +33,7 @@ function safeSet<S>(
 ): void {
   try {
     set(partial);
-    if (context?.event) {
-      console.debug(`${LOG_PREFIX}: event`, {
-        event: context.event,
-        ...(context.meta ?? {}),
-      });
-    }
+
   } catch (err) {
     console.error(`${LOG_PREFIX}: set() failed`, err, { partial, context });
     try {
