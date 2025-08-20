@@ -59,3 +59,19 @@ export type TDetailsType = {
   budget: string;
   customerId: number | null;
 };
+
+export type TAuthorNestedType = {
+  role?: string;
+  firstName?: string;
+  username?: string;
+  email?: string;
+};
+
+export type TLegacyAuthorFieldsType = {
+  author?: TAuthorNestedType;
+  authorRole?: string;
+  authorFirstName?: string;
+  authorUsername?: string;
+  authorEmail?: string;
+  authorName?: string;
+};
