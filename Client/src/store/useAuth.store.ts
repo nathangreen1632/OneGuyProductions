@@ -29,8 +29,25 @@ function isUserRole(v: unknown): v is UserRole {
 function normalizeToken(v: unknown): string | null {
   try {
     if (v == null) return null;
-    const s: string = String(v).trim();
-    return s.length ? s : null;
+
+    let s: string = '';
+
+    if (typeof v === 'string') {
+      s = v;
+    } else if (typeof v === 'number' || typeof v === 'boolean') {
+      s = String(v);
+    } else if (v instanceof Date && Number.isFinite(v.getTime())) {
+      s = v.toISOString();
+    } else {
+      return null;
+    }
+
+    s = s.trim();
+    if (!s) return null;
+
+    if (!/^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+$/.test(s)) return null;
+
+    return s;
   } catch {
     return null;
   }
