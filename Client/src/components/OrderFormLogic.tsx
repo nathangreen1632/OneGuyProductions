@@ -1,10 +1,10 @@
-import React, { type ReactElement, type RefObject, useRef, useState } from 'react';
+import React, {type ReactElement, type RefObject, useRef, useState} from 'react';
 import toast from 'react-hot-toast';
-import type { DerivedOrderFormData, OrderFormData, OrderPayload, OrderResponse } from '../types/order.types';
-import { isLikelyEmail } from '../types/contact.types';
-import { useOrderStore } from '../store/useOrder.store';
-import { useSignupPromptStore } from '../store/useSignupPrompt.store';
-import { executeRecaptchaFlow } from '../helpers/recaptchaHandle.helper';
+import type {DerivedOrderFormData, OrderFormData, OrderPayload, OrderResponse} from '../types/order.types';
+import {isLikelyEmail} from '../types/contact.types';
+import {useOrderStore} from '../store/useOrder.store';
+import {useSignupPromptStore} from '../store/useSignupPrompt.store';
+import {executeRecaptchaFlow} from '../helpers/recaptchaHandle.helper';
 import OrderFormView from '../jsx/orderFormView';
 
 const initialForm: Omit<DerivedOrderFormData, 'captchaToken'> = {
@@ -24,10 +24,10 @@ export default function OrderFormLogic(): ReactElement {
 
   const { setLastOrder, clearOrder } = useOrderStore();
 
-  const validate = (d: OrderFormData): boolean => {
-    const name = (d.name ?? '').trim();
-    const email = (d.email ?? '').trim();
-    const description = (d.description ?? '').trim();
+  const validate: (d: OrderFormData) => boolean = (d: OrderFormData): boolean => {
+    const name: string = (d.name ?? '').trim();
+    const email: string = (d.email ?? '').trim();
+    const description: string = (d.description ?? '').trim();
 
     if (!name) {
       toast.error('Please enter your name.');
@@ -50,134 +50,156 @@ export default function OrderFormLogic(): ReactElement {
 
   const handleChange: (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) => void = (e): void => {
+  ) => void = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>): void => {
     try {
       const { name, value } = e.target ?? {};
       if (typeof name !== 'string' || !(name in initialForm)) {
         console.warn('OrderForm: unknown field change ignored.', name);
         return;
       }
-      setFormData((prev) => ({ ...prev, [name]: String(value ?? '') }) as OrderFormData);
+      setFormData((prev: OrderFormData): OrderFormData => ({ ...prev, [name]: String(value ?? '') }) as OrderFormData);
     } catch (err) {
       console.error('OrderForm: handleChange failed.', err);
       toast.error('Could not update the form field.');
     }
   };
 
-  const handleSubmit: (e: React.FormEvent) => Promise<void> = async (e): Promise<void> => {
+  function isLocked(): boolean {
+    if (lockRef.current || submitting) {
+      console.warn('OrderForm: submission blocked (already submitting).');
+      toast.error('Please wait… already submitting.');
+      return true;
+    }
+    return false;
+  }
+
+  function buildPayload(captchaToken: string): OrderPayload {
+    return { ...formData, captchaToken };
+  }
+
+  async function getCaptcha(): Promise<string | null> {
+    try {
+      const token: string | null = await executeRecaptchaFlow('submit_order_form');
+      if (!token) {
+        console.warn('OrderForm: captcha token missing.');
+        toast.error('Captcha verification failed. Please try again.');
+        return null;
+      }
+      return token;
+    } catch (err) {
+      console.error('OrderForm: reCAPTCHA flow errored.', err);
+      toast.error('Captcha error. Please try again.');
+      return null;
+    }
+  }
+
+  async function postOrder(payload: OrderPayload): Promise<Response | null> {
+    const controller = new AbortController();
+    const timer: number = setTimeout((): void => controller.abort(), 30_000);
+
+    try {
+      return await fetch('/api/order/submit', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+    } catch (err: any) {
+      if (err?.name === 'AbortError') {
+        console.error('OrderForm: request timed out.');
+        toast.error('Request timed out. Please try again.');
+      } else {
+        console.error('OrderForm: network error during submission.', err);
+        toast.error('Network error while submitting. Please check your connection.');
+      }
+      return null;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  async function safeJson<T>(res: Response): Promise<T | null> {
+    try {
+      return (await res.json()) as T;
+    } catch {
+      return null;
+    }
+  }
+
+  function afterSuccess(payload: OrderPayload, result: OrderResponse | null): void {
+    toast.success('Your request was submitted successfully!');
+
+    try {
+      setLastOrder(payload);
+    } catch (err) {
+      console.warn('OrderForm: failed to save last order to store.', err);
+    }
+
+    try {
+      const email: string = (formData.email ?? '').trim();
+      if (
+        result?.unknownEmail &&
+        result?.orderId &&
+        email &&
+        !useSignupPromptStore.getState().wasPrompted(email)
+      ) {
+        useSignupPromptStore.getState().openPrompt(email, result.orderId);
+      }
+    } catch (err) {
+      console.warn('OrderForm: signup prompt flow failed.', err);
+    }
+
+    try {
+      clearOrder();
+    } catch (err) {
+      console.warn('OrderForm: clearOrder store call failed.', err);
+    }
+
+    setFormData(initialForm);
+  }
+
+  async function handleNonOk(res: Response): Promise<void> {
+    let result: OrderResponse | null = null;
+    try {
+      result = await safeJson<OrderResponse>(res);
+      console.warn('OrderForm: server responded with error.', { status: res.status, result });
+    } catch (jsonErr) {
+      console.error('OrderForm: failed to parse error response.', jsonErr);
+    }
+
+    const fallback = `Submission failed (HTTP ${res.status}).`;
+    const msg =
+      (result && typeof result.error === 'string' && result.error) ||
+      (result && typeof (result as any).message === 'string' && (result as any).message) ||
+      fallback;
+
+    toast.error(msg);
+  }
+
+  const handleSubmit: (e: React.FormEvent) => Promise<void> = async (e: React.FormEvent): Promise<void> => {
     try {
       e.preventDefault();
 
-      if (lockRef.current || submitting) {
-        console.warn('OrderForm: submission blocked (already submitting).');
-        toast.error('Please wait… already submitting.');
-        return;
-      }
-
+      if (isLocked()) return;
       if (!validate(formData)) return;
 
       lockRef.current = true;
       setSubmitting(true);
 
-      // 1) reCAPTCHA
-      let captchaToken: string | null = null;
-      try {
-        captchaToken = await executeRecaptchaFlow('submit_order_form');
-      } catch (err) {
-        console.error('OrderForm: reCAPTCHA flow errored.', err);
-        toast.error('Captcha error. Please try again.');
-        return;
-      }
-      if (!captchaToken) {
-        console.warn('OrderForm: captcha token missing.');
-        toast.error('Captcha verification failed. Please try again.');
-        return;
-      }
+      const captchaToken: string | null = await getCaptcha();
+      if (!captchaToken) return;
 
-      // 2) Build payload
-      const payload: OrderPayload = { ...formData, captchaToken };
+      const payload: OrderPayload = buildPayload(captchaToken);
+      const res: Response | null = await postOrder(payload);
+      if (!res) return;
 
-      // 3) Submit to API with timeout
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 30_000);
-
-      let res: Response;
-      try {
-        res = await fetch('/api/order/submit', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-          signal: controller.signal,
-        });
-      } catch (err: any) {
-        if (err?.name === 'AbortError') {
-          console.error('OrderForm: request timed out.');
-          toast.error('Request timed out. Please try again.');
-        } else {
-          console.error('OrderForm: network error during submission.', err);
-          toast.error('Network error while submitting. Please check your connection.');
-        }
-        return;
-      } finally {
-        clearTimeout(timer);
-      }
-
-      // 4) Handle response
       if (res.ok) {
-        let result: OrderResponse | null;
-        try {
-          result = (await res.json()) as OrderResponse;
-        } catch {
-          result = null; // tolerate empty/invalid JSON
-        }
-
-        toast.success('Your request was submitted successfully!');
-        try {
-          setLastOrder(payload);
-        } catch (err) {
-          console.warn('OrderForm: failed to save last order to store.', err);
-        }
-
-        // Prompt signup for unknown email (best effort)
-        try {
-          const email = (formData.email ?? '').trim();
-          if (
-            result?.unknownEmail &&
-            result?.orderId &&
-            email &&
-            !useSignupPromptStore.getState().wasPrompted(email)
-          ) {
-            useSignupPromptStore.getState().openPrompt(email, result.orderId);
-          }
-        } catch (err) {
-          console.warn('OrderForm: signup prompt flow failed.', err);
-        }
-
-        try {
-          clearOrder();
-        } catch (err) {
-          console.warn('OrderForm: clearOrder store call failed.', err);
-        }
-        setFormData(initialForm);
+        const result: OrderResponse | null = await safeJson<OrderResponse>(res);
+        afterSuccess(payload, result);
         return;
       }
 
-      // Non-OK: try to parse error and present something useful
-      let result: OrderResponse | null = null;
-      try {
-        result = (await res.json()) as OrderResponse;
-        console.warn('OrderForm: server responded with error.', { status: res.status, result });
-      } catch (jsonErr) {
-        console.error('OrderForm: failed to parse error response.', jsonErr);
-      }
-
-      const fallback = `Submission failed (HTTP ${res.status}).`;
-      const msg =
-        (result && typeof result.error === 'string' && result.error) ||
-        (result && typeof (result as any).message === 'string' && (result as any).message) ||
-        fallback;
-
-      toast.error(msg);
+      await handleNonOk(res);
     } catch (err) {
       console.error('OrderForm: unexpected failure during submission.', err);
       toast.error('Unexpected error. Try again or refresh the page.');
