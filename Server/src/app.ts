@@ -15,9 +15,6 @@ const __dirname: string = path.dirname(__filename);
 const app: Express = express();
 const isProd = process.env.NODE_ENV === 'production';
 
-// ─────────────────────────────────────────────────────────────
-// Basic hardening + bot probe blocker
-// ─────────────────────────────────────────────────────────────
 app.disable('x-powered-by');
 
 app.use((req, res, next): void => {
@@ -42,7 +39,7 @@ app.use((req, res, next): void => {
     '/wlwmanifest.xml',
   ];
 
-  if (blockedPaths.some((p) => req.url.toLowerCase().includes(p))) {
+  if (blockedPaths.some((p: string): boolean => req.url.toLowerCase().includes(p))) {
     console.warn(`🛑 Blocked bot probe: ${req.method} ${req.url} from ${req.ip}`);
     res.status(404).send('Not Found');
     return;
@@ -51,16 +48,18 @@ app.use((req, res, next): void => {
   next();
 });
 
-// ─────────────────────────────────────────────────────────────
-// Helmet (prod-strict, dev-permissive for Vite/HMR + reCAPTCHA)
-// ─────────────────────────────────────────────────────────────
-const googleHosts = [
+const googleHosts: string[] = [
   'https://www.google.com',
   'https://www.gstatic.com',
   'https://recaptcha.google.com',
   'https://www.recaptcha.net',
 ];
-const viteDev = ['http://localhost:5173', 'ws://localhost:5173', 'ws://localhost:5174'];
+
+const googleFonts: string[] = ['https://fonts.googleapis.com', 'https://fonts.gstatic.com'];
+
+const viteDev: string[] = ['http://localhost:5173', 'ws://localhost:5173', 'ws://localhost:5174'];
+
+const projects: string[] = ['https://www.cvitaepro.com', 'https://www.careergistpro.com', 'https://careergistpro.com', 'https://www.pydatapro.com', 'https://www.leaseclaritypro.com'];
 
 app.use(
   helmet({
@@ -76,7 +75,7 @@ app.use(
         ],
         "script-src": [
           "'self'",
-          ...(isProd ? [] : ["'unsafe-eval'"]), // allow eval only in dev for Vite
+          ...(isProd ? [] : ["'unsafe-eval'"]),
           ...googleHosts,
         ],
         "script-src-elem": [
@@ -87,6 +86,7 @@ app.use(
         "connect-src": [
           "'self'",
           ...googleHosts,
+          ...googleFonts,
           'https://api.resend.com',
           'https://www.oneguyproductions.com',
           ...(isProd ? [] : viteDev),
@@ -94,11 +94,7 @@ app.use(
         "frame-src": [
           "'self'",
           ...googleHosts,
-          'https://www.cvitaepro.com',
-          'https://www.careergistpro.com',
-          'https://careergistpro.com',
-          'https://www.pydatapro.com',
-          'https://www.leaseclaritypro.com',
+          ...projects,
         ],
         "img-src": [
           "'self'",
@@ -108,8 +104,9 @@ app.use(
           "https://secure.gravatar.com",
           ...googleHosts,
         ],
-        "style-src": ["'self'", "'unsafe-inline'"],
-        "font-src": ["'self'", "data:"],
+        "style-src": ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+        "style-src-elem": ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+        "font-src": ["'self'", "data:", 'https://fonts.gstatic.com'],
         ...(isProd ? { "upgrade-insecure-requests": [] } : {}),
       },
     },
@@ -123,21 +120,12 @@ app.use(
   })
 );
 
-// ─────────────────────────────────────────────────────────────
-// Parsers & cookies
-// ─────────────────────────────────────────────────────────────
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// ─────────────────────────────────────────────────────────────
-// API routes
-// ─────────────────────────────────────────────────────────────
 app.use('/api', router);
 
-// ─────────────────────────────────────────────────────────────
-// Static SPA + fallback
-// ─────────────────────────────────────────────────────────────
 const clientBuildPath: string = path.resolve(__dirname, '../../Client/dist');
 const indexHtmlPath: string = path.join(clientBuildPath, 'index.html');
 
