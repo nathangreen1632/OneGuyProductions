@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import {create, type StoreApi, type UseBoundStore} from 'zustand';
 import { safeSet, safeGet } from '../helpers/zustandSafe.helper';
 
 export type Notification = {
@@ -30,9 +30,16 @@ function isString(v: unknown): v is string {
 function normalizeNotification(n: unknown): Notification | null {
   try {
     const x = (n ?? {}) as Record<string, unknown>;
-    const id: string = String(x.id ?? '');
+
+    let id: string = '';
+    if (typeof x.id === 'string') {
+      id = x.id;
+    } else if (typeof x.id === 'number') {
+      id = String(x.id);
+    }
+
     const orderIdNum: number = Number(x.orderId);
-    const orderId: number = Number.isFinite(orderIdNum) ? orderIdNum : 0;
+    const orderId: number = Number.isFinite(orderIdNum) && orderIdNum > 0 ? orderIdNum : 0;
 
     const title: string = isString(x.title) ? x.title : '';
     const message: string = isString(x.message) ? x.message : '';
@@ -57,8 +64,13 @@ function normalizeArray(arr: unknown): Notification[] {
   return out;
 }
 
-export const useNotificationStore = create<State & Actions>((set, get) => ({
-  items: [],
+export const useNotificationStore: UseBoundStore<StoreApi<State & Actions>> =
+  create<State & Actions>(
+    (
+      set: StoreApi<State & Actions>['setState'],
+      get: StoreApi<State & Actions>['getState']
+    ) => ({
+      items: [] as Notification[],
 
   set: (items: Notification[]): void => {
     try {
