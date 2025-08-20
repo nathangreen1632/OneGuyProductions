@@ -43,14 +43,28 @@ function normalizePageSize(v: unknown): number {
   return clamp(Number(v), MIN_PAGE_SIZE, MAX_PAGE_SIZE);
 }
 
+const MAX_Q_LEN = 200;
+
 function normalizeQuery(v: unknown): string {
   try {
-    const s: string = String(v ?? '').trim();
-    return s.length > 200 ? s.slice(0, 200) : s;
+    let s: string = '';
+
+    if (typeof v === 'string') s = v;
+    else if (typeof v === 'number' || typeof v === 'boolean') s = String(v);
+    else if (v instanceof Date && Number.isFinite(v.getTime())) s = v.toISOString();
+
+    s = s.trim().replace(/\s+/g, ' ');
+
+    if (s.length > MAX_Q_LEN) {
+      console.warn('useAdminUiStore: query truncated to 200 chars');
+      return s.slice(0, MAX_Q_LEN);
+    }
+    return s;
   } catch {
     return '';
   }
 }
+
 
 function isOrderStatusOrAll(v: unknown): v is AdminUiState['status'] {
   return v === 'all' ||
