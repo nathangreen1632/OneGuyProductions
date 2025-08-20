@@ -1,67 +1,105 @@
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {type RefObject, type SyntheticEvent, useEffect, useMemo, useRef, useState} from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import md5 from 'blueimp-md5';
-import {Bell, LogIn, LogOut, ShieldCheck, UserSquare2} from 'lucide-react';
-import type {AuthState} from '../types/authState.types';
-import {type NavLink, navLinks} from '../constants/navLinks';
-import {useAppStore} from '../store/useAppStore';
-import {type TAuthStateType, useAuthStore} from '../store/useAuthStore';
-import { useOrderStore } from '../store/useOrderStore';
-import {logoutUser} from '../helpers/logoutHelper';
-import {useNotificationStore} from '../store/useNotificationStore';
+import toast from 'react-hot-toast';
+import { Bell, LogIn, LogOut, ShieldCheck, UserSquare2 } from 'lucide-react';
+import type { AuthState } from '../types/authState.types';
+import { type NavLink, navLinks } from '../constants/navLinks';
+import { useAppStore } from '../store/useApp.store';
+import { type TAuthStateType, useAuthStore } from '../store/useAuth.store';
+import { useOrderStore } from '../store/useOrder.store';
+import { logoutUser } from '../helpers/logout.helper';
+import { useNotificationStore } from '../store/useNotification.store';
 import NavbarView from '../jsx/navbarView';
-import RedInfoIcon from '../common/RedInfoIcon.tsx';
+import RedInfoIcon from '../common/RedInfoIcon';
 import GravatarModal from '../modals/GravatarModal';
 import InboxModal from '../modals/InboxModal';
 
 function getGravatarUrl(email?: string): string {
-  if (!email) return '';
-  const normalized: string = email.trim().toLowerCase();
-  const hash: string = md5(normalized);
-  return `https://www.gravatar.com/avatar/${hash}?s=128&d=identicon&r=g`;
+  try {
+    if (!email) return '';
+    const normalized: string = email.trim().toLowerCase();
+    if (!normalized) return '';
+    const hash: string = md5(normalized);
+    return `https://www.gravatar.com/avatar/${hash}?s=128&d=identicon&r=g`;
+  } catch (err) {
+    console.warn('Navbar: failed to compute Gravatar URL.', err);
+    return '';
+  }
 }
 
 export default function NavbarLogic(): React.ReactElement {
-  const navigate: ReturnType<typeof useNavigate> = useNavigate();
+  const navigate = useNavigate();
   const loc = useLocation();
 
   const [isInboxOpen, setIsInboxOpen] = useState<boolean>(false);
+  const [isGravatarModalOpen, setIsGravatarModalOpen] = useState<boolean>(false);
 
   const { menuOpen, toggleMenu, closeMenu } = useAppStore();
 
-  useEffect((): void => { closeMenu(); }, [location.pathname, closeMenu]);
+  useEffect((): void => {
+    try {
+      closeMenu();
+    } catch (err) {
+      console.error('Navbar: failed to close menu on route change.', err);
+      toast.error('Menu state error.');
+    }
+  }, [loc.pathname, closeMenu]);
 
-  const HIDE_ON_ADMIN: Set<string> = useMemo<Set<string>>(
+  const HIDE_ON_ADMIN: Set<string> = useMemo(
     (): Set<string> => new Set<string>(['Products', 'About', 'Contact', 'Order', 'My Portal', 'Home']),
     []
   );
-  const HIDE_ON_PORTAL: Set<string> = useMemo<Set<string>>(
+  const HIDE_ON_PORTAL: Set<string> = useMemo(
     (): Set<string> => new Set<string>([]),
     []
   );
 
   useEffect((): (() => void) | void => {
-    const isAuthenticated: boolean = useAuthStore.getState().isAuthenticated;
-    const hydrated: boolean = useAuthStore.getState().hydrated;
-    if (!hydrated || !isAuthenticated) return;
+    try {
+      const { isAuthenticated, hydrated }: TAuthStateType = useAuthStore.getState();
+      if (!hydrated || !isAuthenticated) return;
 
-    let cancelled: boolean = false;
+      let cancelled: boolean = false;
+      let notifiedOnce: boolean = false;
 
-    const load: () => Promise<void> = async (): Promise<void> => {
-      try {
-        const res: Response = await fetch('/api/order/inbox?unreadOnly=1', { credentials: 'include' });
-        const data = await res.json();
-        if (!cancelled && Array.isArray(data)) {
-          useNotificationStore.getState().set(data);
+      const load: () => Promise<void> = async (): Promise<void> => {
+        try {
+          const res: Response = await fetch('/api/order/inbox?unreadOnly=1', { credentials: 'include' });
+          let data: unknown;
+          try {
+            data = await res.json();
+          } catch {
+            data = [];
+          }
+          if (!cancelled && Array.isArray(data)) {
+            useNotificationStore.getState().set(data);
+          }
+        } catch (e) {
+          console.error('Navbar: inbox hydrate failed.', e);
+          if (!notifiedOnce) {
+            toast.error('Failed to refresh inbox.');
+            notifiedOnce = true;
+          }
         }
-      } catch (e) {
-        console.error('❌ inbox hydrate failed', e);
-      }
-    };
+      };
 
-    void load();
-    const id: number = window.setInterval((): void => { void load(); }, 30000);
-    return (): void => { cancelled = true; window.clearInterval(id); };
+      void load();
+      const id: number = window.setInterval((): undefined => void load(), 30_000);
+
+      return (): void => {
+        cancelled = true;
+        try {
+          window.clearInterval(id);
+        } catch (err) {
+          console.warn('Navbar: failed to clear inbox interval.', err);
+        }
+      };
+    } catch (err) {
+      console.error('Navbar: unexpected error in inbox effect.', err);
+      toast.error('Inbox initialization error.');
+      return;
+    }
   }, [
     useAuthStore((s: TAuthStateType): boolean => s.hydrated),
     useAuthStore((s: TAuthStateType): boolean => s.isAuthenticated),
@@ -69,64 +107,84 @@ export default function NavbarLogic(): React.ReactElement {
 
   const isAuthenticated: boolean = useAuthStore((state: AuthState): boolean => state.isAuthenticated);
   const hydrated: boolean = useAuthStore((state: AuthState): boolean => state.hydrated);
-  const user: { username?: string; email?: string } | null = useAuthStore((state: AuthState) => state.user);
+  const user: { username?: string; email?: string } | null = useAuthStore((state: AuthState): { username?: string; email?: string } | null => state.user);
   const logout: () => void = useAuthStore((state: AuthState): (() => void) => state.logout);
 
-  const [isGravatarModalOpen, setIsGravatarModalOpen] = useState<boolean>(false);
-
   const dynamicLinks: NavLink[] = useMemo<NavLink[]>((): NavLink[] => {
-    const base: NavLink[] = navLinks.slice();
-    const extras: NavLink[] = [];
+    try {
+      const base: NavLink[] = navLinks.slice();
+      const extras: NavLink[] = [];
 
-    if (hydrated && isAuthenticated) {
-      extras.push({ label: 'My Portal', path: '/portal', icon: UserSquare2 } as NavLink);
+      if (hydrated && isAuthenticated) {
+        extras.push({ label: 'My Portal', path: '/portal', icon: UserSquare2 } as NavLink);
 
-      const isCompanyEmail: boolean = !!user?.email && user.email.toLowerCase().endsWith('@oneguyproductions.com');
-      if (isCompanyEmail) {
-        extras.push({ label: 'Admin', path: '/admin/orders', icon: ShieldCheck } as NavLink);
+        const email: string = (user?.email ?? '').toLowerCase();
+        const isCompanyEmail: boolean = Boolean(email) && email.endsWith('@oneguyproductions.com');
+        if (isCompanyEmail) {
+          extras.push({ label: 'Admin', path: '/admin/orders', icon: ShieldCheck } as NavLink);
+        }
+
+        extras.push({
+          label: 'Inbox',
+          path: '#',
+          icon: Bell,
+          onClick: (): void => setIsInboxOpen(true),
+        } as NavLink);
+
+        extras.push({
+          label: 'Logout',
+          path: '#',
+          icon: LogOut,
+          onClick: async (): Promise<void> => {
+            try {
+              const success: boolean = await logoutUser();
+              if (success) {
+                try {
+                  logout();
+                } catch (err) {
+                  console.warn('Navbar: local logout state update failed.', err);
+                }
+                navigate('/auth');
+              } else {
+                toast.error('Logout failed. Please try again.');
+              }
+            } catch (err) {
+              console.error('Navbar: error during logout flow.', err);
+              toast.error('Unexpected error while logging out.');
+            }
+          },
+        } as NavLink);
+      } else if (hydrated && !isAuthenticated) {
+        extras.push({ label: 'Login / Register', path: '/auth', icon: LogIn } as NavLink);
       }
 
-      extras.push({
-        label: 'Inbox',
-        path: '#',
-        icon: Bell,
-        onClick: (): void => setIsInboxOpen(true),
-      } as NavLink);
+      const merged: NavLink[] = [...base, ...extras];
+      const deduped: NavLink[] = Array.from(
+        new Map(merged.map((l: NavLink): [string, NavLink] => [`${l.label}|${l.path}`, l])).values()
+      );
 
-      extras.push({
-        label: 'Logout',
-        path: '#',
-        icon: LogOut,
-        onClick: async (): Promise<void> => {
-          const success: boolean = await logoutUser();
-          if (success) {
-            logout();
-            navigate('/auth');
-          }
-        },
-      } as NavLink);
-    } else if (hydrated && !isAuthenticated) {
-      extras.push({ label: 'Login / Register', path: '/auth', icon: LogIn } as NavLink);
+      const isAdminRoute: boolean = loc.pathname.startsWith('/admin');
+      const isPortalRoute: boolean = loc.pathname.startsWith('/portal');
+
+      let scoped: NavLink[] = deduped;
+      if (isAdminRoute) scoped = scoped.filter((l: NavLink): boolean => !HIDE_ON_ADMIN.has(l.label));
+      if (isPortalRoute) scoped = scoped.filter((l: NavLink): boolean => !HIDE_ON_PORTAL.has(l.label));
+
+      const logoutIndex: number = scoped.findIndex((l: NavLink): boolean => l.label === 'Logout');
+      if (logoutIndex > -1) {
+        const [logoutLink] = scoped.splice(logoutIndex, 1);
+        scoped.push(logoutLink);
+      }
+
+      return scoped;
+    } catch (err) {
+      console.error('Navbar: failed to compute dynamic links.', err);
+      toast.error('Navigation error.');
+      return navLinks;
     }
-
-    const merged: NavLink[] = [...base, ...extras];
-    const deduped: NavLink[] = Array.from(new Map(merged.map((l: NavLink): [string, NavLink] => [`${l.label}|${l.path}`, l])).values());
-
-    const isAdminRoute: boolean = loc.pathname.startsWith('/admin');
-    const isPortalRoute: boolean = loc.pathname.startsWith('/portal');
-
-    let scoped: NavLink[] = deduped;
-    if (isAdminRoute) scoped = scoped.filter((l: NavLink): boolean => !HIDE_ON_ADMIN.has(l.label));
-    if (isPortalRoute) scoped = scoped.filter((l: NavLink): boolean => !HIDE_ON_PORTAL.has(l.label));
-
-    const logoutIndex2: number = scoped.findIndex((l: NavLink): boolean => l.label === 'Logout');
-    if (logoutIndex2 > -1) {
-      const [logoutLink2] = scoped.splice(logoutIndex2, 1);
-      scoped.push(logoutLink2);
-    }
-
-    return scoped;
   }, [isAuthenticated, user?.email, logout, navigate, hydrated, loc.pathname, HIDE_ON_ADMIN, HIDE_ON_PORTAL]);
+
+  const assigningRef: RefObject<boolean> = useRef(false);
 
   return (
     <div className="bg-[var(--theme-surface)] text-[var(--theme-text)] shadow-md">
@@ -134,8 +192,22 @@ export default function NavbarLogic(): React.ReactElement {
         key={`${hydrated ? 'h1' : 'h0'}-${isAuthenticated ? 'auth' : 'anon'}`}
         navLinks={dynamicLinks}
         menuOpen={menuOpen}
-        toggleMenu={toggleMenu}
-        closeMenu={closeMenu}
+        toggleMenu={(): void => {
+          try {
+            toggleMenu();
+          } catch (err) {
+            console.error('Navbar: toggleMenu failed.', err);
+            toast.error('Menu toggle failed.');
+          }
+        }}
+        closeMenu={(): void => {
+          try {
+            closeMenu();
+          } catch (err) {
+            console.error('Navbar: closeMenu failed.', err);
+            toast.error('Menu close failed.');
+          }
+        }}
       />
 
       {hydrated && isAuthenticated && user && (
@@ -144,7 +216,7 @@ export default function NavbarLogic(): React.ReactElement {
             <span className="relative text-lg font-semibold text-[var(--theme-text)]">
               Logged In As{' '}
               <span className="font-semibold text-[var(--theme-border-red)]">
-                {user.username}
+                {user.username ?? 'User'}
               </span>
             </span>
 
@@ -152,12 +224,45 @@ export default function NavbarLogic(): React.ReactElement {
               open={isInboxOpen}
               onClose={(): void => setIsInboxOpen(false)}
               onNavigateToOrder={(orderId: number): void => {
-                try { useOrderStore.getState().setView('timeline'); } catch {}
-                window.location.assign(`/portal#order-${orderId}`);
+                try {
+                  if (!Number.isFinite(orderId) || orderId <= 0) {
+                    console.warn('Navbar: invalid orderId for navigation.', orderId);
+                    toast.error('Invalid order id.');
+                    return;
+                  }
+                  try {
+                    useOrderStore.getState().setView('timeline');
+                  } catch (err) {
+                    console.warn('Navbar: failed to set order view state.', err);
+                  }
+                  assigningRef.current = true;
+                  window.location.assign(`/portal#order-${orderId}`);
+                } catch (err) {
+                  console.error('Navbar: window.location.assign failed, using navigate.', err);
+                  assigningRef.current = false;
+                  try {
+                    navigate(`/portal#order-${orderId}`);
+                  } catch (navErr) {
+                    console.error('Navbar: navigate fallback failed.', navErr);
+                    toast.error('Navigation failed.');
+                  }
+                }
               }}
             />
 
-            <img src={getGravatarUrl(user.email)} alt="User Avatar" className="w-12 h-12 rounded-full" />
+            <img
+              src={getGravatarUrl(user.email)}
+              alt="User Avatar"
+              className="w-12 h-12 rounded-full"
+              onError={(ev: SyntheticEvent<HTMLImageElement, Event>): void => {
+                try {
+                  (ev.currentTarget as HTMLImageElement).style.visibility = 'hidden';
+                } catch (err) {
+                  console.error('Navbar: failed to hide image on error.', err);
+                  toast.error('Avatar loading error.');
+                }
+              }}
+            />
 
             <button
               type="button"
@@ -168,7 +273,10 @@ export default function NavbarLogic(): React.ReactElement {
               <RedInfoIcon size={16} strokeWidth={2.5} />
             </button>
 
-            <GravatarModal isOpen={isGravatarModalOpen} onClose={(): void => setIsGravatarModalOpen(false)} />
+            <GravatarModal
+              isOpen={isGravatarModalOpen}
+              onClose={(): void => setIsGravatarModalOpen(false)}
+            />
           </div>
         </div>
       )}
