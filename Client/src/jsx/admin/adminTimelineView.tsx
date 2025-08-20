@@ -1,7 +1,7 @@
 import { type ReactElement } from 'react';
 import type { OrderUpdateDto } from '../../types/order.types';
 import type { TOrderUpdateLikeType } from '../../components/admin/AdminTimeline';
-import { linkifySafe } from '../../helpers/linkify';
+import { linkifySafe } from '../../helpers/linkify.helper';
 
 interface AdminTimelineViewProps {
   updates: ReadonlyArray<OrderUpdateDto>;
