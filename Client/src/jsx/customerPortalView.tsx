@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { useOrderStore } from '../store/useOrderStore';
+import { useOrderStore } from '../store/useOrder.store';
 import ToggleViewButton from '../common/ToggleViewButton';
 import OrderCardLogic from '../components/OrderCardLogic';
 import OrderTimelineLogic from '../components/OrderTimelineLogic';

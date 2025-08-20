@@ -1,3 +1,5 @@
+import toast from "react-hot-toast";
+
 export async function logoutUser(): Promise<boolean> {
   try {
     const res: Response = await fetch('/api/auth/logout', {
@@ -5,9 +7,11 @@ export async function logoutUser(): Promise<boolean> {
       credentials: 'include',
     });
 
-    if (!res.ok) {
-      console.error('Logout failed:', await res.text());
-      return false;
+    if (res.ok) {
+      toast.dismiss('admin-guard-denied');
+      toast.success('Logged out successfully', { id: 'logout-success' });
+    } else {
+      toast.error('Logout failed. Please try again.');
     }
 
     return true;

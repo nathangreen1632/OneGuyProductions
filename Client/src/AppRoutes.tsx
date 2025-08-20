@@ -1,6 +1,6 @@
 import React, {type ReactElement} from 'react';
 import { useRoutes } from 'react-router-dom';
-import { useAuthStore } from './store/useAuthStore';
+import { useAuthStore } from './store/useAuth.store';
 import { useSessionHydration } from './hooks/useSessionHydration';
 import publicRoutes from './routes/PublicRoutes';
 import adminRoutes from './routes/AdminRoutes';

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-import type { Order } from '../../types/order.types.ts';
-import { isWithin72Hours } from '../../helpers/dateHelper.ts';
-import type { FormState } from '../../types/formState.types.ts';
-import { useScrollLock } from '../../hooks/useScrollLock.ts';
+import type { Order } from '../../types/order.types';
+import { isWithin72Hours } from '../../helpers/date.helper';
+import type { FormState } from '../../types/formState.types';
+import { useScrollLock } from '../../hooks/useScrollLock';
 
 interface Props {
   order: Order;

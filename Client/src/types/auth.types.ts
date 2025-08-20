@@ -14,3 +14,12 @@ export type LoginPayload = {
 export type RegisterPayload = LoginPayload & {
   username: string;
 };
+
+export type TAuthEndpoint = '/api/auth/login' | '/api/auth/register';
+
+export type TApiResult = { ok: boolean; data: unknown };
+
+export type BuiltAuth = {
+  endpoint: TAuthEndpoint;
+  payload: LoginPayload | RegisterPayload;
+};
