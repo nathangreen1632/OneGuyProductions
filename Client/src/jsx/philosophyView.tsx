@@ -2,7 +2,7 @@ import React from "react";
 
 export default function PhilosophyView(): React.ReactElement {
   return (
-    <section className="py-16 px-4 sm:px-6 max-w-6xl mx-auto text-center text-[var(--theme-text)]">
+    <section className="py-10 px-4 sm:px-6 max-w-6xl mx-auto text-center text-[var(--theme-text)]">
       <div className="rounded-3xl overflow-hidden shadow-[0_4px_14px_0_var(--theme-shadow)] bg-[var(--theme-surface)]">
         <div className="w-full h-[300px] sm:h-[400px] md:h-[500px] lg:h-[600px] xl:h-[650px] 2xl:h-[700px] rounded-2xl overflow-hidden">
           <img
