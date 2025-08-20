@@ -3,7 +3,7 @@ import { Link, NavLink, type NavLinkRenderProps, useLocation } from 'react-route
 import { Menu, X } from 'lucide-react';
 import type { NavLink as INavLink } from '../constants/navLinks';
 import type NavbarViewProps from '../types/navbarProps.types';
-import { useNotificationStore } from '../store/useNotificationStore';
+import { useNotificationStore } from '../store/useNotification.store';
 
 type NotificationStoreState = ReturnType<typeof useNotificationStore.getState>;
 
