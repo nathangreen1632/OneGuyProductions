@@ -7,7 +7,6 @@ import type {
   TJwtPayloadType,
   TRequestOtpBodyType,
   TVerifyOtpBodyType,
-  TCookieOptionsType,
 } from '../types/auth.types.js';
 import {
   hashPassword,
@@ -19,7 +18,7 @@ import {
 } from '../services/auth.service.js';
 import { sendOtpEmail } from '../services/resend.service.js';
 import { Op } from 'sequelize';
-import { COOKIE_OPTIONS } from '../config/constants.config.js';
+import {COOKIE_OPTIONS_BASE, cookieOptions} from '../config/constants.config.js';
 import { otpExpiryDate } from '../utils/otp.util.js';
 import { issueOtpForEmail } from '../utils/otp-issuer.util.js';
 import {OtpTokenInstance} from "../models/otpToken.model.js";
@@ -76,12 +75,8 @@ export async function register(
     }
 
     const token: string = generateJwt({ id: newUser.id });
-    const options: TCookieOptionsType = {
-      ...COOKIE_OPTIONS,
-      ...(rememberMe && { expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) }),
-    };
 
-    res.cookie('token', token, options);
+    res.cookie('token', token, cookieOptions(Boolean(rememberMe)));
     res.status(201).json({
       success: true,
       user: {
@@ -106,24 +101,15 @@ export async function login(
 
   try {
     const user: User | null = await User.findOne({ where: { email } });
-    if (!user) {
-      res.status(401).json({ error: 'Invalid email or password.' });
-      return;
-    }
+    if (!user) { res.status(401).json({ error: 'Invalid email or password.' }); return; }
 
     const isPasswordValid: boolean = await verifyPassword(password, user.password);
-    if (!isPasswordValid) {
-      res.status(401).json({ error: 'Invalid email or password.' });
-      return;
-    }
+    if (!isPasswordValid) { res.status(401).json({ error: 'Invalid email or password.' }); return; }
 
     const token: string = generateJwt({ id: user.id });
-    const options: TCookieOptionsType = {
-      ...COOKIE_OPTIONS,
-      ...(rememberMe && { expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) }),
-    };
 
-    res.cookie('token', token, options);
+    res.cookie('token', token, cookieOptions(Boolean(rememberMe)));
+
     res.status(200).json({
       success: true,
       user: {
@@ -159,6 +145,7 @@ export async function getAuthenticatedUser(req: Request, res: Response): Promise
       user: {
         id: user.id,
         email: user.email,
+        username: user.username,
         role: user.role,
         emailVerified: user.emailVerified,
       },
@@ -232,7 +219,7 @@ export async function requestOtp(
 }
 
 export function logout(_: Request, res: Response): void {
-  res.clearCookie('token', COOKIE_OPTIONS);
+  res.clearCookie('token', COOKIE_OPTIONS_BASE);
   res.status(200).json({ success: true });
 }
 
