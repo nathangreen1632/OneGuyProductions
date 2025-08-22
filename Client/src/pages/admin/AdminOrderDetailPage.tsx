@@ -8,6 +8,8 @@ import { useAdminStore } from '../../store/useAdmin.store';
 import type { OrderThreadDto, TDetailsType } from '../../types/admin.types';
 import type { OrderStatus } from '../../types/order.types';
 
+import InvoiceEditor from '../../components/admin/InvoiceEditor';
+
 const LOG_PREFIX = 'AdminOrderDetailPage';
 
 function isNonEmptyString(v: unknown): v is string {
@@ -16,7 +18,7 @@ function isNonEmptyString(v: unknown): v is string {
 
 function offlineHint(): string {
   try {
-    return typeof navigator !== 'undefined' && 'onLine' in navigator && (navigator).onLine
+    return typeof navigator !== 'undefined' && 'onLine' in navigator && (navigator as any).onLine
       ? ' You appear to be offline.'
       : '';
   } catch {
@@ -70,7 +72,6 @@ export default function AdminOrderDetailPage(): React.ReactElement {
 
   const { threads, fetchThread, sendUpdate } = useAdminStore();
 
-  // Be defensive when reading by both numeric and string keys
   let data: OrderThreadDto | undefined;
   try {
     data = Number.isFinite(orderId)
@@ -267,6 +268,14 @@ export default function AdminOrderDetailPage(): React.ReactElement {
             }}
           />
         </div>
+
+        <InvoiceEditor
+          orderId={data.order.id}
+          initialItems={(data.order as any).items ?? []}
+          initialTaxRate={Number((data.order as any).taxRate ?? 0)}
+          initialDiscountCents={Number((data.order as any).discountCents ?? 0)}
+          initialShippingCents={Number((data.order as any).shippingCents ?? 0)}
+        />
       </aside>
     </div>
   );
