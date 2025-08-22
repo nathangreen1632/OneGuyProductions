@@ -15,10 +15,25 @@ export interface OrderAttributes {
   status?: 'pending' | 'in-progress' | 'needs-feedback' | 'complete' | 'cancelled';
   createdAt: Date;
   updatedAt?: Date;
+
+  items: Array<{ description: string; quantity: number; unitPriceCents: number }>;
+  taxRate: number | string;
+  discountCents: number;
+  shippingCents: number;
 }
 
 export interface OrderCreationAttributes
-  extends Optional<OrderAttributes, 'id' | 'status' | 'createdAt' | 'updatedAt'> {}
+  extends Optional<
+    OrderAttributes,
+    | 'id'
+    | 'status'
+    | 'createdAt'
+    | 'updatedAt'
+    | 'items'
+    | 'taxRate'
+    | 'discountCents'
+    | 'shippingCents'
+  > {}
 
 export interface OrderInstance
   extends Model<OrderAttributes, OrderCreationAttributes>,
@@ -69,6 +84,27 @@ export const OrderModel = sequelize.define<OrderInstance>(
       references: { model: 'users', key: 'id' },
       onDelete: 'SET NULL',
     },
+
+    items: {
+      type: DataTypes.JSONB as unknown as typeof DataTypes.JSON,
+      allowNull: false,
+      defaultValue: [],
+    },
+    taxRate: {
+      type: DataTypes.DECIMAL(6, 4),
+      allowNull: false,
+      defaultValue: 0,
+    },
+    discountCents: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+    },
+    shippingCents: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+    },
   },
   {
     modelName: 'Order',
@@ -76,4 +112,3 @@ export const OrderModel = sequelize.define<OrderInstance>(
     timestamps: true,
   }
 );
-
