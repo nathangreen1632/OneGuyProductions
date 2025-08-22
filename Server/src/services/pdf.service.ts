@@ -65,9 +65,9 @@ export async function generatePdfBuffer(order: OrderInstance): Promise<Buffer> {
       colorRule: COLOR_RED,
       colorFooter: COLOR_FOOTER,
       brandText: 'One Guy Productions',
-      suffixText: ' - Invoice',
+      suffixText: ' - Quote',
       footerMsg:
-        'Thank you for working with One Guy Productions. This invoice reflects your order submission details.',
+        'Thank you for working with One Guy Productions. This quote reflects your order submission details.',
     });
 
   const newPage: () => void = (): void => {
