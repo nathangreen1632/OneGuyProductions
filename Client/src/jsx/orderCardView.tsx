@@ -171,7 +171,7 @@ export default function OrderCardView({
                     }}
                     className="px-4 py-2 bg-[var(--theme-button-blue)] text-[var(--theme-text-white)] cursor-pointer text-sm rounded shadow-md hover:bg-[var(--theme-button-blue-hover)]"
                   >
-                    Download Invoice
+                    Download Quote
                   </button>
                 </div>
               </article>
