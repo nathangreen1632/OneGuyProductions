@@ -65,9 +65,9 @@ export async function generatePdfBuffer(order: OrderInstance): Promise<Buffer> {
       colorRule: COLOR_RED,
       colorFooter: COLOR_FOOTER,
       brandText: 'One Guy Productions',
-      suffixText: ' - Quote',
+      suffixText: ' - Invoice',
       footerMsg:
-        'Thank you for working with One Guy Productions. This quote reflects your order submission details.',
+        'Thank you for working with One Guy Productions. This invoice reflects your order submission details.',
     });
 
   const newPage: () => void = (): void => {
@@ -121,10 +121,10 @@ export async function generatePdfBuffer(order: OrderInstance): Promise<Buffer> {
     defaultColor: COLOR_BLACK,
   });
 
-  drawLine(`Customer Name: ${safe((order as any).name ?? (order as any).customer?.name ?? '')}`, { bold: true });
-  drawLine(`Email: ${safe((order as any).email ?? (order as any).customer?.email ?? '')}`, { bold: true });
-  drawLine(`Business: ${safe((order as any).businessName || 'N/A')}`, { bold: true });
-  drawLine(`Submitted: ${safe((order as any).createdAt ? new Date((order as any).createdAt).toLocaleString() : 'Unknown')}`, { bold: true });
+  drawLine(`Customer Name: ${safe((order as any).name ?? (order as any).customer?.name ?? '')}`, { bold: false });
+  drawLine(`Email: ${safe((order as any).email ?? (order as any).customer?.email ?? '')}`, { bold: false });
+  drawLine(`Business: ${safe((order as any).businessName || 'N/A')}`, { bold: false });
+  drawLine(`Submitted: ${safe((order as any).createdAt ? new Date((order as any).createdAt).toLocaleString() : 'Unknown')}`, { bold: false });
 
   if (cursor.y - (24 + SIZE_SECTION) < BOTTOM_CONTENT) newPage();
   cursor.y -= 24;
