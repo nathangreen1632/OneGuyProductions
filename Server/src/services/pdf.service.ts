@@ -82,9 +82,7 @@ export async function generatePdfBuffer(order: OrderInstance): Promise<Buffer> {
   function safe(v: string | number | boolean | Date | null | undefined): string {
     if (v == null) return '';
     if (typeof v === 'string') return sanitizeInline(v);
-    if (typeof v === 'number' || typeof v === 'boolean') {
-      return String(v);
-    }
+    if (typeof v === 'number' || typeof v === 'boolean') return String(v);
     return Number.isNaN(v.getTime()) ? '' : sanitizeInline(v.toLocaleString());
   }
 
@@ -96,8 +94,10 @@ export async function generatePdfBuffer(order: OrderInstance): Promise<Buffer> {
     xLeft: SIDE,
     xRight: SIDE + 260,
     left:  { heading: 'From',   lines: ['One Guy Productions', 'orders@oneguyproductions.com'] },
-    right: { heading: 'Bill To', lines: [safe((order as any).name ?? (order as any).customer?.name ?? ''),
-        safe((order as any).email ?? (order as any).customer?.email ?? '')] },
+    right: { heading: 'Bill To', lines: [
+        safe((order as any).name ?? (order as any).customer?.name ?? ''),
+        safe((order as any).email ?? (order as any).customer?.email ?? '')
+      ] },
   });
 
   drawOrderIdLine({
@@ -121,10 +121,10 @@ export async function generatePdfBuffer(order: OrderInstance): Promise<Buffer> {
     defaultColor: COLOR_BLACK,
   });
 
-  drawLine(`Customer Name: ${safe((order as any).name ?? (order as any).customer?.name ?? '')}`, { bold: false });
-  drawLine(`Email: ${safe((order as any).email ?? (order as any).customer?.email ?? '')}`, { bold: false });
-  drawLine(`Business: ${safe((order as any).businessName || 'N/A')}`, { bold: false });
-  drawLine(`Submitted: ${safe((order as any).createdAt ? new Date((order as any).createdAt).toLocaleString() : 'Unknown')}`, { bold: false });
+  drawLine(`Customer Name: ${safe((order as any).name ?? (order as any).customer?.name ?? '')}`);
+  drawLine(`Email: ${safe((order as any).email ?? (order as any).customer?.email ?? '')}`);
+  drawLine(`Business: ${safe((order as any).businessName || 'N/A')}`);
+  drawLine(`Submitted: ${safe((order as any).createdAt ? new Date((order as any).createdAt).toLocaleString() : 'Unknown')}`);
 
   if (cursor.y - (24 + SIZE_SECTION) < BOTTOM_CONTENT) newPage();
   cursor.y -= 24;
@@ -136,12 +136,35 @@ export async function generatePdfBuffer(order: OrderInstance): Promise<Buffer> {
   drawLine(`Timeline: ${safe((order as any).timeline)}`);
   drawLine(`Status: ${safe((order as any).status)}`);
 
+  if (cursor.y - (24 + SIZE_SECTION) < BOTTOM_CONTENT) newPage();
+  cursor.y -= 24;
+  pageRef.page.drawText('Description:', {
+    x: SIDE, y: cursor.y, size: SIZE_SECTION, font: fontBold, color: rgb(...COLOR_RED),
+  });
+
+  const AFTER_DESC_GAP = 12;
+  if (cursor.y - AFTER_DESC_GAP < BOTTOM_CONTENT) newPage();
+  cursor.y -= AFTER_DESC_GAP;
+
+  layoutRichText({
+    pageRef,
+    newPage,
+    cursor,
+    x: SIDE,
+    contentWidth,
+    bottomContentMargin: BOTTOM_CONTENT,
+    lineHeight: 16,
+    paraGap: 16,
+    style: bodyStyle,
+    text: String((order as any).description || ''),
+  });
+
   const rows: ItemRow[] = Array.isArray((order as any).items) ? (order as any).items : [];
   if (rows.length > 0) {
     if (cursor.y - (24 + SIZE_SECTION) < BOTTOM_CONTENT) newPage();
     cursor.y -= 24;
     pageRef.page.drawText('Line Items', {
-      x: SIDE, y: cursor.y, size: SIZE_SECTION, font: fontBold, color: rgb(...COLOR_RED)
+      x: SIDE, y: cursor.y, size: SIZE_SECTION, font: fontBold, color: rgb(...COLOR_RED),
     });
 
     drawItemsTable(pageRef, {
@@ -179,29 +202,6 @@ export async function generatePdfBuffer(order: OrderInstance): Promise<Buffer> {
     cursor.y -= 10;
   }
 
-  if (cursor.y - (24 + SIZE_SECTION) < BOTTOM_CONTENT) newPage();
-  cursor.y -= 24;
-  pageRef.page.drawText('Description:', {
-    x: SIDE, y: cursor.y, size: SIZE_SECTION, font: fontBold, color: rgb(...COLOR_RED),
-  });
-
-  const AFTER_DESC_GAP = 12;
-  if (cursor.y - AFTER_DESC_GAP < BOTTOM_CONTENT) newPage();
-  cursor.y -= AFTER_DESC_GAP;
-
-  layoutRichText({
-    pageRef,
-    newPage,
-    cursor,
-    x: SIDE,
-    contentWidth,
-    bottomContentMargin: BOTTOM_CONTENT,
-    lineHeight: 16,
-    paraGap: 16,
-    style: bodyStyle,
-    text: String((order as any).description || ''),
-  });
-
   drawPageNumbers({
     pdfDoc,
     font,
@@ -214,3 +214,4 @@ export async function generatePdfBuffer(order: OrderInstance): Promise<Buffer> {
   const bytes: Uint8Array<ArrayBufferLike> = await pdfDoc.save();
   return Buffer.from(bytes);
 }
+
