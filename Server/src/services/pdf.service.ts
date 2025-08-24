@@ -1,17 +1,17 @@
-import {PDFDocument, PDFFont, PDFPage, rgb, StandardFonts} from 'pdf-lib';
+// Server/src/services/pdf.service.ts
+import { PDFDocument, PDFFont, rgb, StandardFonts } from 'pdf-lib';
 import type { OrderInstance } from '../models/order.model.js';
 import {
   sanitizeInline,
   layoutRichText,
   drawItemsTable,
   makeDrawLine,
-  paintHeaderFooter,
-  drawTwoAddressColumns,
-  drawOrderIdLine,
+  // drawTwoAddressColumns, // not used; we render columns manually to control spacing
   drawRightAlignedPairs,
   drawPageNumbers,
+  drawLogo,
   type ItemRow,
-  type TextStyle,
+  type TaskRow,
 } from '../helpers/pdf.helper.js';
 import { money, computeTotals } from '../helpers/money.helper.js';
 
@@ -20,198 +20,214 @@ type Row = [string, string];
 export async function generatePdfBuffer(order: OrderInstance): Promise<Buffer> {
   const pdfDoc: PDFDocument = await PDFDocument.create();
 
-  const COLOR_BLACK: [number, number, number] = [0, 0, 0];
-  const COLOR_RED:   [number, number, number] = [239/255, 68/255, 68/255]; // #ef4444
-  const COLOR_FOOTER:[number, number, number] = [0.4, 0.4, 0.4];
-  const COLOR_PGNUM: [number, number, number] = [0.5, 0.5, 0.5];
-
+  // Fonts (Helvetica 12pt baseline everywhere)
   const font: PDFFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const fontBold: PDFFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-  const SIZE_TITLE = 20;
-  const SIZE_SECTION = 14;
-  const SIZE_TEXT = 12;
-  const SIZE_FOOTER = 10;
+  // Page + constants
+  const page = pdfDoc.addPage([612, 792]); // Letter portrait
+  const SIDE = 48;
+  const contentWidth = page.getSize().width - SIDE * 2;
+  const TOP = page.getSize().height - SIDE;
+  const BOTTOM = 64;
 
-  const INCH = 72;
-  const HALF_IN = 36;
-  const QUARTER_IN = 30;
-  const SIDE: 36 = HALF_IN;
-  const TOP_CONTENT: 36 = HALF_IN;
-  const BOTTOM_CONTENT: 72 = INCH;
-  const FOOTER_Y: 30 = QUARTER_IN;
-
-  let page: PDFPage = pdfDoc.addPage();
-  const pageRef = { page };
-  let { width } = page.getSize();
-  const cursor = { y: 0 };
-  const contentWidth = width - SIDE * 2;
-
-  const bodyStyle: TextStyle = { font, fontBold, size: SIZE_TEXT, color: COLOR_BLACK };
-
-  const doPaintHeaderFooter: () => void = (): void =>
-    paintHeaderFooter({
-      pageRef,
-      cursor,
-      font,
-      fontBold,
-      sizeTitle: SIZE_TITLE,
-      sizeFooter: SIZE_FOOTER,
-      side: SIDE,
-      topContent: TOP_CONTENT,
-      footerY: FOOTER_Y,
-      colorBrand: COLOR_BLACK,
-      colorSuffix: COLOR_BLACK,
-      colorRule: COLOR_RED,
-      colorFooter: COLOR_FOOTER,
-      brandText: 'One Guy Productions',
-      suffixText: ' - Invoice',
-      footerMsg:
-        'Thank you for working with One Guy Productions. This invoice reflects your order submission details.',
-    });
-
-  const newPage: () => void = (): void => {
-    page = pdfDoc.addPage();
-    pageRef.page = page;
-    doPaintHeaderFooter();
-    ({ width } = pageRef.page.getSize());
+  const drawLineRaw = makeDrawLine(page);
+  // Only draw header underline (0.5); skip per-row separators (0.25)
+  const drawHeaderOnly = (x1: number, y1: number, x2: number, y2: number, thickness = 0.5) => {
+    if ((thickness ?? 0.5) >= 0.5) {
+      drawLineRaw(x1, y1, x2, y2, thickness);
+    }
   };
 
-  doPaintHeaderFooter();
-
-  function safe(v: string | number | boolean | Date | null | undefined): string {
+  // Safe accessor
+  function safe(v: unknown): string {
     if (v == null) return '';
     if (typeof v === 'string') return sanitizeInline(v);
     if (typeof v === 'number' || typeof v === 'boolean') return String(v);
-    return Number.isNaN(v.getTime()) ? '' : sanitizeInline(v.toLocaleString());
+    try {
+      // @ts-ignore
+      if (v && typeof v.toISOString === 'function') {
+        return sanitizeInline(new Date(v as any).toLocaleString());
+      }
+    } catch { /* no-throw */ }
+    return sanitizeInline(String(v ?? ''));
   }
 
-  drawTwoAddressColumns({
-    pageRef, cursor, newPage, bottom: BOTTOM_CONTENT,
-    font, fontBold,
-    headingColor: COLOR_RED,
-    bodyColor: COLOR_BLACK,
-    xLeft: SIDE,
-    xRight: SIDE + 260,
-    left:  { heading: 'From',   lines: ['One Guy Productions', 'orders@oneguyproductions.com'] },
-    right: { heading: 'Bill To', lines: [
-        safe((order as any).name ?? (order as any).customer?.name ?? ''),
-        safe((order as any).email ?? (order as any).customer?.email ?? '')
-      ] },
+  // Deserialize items/tasks
+  const items: ItemRow[] = Array.isArray((order as any).items) ? (order as any).items : [];
+  const tasks: TaskRow[] = Array.isArray((order as any).tasks) ? (order as any).tasks : [];
+
+  // Totals
+  const totals = computeTotals(items, {
+    taxRate: Number((order as any).taxRate ?? 0),
+    discountCents: Number((order as any).discountCents ?? 0),
+    shippingCents: Number((order as any).shippingCents ?? 0),
   });
 
-  drawOrderIdLine({
-    pageRef, cursor, newPage,
-    bottom: BOTTOM_CONTENT, side: SIDE,
-    font, fontBold,
-    size: SIZE_SECTION,
-    label: 'Order ID: ',
-    value: safe((order as any).id ?? (order as any).orderId ?? ''),
-    labelColor: COLOR_RED,
-    valueColor: COLOR_BLACK,
-    leading: 18,
-  });
+  // Header rule
+  drawLineRaw(SIDE, TOP - 56, SIDE + contentWidth, TOP - 56, 0.8);
 
-  const drawLine = makeDrawLine({
-    pageRef, cursor, newPage,
-    bottom: BOTTOM_CONTENT,
-    side: SIDE,
-    font, fontBold,
-    defaultSize: SIZE_TEXT,
-    defaultColor: COLOR_BLACK,
-  });
+  // Optional logo
+  try {
+    const logoB64: string | undefined =
+      (order as any).logoBase64 || (order as any).companyLogoBase64 || undefined;
+    if (logoB64) {
+      const bytes = Buffer.from(logoB64.split(',').pop() ?? '', 'base64');
+      const img = await pdfDoc.embedPng(bytes).catch(async () => {
+        try { return await pdfDoc.embedJpg(bytes); } catch { return null; }
+      });
+      drawLogo(page, img, SIDE, TOP - 12, 160, 44);
+    }
+  } catch { /* no-throw */ }
 
-  drawLine(`Customer Name: ${safe((order as any).name ?? (order as any).customer?.name ?? '')}`);
-  drawLine(`Email: ${safe((order as any).email ?? (order as any).customer?.email ?? '')}`);
-  drawLine(`Business: ${safe((order as any).businessName || 'N/A')}`);
-  drawLine(`Submitted: ${safe((order as any).createdAt ? new Date((order as any).createdAt).toLocaleString() : 'Unknown')}`);
-
-  if (cursor.y - (24 + SIZE_SECTION) < BOTTOM_CONTENT) newPage();
-  cursor.y -= 24;
-  pageRef.page.drawText('Project Details', {
-    x: SIDE, y: cursor.y, size: SIZE_SECTION, font: fontBold, color: rgb(...COLOR_RED),
-  });
-  drawLine(`Project Type: ${safe((order as any).projectType)}`);
-  drawLine(`Budget: ${safe((order as any).budget)}`);
-  drawLine(`Timeline: ${safe((order as any).timeline)}`);
-  drawLine(`Status: ${safe((order as any).status)}`);
-
-  if (cursor.y - (24 + SIZE_SECTION) < BOTTOM_CONTENT) newPage();
-  cursor.y -= 24;
-  pageRef.page.drawText('Description:', {
-    x: SIDE, y: cursor.y, size: SIZE_SECTION, font: fontBold, color: rgb(...COLOR_RED),
-  });
-
-  const AFTER_DESC_GAP = 12;
-  if (cursor.y - AFTER_DESC_GAP < BOTTOM_CONTENT) newPage();
-  cursor.y -= AFTER_DESC_GAP;
-
-  layoutRichText({
-    pageRef,
-    newPage,
-    cursor,
-    x: SIDE,
-    contentWidth,
-    bottomContentMargin: BOTTOM_CONTENT,
-    lineHeight: 16,
-    paraGap: 16,
-    style: bodyStyle,
-    text: String((order as any).description || ''),
-  });
-
-  const rows: ItemRow[] = Array.isArray((order as any).items) ? (order as any).items : [];
-  if (rows.length > 0) {
-    if (cursor.y - (24 + SIZE_SECTION) < BOTTOM_CONTENT) newPage();
-    cursor.y -= 24;
-    pageRef.page.drawText('Line Items', {
-      x: SIDE, y: cursor.y, size: SIZE_SECTION, font: fontBold, color: rgb(...COLOR_RED),
+  // Big total on the top-right — color red-500 (#ef4444)
+  try {
+    const label = money(totals.total);
+    const big = 20;
+    const labelW = fontBold.widthOfTextAtSize(label, big);
+    page.drawText(label, {
+      x: SIDE + contentWidth - labelW,
+      y: TOP - 30,
+      size: big,
+      font: fontBold,
+      color: rgb(239 / 255, 68 / 255, 68 / 255),
     });
+  } catch { /* no-throw */ }
 
-    drawItemsTable(pageRef, {
-      cursor, newPage,
-      width: contentWidth, left: SIDE, bottom: BOTTOM_CONTENT,
-      font, fontBold, rows,
-      moneyFn: (cents: number): string => money(cents),
-    });
+  // Invoice meta (12pt)
+  const createdAt = (order as any).createdAt ? new Date((order as any).createdAt) : new Date();
+  const invNum: string =
+    (order as any).invoiceNumber ??
+    `INV-${createdAt.getFullYear()}-${String((order as any).id ?? '0000').padStart(4, '0')}`;
 
-    const { subtotal, discount, tax, shipping, total } = computeTotals(rows, {
-      taxRate: Number((order as any).taxRate ?? 0),
-      discountCents: Number((order as any).discountCents ?? 0),
-      shippingCents: Number((order as any).shippingCents ?? 0),
-    });
+  try {
+    page.drawText(`Invoice #: ${invNum}`, { x: SIDE, y: TOP - 78, size: 12, font, color: rgb(0, 0, 0) });
+    page.drawText(createdAt.toLocaleDateString(), { x: SIDE, y: TOP - 94, size: 12, font, color: rgb(0, 0, 0) });
+  } catch { /* no-throw */ }
 
-    const totals: Row[] = [];
-    totals.push(['Subtotal', money(subtotal)]);
-    if (discount) totals.push(['Discount', `-${money(discount)}`]);
-    if (tax) totals.push(['Tax', money(tax)]);
-    if (shipping) totals.push(['Shipping', money(shipping)]);
-    totals.push(['Total', money(total)]);
+  // ─────────────────────────────────────────────────────────────
+  // Address columns (Customer | One Guy Productions)
+  //   - Exact 12pt Helvetica
+  //   - Added row padding between DB fields and between company address lines
+  //   - Extra spacing before the items table
+  // ─────────────────────────────────────────────────────────────
+  const colWidth = Math.floor(contentWidth / 2 - 12);
+  const gap = 24;
+  const xLeft = SIDE;
+  const xRight = SIDE + colWidth + gap;
 
-    drawRightAlignedPairs({
-      pageRef, cursor, newPage,
-      bottom: BOTTOM_CONTENT,
-      labelX: SIDE + contentWidth - 200,
-      valueX: SIDE + contentWidth - 90,
-      pairs: totals,
-      font, fontBold,
-      size: 12,
-      leading: 16,
-      color: COLOR_BLACK,
-    });
+  // Headings (12pt)
+  try {
+    page.drawText('Customer', { x: xLeft, y: TOP - 104, size: 12, font: fontBold, color: rgb(0, 0, 0) });
+    page.drawText('One Guy Productions', { x: xRight, y: TOP - 104, size: 12, font: fontBold, color: rgb(0, 0, 0) });
+  } catch { /* no-throw */ }
 
-    cursor.y -= 10;
+  // LEFT: DB-derived lines — one per line; Submitted shows date only
+  const customerLines: string[] = [
+    `Customer Name: ${safe((order as any).name ?? (order as any).customer?.name ?? '')}`,
+    `Email: ${safe((order as any).email ?? (order as any).customer?.email ?? '')}`,
+    `Business: ${safe((order as any).businessName || 'N/A')}`,
+    `Submitted: ${safe((order as any).createdAt ? new Date((order as any).createdAt).toLocaleDateString() : 'Unknown')}`,
+  ];
+
+  // RIGHT: fixed company lines
+  const ogpLines: string[] = [
+    '338 Paddington Drive',
+    'Kyle, TX 78640',
+  ];
+
+  // Helper: draw a column with guaranteed line breaks + row padding
+  function drawLinesColumn(
+    x: number,
+    yStart: number,
+    lines: string[],
+    maxWidth: number,
+    size = 12,
+    lineWrapGap = 2,     // within-line wrapping gap
+    rowGap = 12          // <— extra padding BETWEEN lines (increased)
+  ): number {
+    const style = { font, size, color: { r: 0, g: 0, b: 0 } };
+    let yCursor = yStart;
+    for (const ln of lines) {
+      yCursor = layoutRichText(page, ln, x, yCursor, maxWidth, style, lineWrapGap);
+      yCursor -= rowGap;
+    }
+    return yCursor;
   }
 
-  drawPageNumbers({
-    pdfDoc,
+  const yColTop = TOP - 120;
+  const yLeftEnd = drawLinesColumn(xLeft, yColTop, customerLines, colWidth, 12, 2, 12);
+  const yRightEnd = drawLinesColumn(xRight, yColTop, ogpLines, colWidth, 12, 2, 12);
+
+  // Start content below the lower of the two columns, with an extra blank line
+  let y = Math.min(yLeftEnd, yRightEnd) - 24; // add a bit more space before Items
+
+  // Optional TASKS section
+  if (tasks.length > 0) {
+    y = drawItemsTable({
+      page,
+      font,
+      fontBold,
+      xLeft: SIDE,
+      yTop: y,
+      width: contentWidth,
+      rows: tasks.map((t) => ({
+        description: `${sanitizeInline(String(t.task || 'Task'))} (${Math.max(0, Number(t.hours) || 0)}h @ $${(Math.max(0, Number(t.rateCents) || 0) / 100).toFixed(2)}/h)`,
+        quantity: Math.max(0, Number(t.hours) || 0),
+        unitPriceCents: Math.max(0, Number(t.rateCents) || 0),
+      })),
+      line: drawHeaderOnly,
+      header: 'Task',
+    }) - 8;
+  }
+
+  // Items section (12pt via helper)
+  y = drawItemsTable({
+    page,
     font,
-    size: SIZE_FOOTER,
-    side: SIDE,
-    footerY: FOOTER_Y,
-    color: COLOR_PGNUM,
+    fontBold,
+    xLeft: SIDE,
+    yTop: y,
+    width: contentWidth,
+    rows: items,
+    line: drawHeaderOnly,
+    header: 'Item',
   });
 
-  const bytes: Uint8Array<ArrayBufferLike> = await pdfDoc.save();
+  // Terms & Remarks (12pt)
+  const terms = safe((order as any).termsText || 'Net 30');
+  const remarks = safe((order as any).notesText || 'Thanks for choosing One Guy Productions! Please think of us for your next project.');
+  const bodyStyle12 = { font, size: 12, color: { r: 0, g: 0, b: 0 } };
+
+  try {
+    const termsLabelY = y - 10;
+    page.drawText('Terms', { x: SIDE, y: termsLabelY, size: 12, font: fontBold, color: rgb(0, 0, 0) });
+    layoutRichText(page, terms, SIDE, termsLabelY - 16, Math.floor(contentWidth / 2 - 24), bodyStyle12, 4);
+
+    const remarksY = termsLabelY - 56;
+    page.drawText('Remarks', { x: SIDE, y: remarksY, size: 12, font: fontBold, color: rgb(0, 0, 0) });
+    layoutRichText(page, remarks, SIDE, remarksY - 16, Math.floor(contentWidth / 2 - 24), bodyStyle12, 4);
+  } catch { /* no-throw */ }
+
+  // Footer line
+  drawLineRaw(SIDE, BOTTOM, SIDE + contentWidth, BOTTOM, 0.6);
+
+  // Totals block: lower-right, above footer (12pt)
+  const pairs = [
+    { label: 'Subtotal', value: money(totals.subtotal) },
+    ...(totals.discount ? [{ label: 'Discount', value: `-${money(totals.discount)}` }] : []),
+    ...(totals.tax ? [{ label: 'Tax', value: money(totals.tax) }] : []),
+    ...(totals.shipping ? [{ label: 'Shipping', value: money(totals.shipping) }] : []),
+    { label: 'Total', value: money(totals.total), bold: true },
+  ];
+  const rowsCount = pairs.length;
+  const rowGap = 16;
+  const startY = BOTTOM + 12 + (rowsCount - 1) * rowGap; // last line lands just above the footer
+  drawRightAlignedPairs(page, font, fontBold, SIDE + contentWidth, startY, pairs, 12, rowGap);
+
+  // Page numbers
+  drawPageNumbers(page, font, 0, 1, SIDE + contentWidth, BOTTOM - 14);
+
+  const bytes = await pdfDoc.save();
   return Buffer.from(bytes);
 }
-
