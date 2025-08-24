@@ -78,21 +78,65 @@ export async function generatePdfBuffer(order: OrderInstance): Promise<Buffer> {
     }
   } catch { /* no-throw */ }
 
-  // Big total on the top-right — color red-500 (#ef4444)
+  // Big total on the top-right — color red-500 (#ef4444) + black "Amount Due:" label to its left
   try {
-    const label = money(totals.total);
-    const big = 20;
-    const labelW = fontBold.widthOfTextAtSize(label, big);
-    page.drawText(label, {
-      x: SIDE + contentWidth - labelW,
-      y: TOP - 30,
-      size: big,
+    const totalText = money(totals.total);
+    const totalSize = 20;
+    const totalTextWidth = fontBold.widthOfTextAtSize(totalText, totalSize);
+
+    // X position where the red total starts (right aligned to content edge)
+    const xTotal = SIDE + contentWidth - totalTextWidth;
+    const yTotal = TOP - 30;
+
+    // Draw the black label aligned to the left of the red total with a small gap
+    const labelText = 'Amount Due:';
+    const labelSize = 25;
+    const labelWidth = font.widthOfTextAtSize(labelText, labelSize);
+    const gap = 8; // space between label and total
+    const xLabel = xTotal - gap - labelWidth;
+
+    page.drawText(labelText, {
+      x: xLabel,
+      y: yTotal,
+      size: labelSize,
+      font,
+      color: rgb(0, 0, 0),
+    });
+
+    // Draw the red total
+    page.drawText(totalText, {
+      x: xTotal,
+      y: yTotal,
+      size: totalSize,
       font: fontBold,
       color: rgb(239 / 255, 68 / 255, 68 / 255),
     });
+
+    // ── NEW: small gray Invoice Date directly under the total (MM,DD,YYYY), right-aligned
+    const invoiceDate: Date = (order as any).invoiceCreatedAt
+      ? new Date((order as any).invoiceCreatedAt)
+      : new Date();
+    const mm = String(invoiceDate.getMonth() + 1).padStart(2, '0');
+    const dd = String(invoiceDate.getDate()).padStart(2, '0');
+    const yyyy = invoiceDate.getFullYear();
+    const mdy = `${mm}-${dd}-${yyyy}`;
+
+    const dateLabel = `Invoice Date: ${mdy}`;
+    const dateSize = 10;
+    const dateWidth = font.widthOfTextAtSize(dateLabel, dateSize);
+    const xDate = SIDE + contentWidth - dateWidth; // right align with the total
+    const yDate = yTotal - 14;                     // sit neatly below, above the header rule
+
+    page.drawText(dateLabel, {
+      x: xDate,
+      y: yDate,
+      size: dateSize,
+      font,
+      color: rgb(0.45, 0.45, 0.45),
+    });
   } catch { /* no-throw */ }
 
-  // Invoice meta (12pt)
+  // Invoice meta (left side): keep invoice number; no order date
   const createdAt = (order as any).createdAt ? new Date((order as any).createdAt) : new Date();
   const invNum: string =
     (order as any).invoiceNumber ??
@@ -100,14 +144,10 @@ export async function generatePdfBuffer(order: OrderInstance): Promise<Buffer> {
 
   try {
     page.drawText(`Invoice #: ${invNum}`, { x: SIDE, y: TOP - 78, size: 12, font, color: rgb(0, 0, 0) });
-    page.drawText(createdAt.toLocaleDateString(), { x: SIDE, y: TOP - 94, size: 12, font, color: rgb(0, 0, 0) });
   } catch { /* no-throw */ }
 
   // ─────────────────────────────────────────────────────────────
   // Address columns (Customer | One Guy Productions)
-  //   - Exact 12pt Helvetica
-  //   - Added row padding between DB fields and between company address lines
-  //   - Extra spacing before the items table
   // ─────────────────────────────────────────────────────────────
   const colWidth = Math.floor(contentWidth / 2 - 12);
   const gap = 24;
@@ -130,8 +170,10 @@ export async function generatePdfBuffer(order: OrderInstance): Promise<Buffer> {
 
   // RIGHT: fixed company lines
   const ogpLines: string[] = [
+    'ngreen@oneguyproductions.com',
     '338 Paddington Drive',
     'Kyle, TX 78640',
+    '512-787-0879',
   ];
 
   // Helper: draw a column with guaranteed line breaks + row padding
@@ -141,8 +183,8 @@ export async function generatePdfBuffer(order: OrderInstance): Promise<Buffer> {
     lines: string[],
     maxWidth: number,
     size = 12,
-    lineWrapGap = 2,     // within-line wrapping gap
-    rowGap = 12          // <— extra padding BETWEEN lines (increased)
+    lineWrapGap = 2,
+    rowGap = 12
   ): number {
     const style = { font, size, color: { r: 0, g: 0, b: 0 } };
     let yCursor = yStart;
@@ -155,10 +197,10 @@ export async function generatePdfBuffer(order: OrderInstance): Promise<Buffer> {
 
   const yColTop = TOP - 120;
   const yLeftEnd = drawLinesColumn(xLeft, yColTop, customerLines, colWidth, 12, 2, 12);
-  const yRightEnd = drawLinesColumn(xRight, yColTop, ogpLines, colWidth, 12, 2, 12);
+  const yRightEnd = drawLinesColumn(xRight, yColTop, ogpLines, colWidth, 12, 2, 14);
 
   // Start content below the lower of the two columns, with an extra blank line
-  let y = Math.min(yLeftEnd, yRightEnd) - 24; // add a bit more space before Items
+  let y = Math.min(yLeftEnd, yRightEnd) - 24;
 
   // Optional TASKS section
   if (tasks.length > 0) {
