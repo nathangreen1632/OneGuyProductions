@@ -1,16 +1,44 @@
-// Client/src/components/admin/InvoiceEditor.tsx
-import React, { useMemo, useRef, useState } from 'react';
+import React, {type ChangeEvent, type RefObject, useMemo, useRef, useState} from 'react';
 import type { InvoiceItem } from '../../types/invoice.types';
 import { money, computeTotals } from '../../helpers/money.helper';
 import { X } from 'lucide-react';
 
-interface Props {
+type TPropsType = Readonly<{
   orderId: number;
   initialItems?: InvoiceItem[];
   initialTaxRate?: number;
-  initialDiscountCents?: number; // kept for compatibility; we derive an initial percent from it
+  initialDiscountCents?: number;
   initialShippingCents?: number;
+}>;
+
+type TLineItemType = InvoiceItem & { id: string };
+
+type TPlainInvoiceItemType = InvoiceItem;
+
+let __iidCounter: number = 0;
+
+function makeId(): string {
+  const c: Crypto | undefined = (globalThis as unknown as { crypto?: Crypto }).crypto;
+
+  if (c?.randomUUID) {
+    return c.randomUUID();
+  }
+
+  if (c?.getRandomValues) {
+    const bytes = new Uint8Array(12);
+    c.getRandomValues(bytes);
+    let rnd: string = '';
+    for (let i: number = 0; i < bytes.length; i += 3) {
+      const n: number = (bytes[i] << 16) | (bytes[i + 1] << 8) | bytes[i + 2];
+      rnd += n.toString(36).padStart(5, '0');
+    }
+    return `iid_${Date.now().toString(36)}_${rnd}`;
+  }
+
+  __iidCounter = (__iidCounter + 1) >>> 0;
+  return `iid_${Date.now().toString(36)}_${__iidCounter.toString(36)}`;
 }
+
 
 export default function InvoiceEditor({
                                         orderId,
@@ -18,10 +46,7 @@ export default function InvoiceEditor({
                                         initialTaxRate = 0,
                                         initialDiscountCents = 0,
                                         initialShippingCents = 0,
-                                      }: Readonly<Props>): React.ReactElement {
-  // ─────────────────────────────────────────────────────────────
-  // Shared styles (compact, sleek, aligned to your theme tokens)
-  // ─────────────────────────────────────────────────────────────
+                                      }: TPropsType): React.ReactElement {
   const inputBase =
     'w-full rounded-xl px-2 py-1.5 text-sm bg-[var(--theme-surface)] border border-[var(--theme-border)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30';
   const inputRight = `${inputBase} text-right`;
@@ -33,19 +58,24 @@ export default function InvoiceEditor({
   const btnIconRed =
     'inline-flex items-center justify-center rounded-lg p-0.5 text-[var(--theme-button-red)] hover:text-[var(--theme-button-red-hover)] bg-transparent transition-colors';
 
-  // ─────────────────────────────────────────────────────────────
-  // State
-  // ─────────────────────────────────────────────────────────────
-  const [items, setItems] = useState<InvoiceItem[]>(initialItems);
+  const seededItems: TLineItemType[] = useMemo(() => {
+    return (initialItems ?? []).map((it) => ({
+      id: makeId(),
+      description: it.description ?? '',
+      quantity: Number(it.quantity) || 0,
+      unitPriceCents: Number(it.unitPriceCents) || 0,
+    }));
+  }, [initialItems]);
+
+  const [items, setItems] = useState<TLineItemType[]>(seededItems);
   const [taxRate, setTaxRate] = useState<number>(Number(initialTaxRate) || 0);
   const [shippingCents, setShippingCents] = useState<number>(Number(initialShippingCents) || 0);
-  const [saving, setSaving] = useState(false);
+  const [saving, setSaving] = useState<boolean>(false);
 
-  // derive initial discount percent from initialDiscountCents relative to initial items subtotal
-  const initialPercent = useMemo(() => {
-    const subtotalInit = initialItems.reduce((sum, it) => {
-      const q = Math.max(0, Number(it.quantity) || 0);
-      const unit = Math.max(0, Number(it.unitPriceCents) || 0);
+  const initialPercent: number = useMemo(() => {
+    const subtotalInit: number = (initialItems ?? []).reduce((sum: number, it: InvoiceItem): number => {
+      const q: number = Math.max(0, Number(it.quantity) || 0);
+      const unit: number = Math.max(0, Number(it.unitPriceCents) || 0);
       return sum + q * unit;
     }, 0);
     if (subtotalInit > 0 && initialDiscountCents > 0) {
@@ -56,74 +86,87 @@ export default function InvoiceEditor({
 
   const [discountPercent, setDiscountPercent] = useState<number>(initialPercent);
 
-  // Inputs for quick time entry
-  const hoursRef = useRef<HTMLInputElement>(null);
-  const rateRef = useRef<HTMLInputElement>(null);
-  const noteRef = useRef<HTMLInputElement>(null);
+  const hoursRef: RefObject<HTMLInputElement | null> = useRef<HTMLInputElement>(null);
+  const rateRef: RefObject<HTMLInputElement | null> = useRef<HTMLInputElement>(null);
+  const noteRef: RefObject<HTMLInputElement | null> = useRef<HTMLInputElement>(null);
 
-  // Current subtotal (in cents) from items
-  const subtotalCents = useMemo(() => {
-    return items.reduce((sum, it) => {
-      const q = Math.max(0, Number(it.quantity) || 0);
-      const unit = Math.max(0, Number(it.unitPriceCents) || 0);
+  const subtotalCents: number = useMemo((): number => {
+    return items.reduce((sum: number, it: TLineItemType): number => {
+      const q: number = Math.max(0, Number(it.quantity) || 0);
+      const unit: number = Math.max(0, Number(it.unitPriceCents) || 0);
       return sum + q * unit;
     }, 0);
   }, [items]);
 
-  // Convert percent → cents for computeTotals
-  const discountCentsFromPercent = useMemo(() => {
-    const pct = Math.max(0, Number(discountPercent) || 0) / 100;
+  const discountCentsFromPercent: number = useMemo((): number => {
+    const pct: number = Math.max(0, Number(discountPercent) || 0) / 100;
     return Math.round(subtotalCents * pct);
   }, [discountPercent, subtotalCents]);
 
   const totals = useMemo(
     () =>
-      computeTotals(items, {
-        taxRate,
-        discountCents: discountCentsFromPercent,
-        shippingCents,
-      }),
+      computeTotals(
+        items.map<TPlainInvoiceItemType>(({ description, quantity, unitPriceCents }) => ({
+          description,
+          quantity,
+          unitPriceCents,
+        })),
+        { taxRate, discountCents: discountCentsFromPercent, shippingCents }
+      ),
     [items, taxRate, discountCentsFromPercent, shippingCents]
   );
 
-  // ─────────────────────────────────────────────────────────────
-  // Actions
-  // ─────────────────────────────────────────────────────────────
   function addBlankItem(): void {
-    setItems((prev) => [...prev, { description: '', quantity: 1, unitPriceCents: 0 }]);
+    setItems((prev: TLineItemType[]): TLineItemType[] => [
+      ...prev,
+      { id: makeId(), description: '', quantity: 1, unitPriceCents: 0 },
+    ]);
   }
 
   function addTimeEntry(hours: number, rateDollars: number, note?: string): void {
-    const qty = Math.max(0, Number(hours) || 0);
-    const rateCents = Math.round((Number(rateDollars) || 0) * 100);
-    const desc = note?.trim() ? `Time: ${note}` : 'Time';
-    setItems((prev) => [
+    const qty: number = Math.max(0, Number(hours) || 0);
+    const rateCents: number = Math.round((Number(rateDollars) || 0) * 100);
+    const descLabel: string = note?.trim() ? `Time: ${note}` : 'Time';
+    setItems((prev: TLineItemType[]): TLineItemType[] => [
       ...prev,
       {
-        description: `${desc} (${qty}h @ $${Number(rateDollars || 0).toFixed(2)}/h)`,
+        id: makeId(),
+        description: `${descLabel} (${qty}h @ $${Number(rateDollars || 0).toFixed(2)}/h)`,
         quantity: qty,
         unitPriceCents: rateCents,
       },
     ]);
   }
 
-  function updateItem(idx: number, patch: Partial<InvoiceItem>): void {
-    setItems((prev) => prev.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
+  function updateItemById(id: string, patch: Partial<InvoiceItem>): void {
+    setItems((prev: TLineItemType[]): TLineItemType[] =>
+      prev.map((it: TLineItemType): TLineItemType => (it.id === id ? { ...it, ...patch } : it))
+    );
   }
 
-  function removeItem(idx: number): void {
-    setItems((prev) => prev.filter((_, i) => i !== idx));
+  function removeItemById(id: string): void {
+    setItems((prev: TLineItemType[]): TLineItemType[] => prev.filter((it: TLineItemType): boolean => it.id !== id));
   }
 
   async function saveInvoice(): Promise<void> {
     setSaving(true);
     try {
+      const plainItems: TPlainInvoiceItemType[] = items.map(({ description, quantity, unitPriceCents }) => ({
+        description,
+        quantity,
+        unitPriceCents,
+      }));
+
       const res = await fetch(`/api/order/${orderId}/invoice`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        // Backend expects cents; we send computed discountCents
-        body: JSON.stringify({ items, taxRate, discountCents: discountCentsFromPercent, shippingCents }),
+        body: JSON.stringify({
+          items: plainItems,
+          taxRate,
+          discountCents: discountCentsFromPercent,
+          shippingCents,
+        }),
       });
       setSaving(false);
       if (!res.ok) return;
@@ -134,21 +177,19 @@ export default function InvoiceEditor({
 
   async function downloadPdf(): Promise<void> {
     await saveInvoice();
-    const resp = await fetch(`/api/order/${orderId}/invoice`, { credentials: 'include' });
+    const resp: Response = await fetch(`/api/order/${orderId}/invoice`, { credentials: 'include' });
     if (!resp.ok) return;
 
-    const blob = await resp.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const blob: Blob = await resp.blob();
+    const url: string = URL.createObjectURL(blob);
+    const a:  HTMLAnchorElement = document.createElement('a');
     a.href = url;
     a.download = `order-${orderId}.pdf`;
     a.click();
     URL.revokeObjectURL(url);
   }
 
-  // ─────────────────────────────────────────────────────────────
-  // UI
-  // ─────────────────────────────────────────────────────────────
+
   return (
     <section
       className="
@@ -164,8 +205,7 @@ export default function InvoiceEditor({
         <h3 className="text-lg sm:text-xl font-semibold">Generate Invoice</h3>
       </header>
 
-      {/* Quick Time Entry */}
-      <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,75px)_minmax(0,75px)_1fr_auto] gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,100px)_minmax(0,100px)_1fr_auto] gap-2">
         <input
           ref={hoursRef}
           type="number"
@@ -194,10 +234,10 @@ export default function InvoiceEditor({
         <button
           type="button"
           className={btnBlue}
-          onClick={() => {
-            const h = Number(hoursRef.current?.value || 0);
-            const r = Number(rateRef.current?.value || 0);
-            const n = noteRef.current?.value || '';
+          onClick={(): void => {
+            const h: number = Number(hoursRef.current?.value || 0);
+            const r: number = Number(rateRef.current?.value || 0);
+            const n: string = noteRef.current?.value || '';
             addTimeEntry(h, r, n);
           }}
         >
@@ -205,23 +245,21 @@ export default function InvoiceEditor({
         </button>
       </div>
 
-      {/* Items */}
       <div className="space-y-2 sm:space-y-3">
-        {/* Mobile cards */}
         <div className="sm:hidden space-y-2">
-          {items.map((it, i) => {
-            const amount = (Number(it.quantity) || 0) * (Number(it.unitPriceCents) || 0);
+          {items.map((it: TLineItemType, idx: number): React.ReactElement => {
+            const amount: number = (Number(it.quantity) || 0) * (Number(it.unitPriceCents) || 0);
             return (
               <div
-                key={i}
+                key={it.id}
                 className="rounded-xl border border-[var(--theme-border)] bg-[var(--theme-bg)]/60 p-2.5 space-y-2"
               >
                 <input
                   value={it.description}
-                  onChange={(e) => updateItem(i, { description: e.target.value })}
+                  onChange={(e: ChangeEvent<HTMLInputElement>): void => updateItemById(it.id, { description: e.target.value })}
                   className={inputBase}
                   placeholder="Description"
-                  aria-label={`Item ${i + 1} description`}
+                  aria-label={`Item ${idx + 1} description`}
                 />
                 <div className="grid grid-cols-2 gap-2">
                   <label className="flex flex-col gap-1">
@@ -231,9 +269,9 @@ export default function InvoiceEditor({
                       min={0}
                       step="0.25"
                       value={it.quantity}
-                      onChange={(e) => updateItem(i, { quantity: Number(e.target.value) })}
+                      onChange={(e: ChangeEvent<HTMLInputElement>): void => updateItemById(it.id, { quantity: Number(e.target.value) })}
                       className={inputRight}
-                      aria-label={`Item ${i + 1} quantity`}
+                      aria-label={`Item ${idx + 1} quantity`}
                     />
                   </label>
                   <label className="flex flex-col gap-1">
@@ -241,14 +279,14 @@ export default function InvoiceEditor({
                     <input
                       type="number"
                       min={0}
-                      step="0.01"
+                      step="5"
                       value={(Number(it.unitPriceCents) || 0) / 100}
-                      onChange={(e) => {
+                      onChange={(e: ChangeEvent<HTMLInputElement>): void => {
                         const dollars = Number(e.target.value) || 0;
-                        updateItem(i, { unitPriceCents: Math.round(dollars * 100) });
+                        updateItemById(it.id, { unitPriceCents: Math.round(dollars * 100) });
                       }}
                       className={inputRight}
-                      aria-label={`Item ${i + 1} unit price in USD`}
+                      aria-label={`Item ${idx + 1} unit price in USD`}
                     />
                   </label>
                 </div>
@@ -259,9 +297,9 @@ export default function InvoiceEditor({
                 <div className="flex justify-end">
                   <button
                     type="button"
-                    onClick={() => removeItem(i)}
+                    onClick={(): void => removeItemById(it.id)}
                     className={btnIconRed}
-                    aria-label={`Remove item ${i + 1}`}
+                    aria-label={`Remove item ${idx + 1}`}
                     title="Remove line"
                   >
                     <X size={16} />
@@ -273,7 +311,6 @@ export default function InvoiceEditor({
           })}
         </div>
 
-        {/* Desktop table — align paddings with Generate Invoice: px-2 py-1.5 */}
         <div className="hidden sm:block overflow-auto">
           <table className="w-full text-sm">
             <thead>
@@ -286,14 +323,14 @@ export default function InvoiceEditor({
             </tr>
             </thead>
             <tbody>
-            {items.map((it, i) => {
-              const amount = (Number(it.quantity) || 0) * (Number(it.unitPriceCents) || 0);
+            {items.map((it: TLineItemType): React.ReactElement => {
+              const amount: number = (Number(it.quantity) || 0) * (Number(it.unitPriceCents) || 0);
               return (
-                <tr key={i} className="border-b border-[var(--theme-border)] last:border-b-0 align-middle">
+                <tr key={it.id} className="border-b border-[var(--theme-border)] last:border-b-0 align-middle">
                   <td className="px-2 py-1">
                     <input
                       value={it.description}
-                      onChange={(e) => updateItem(i, { description: e.target.value })}
+                      onChange={(e: ChangeEvent<HTMLInputElement>): void => updateItemById(it.id, { description: e.target.value })}
                       className={inputBase}
                       placeholder="Description"
                     />
@@ -302,9 +339,9 @@ export default function InvoiceEditor({
                     <input
                       type="number"
                       min={0}
-                      step="0.25"
+                      step="1"
                       value={it.quantity}
-                      onChange={(e) => updateItem(i, { quantity: Number(e.target.value) })}
+                      onChange={(e: ChangeEvent<HTMLInputElement>): void => updateItemById(it.id, { quantity: Number(e.target.value) })}
                       className={inputRight}
                     />
                   </td>
@@ -314,11 +351,11 @@ export default function InvoiceEditor({
                       <input
                         type="number"
                         min={0}
-                        step="0.01"
+                        step="1"
                         value={(Number(it.unitPriceCents) || 0) / 100}
-                        onChange={(e) => {
+                        onChange={(e: ChangeEvent<HTMLInputElement>): void => {
                           const dollars = Number(e.target.value) || 0;
-                          updateItem(i, { unitPriceCents: Math.round(dollars * 100) });
+                          updateItemById(it.id, { unitPriceCents: Math.round(dollars * 100) });
                         }}
                         className={inputRight}
                       />
@@ -328,7 +365,7 @@ export default function InvoiceEditor({
                   <td className="px-2">
                     <button
                       type="button"
-                      onClick={() => removeItem(i)}
+                      onClick={(): void => removeItemById(it.id)}
                       className={btnIconRed}
                       aria-label="Remove line"
                       title="Remove line"
@@ -350,16 +387,15 @@ export default function InvoiceEditor({
         </div>
       </div>
 
-      {/* Tax / Discount / Shipping */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <label className="flex flex-col gap-1">
           <span className="text-xs sm:text-sm opacity-70">Tax Rate</span>
           <input
             type="number"
-            step=".0001"
+            step=".001"
             min={0}
             value={taxRate}
-            onChange={(e) => setTaxRate(Number(e.target.value) || 0)}
+            onChange={(e: ChangeEvent<HTMLInputElement>): void => setTaxRate(Number(e.target.value) || 0)}
             className={inputBase}
           />
         </label>
@@ -368,10 +404,10 @@ export default function InvoiceEditor({
           <span className="text-xs sm:text-sm opacity-70">Discount (%)</span>
           <input
             type="number"
-            step="0.01"
+            step="1"
             min={0}
             value={discountPercent}
-            onChange={(e) => setDiscountPercent(Number(e.target.value) || 0)}
+            onChange={(e: ChangeEvent<HTMLInputElement>): void => setDiscountPercent(Number(e.target.value) || 0)}
             className={inputBase}
           />
         </label>
@@ -380,16 +416,15 @@ export default function InvoiceEditor({
           <span className="text-xs sm:text-sm opacity-70">Shipping (USD)</span>
           <input
             type="number"
-            step="0.01"
+            step="1"
             min={0}
             value={(shippingCents || 0) / 100}
-            onChange={(e) => setShippingCents(Math.round((Number(e.target.value) || 0) * 100))}
+            onChange={(e: ChangeEvent<HTMLInputElement>): void => setShippingCents(Math.round((Number(e.target.value) || 0) * 100))}
             className={inputBase}
           />
         </label>
       </div>
 
-      {/* Totals */}
       <div className="flex flex-col sm:items-end gap-1">
         <div>
           Subtotal: <strong>{money(totals.subtotal)}</strong>
@@ -414,7 +449,6 @@ export default function InvoiceEditor({
         </div>
       </div>
 
-      {/* Actions */}
       <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
         <button type="button" disabled={saving} onClick={saveInvoice} className={btnPrimary}>
           {saving ? 'Saving…' : 'Save'}
