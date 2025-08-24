@@ -207,16 +207,16 @@ export function drawLogo(
   page: PDFPage,
   img: PDFImage | null,
   x: number,
-  y: number,
-  maxW = 140,
-  maxH = 40
-) {
+  yTop: number,
+  maxW = 160,
+  maxH = 44
+): void {
   if (!img) return;
   try {
     const scale = Math.min(maxW / img.width, maxH / img.height);
     const w = img.width * scale;
     const h = img.height * scale;
-    page.drawImage(img, { x, y: y - h, width: w, height: h, opacity: 1 });
+    page.drawImage(img, { x, y: yTop - h, width: w, height: h, opacity: 1 });
   } catch {
     /* no-throw */
   }
@@ -231,3 +231,4 @@ export function drawPageNumbers(page: PDFPage, font: PDFFont, pageIndex: number,
     /* no-throw */
   }
 }
+
