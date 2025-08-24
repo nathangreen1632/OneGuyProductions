@@ -15,8 +15,6 @@ import {
 } from '../helpers/pdf.helper.js';
 import { money, computeTotals } from '../helpers/money.helper.js';
 
-type Row = [string, string];
-
 export async function generatePdfBuffer(order: OrderInstance): Promise<Buffer> {
   const pdfDoc: PDFDocument = await PDFDocument.create();
 
