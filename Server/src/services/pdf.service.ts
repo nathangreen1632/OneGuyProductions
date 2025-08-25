@@ -84,7 +84,7 @@ export async function generatePdfBuffer(order: OrderInstance): Promise<Buffer> {
       y: yTotal,
       size: totalSize,
       font: fontBold,
-      color: rgb(239 / 255, 68 / 255, 68 / 255),
+      color: rgb(239/255, 68/255, 68/255),
     });
 
     const invoiceDate: Date = (order as any).invoiceCreatedAt
@@ -125,8 +125,8 @@ export async function generatePdfBuffer(order: OrderInstance): Promise<Buffer> {
   const xRight: number = SIDE + colWidth + gap;
 
   try {
-    page.drawText('Customer', { x: xLeft, y: TOP - 104, size: 12, font: fontBold, color: rgb(0, 0, 0) });
-    page.drawText('One Guy Productions', { x: xRight, y: TOP - 104, size: 12, font: fontBold, color: rgb(0, 0, 0) });
+    page.drawText('Customer', { x: xLeft, y: TOP - 104, size: 12, font: fontBold, color: rgb(239/255, 68/255, 68/255) });
+    page.drawText('One Guy Productions', { x: xRight, y: TOP - 104, size: 12, font: fontBold, color: rgb(239/255, 68/255, 68/255) });
   } catch {  }
 
   const customerLines: string[] = [
@@ -194,7 +194,7 @@ export async function generatePdfBuffer(order: OrderInstance): Promise<Buffer> {
     width: contentWidth,
     rows: items,
     line: drawHeaderOnly,
-    header: 'Item',
+    header: '',
   });
 
   const terms: string = safe((order as any).termsText || 'Net 30');
@@ -203,11 +203,11 @@ export async function generatePdfBuffer(order: OrderInstance): Promise<Buffer> {
 
   try {
     const termsLabelY: number = y - 10;
-    page.drawText('Terms', { x: SIDE, y: termsLabelY, size: 12, font: fontBold, color: rgb(0, 0, 0) });
+    page.drawText('Terms', { x: SIDE, y: termsLabelY, size: 12, font: fontBold, color: rgb(239/255, 68/255, 68/255) });
     layoutRichText(page, terms, SIDE, termsLabelY - 16, Math.floor(contentWidth / 2 - 24), bodyStyle12, 4);
 
     const remarksY: number = termsLabelY - 56;
-    page.drawText('Remarks', { x: SIDE, y: remarksY, size: 12, font: fontBold, color: rgb(0, 0, 0) });
+    page.drawText('Remarks', { x: SIDE, y: remarksY, size: 12, font: fontBold, color: rgb(239/255, 68/255, 68/255) });
     layoutRichText(page, remarks, SIDE, remarksY - 16, Math.floor(contentWidth / 2 - 24), bodyStyle12, 4);
   } catch {  }
 
