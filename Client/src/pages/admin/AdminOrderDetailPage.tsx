@@ -8,7 +8,7 @@ import { useAdminStore } from '../../store/useAdmin.store';
 import type { OrderThreadDto, TDetailsType } from '../../types/admin.types';
 import type { OrderStatus } from '../../types/order.types';
 
-import InvoiceEditor from '../../components/admin/InvoiceEditor';
+import InvoiceEditorLogic from '../../components/admin/InvoiceEditorLogic.tsx';
 
 const LOG_PREFIX = 'AdminOrderDetailPage';
 
@@ -278,7 +278,7 @@ export default function AdminOrderDetailPage(): React.ReactElement {
         </div>
 
         <div className="w-full">
-          <InvoiceEditor
+          <InvoiceEditorLogic
             orderId={data.order.id}
             initialItems={(data.order as any).items ?? []}
             initialTaxRate={Number((data.order as any).taxRate ?? 0)}
