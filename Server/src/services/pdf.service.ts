@@ -116,8 +116,31 @@ export async function generatePdfBuffer(order: OrderInstance): Promise<Buffer> {
     `INV-${createdAt.getFullYear()}-${String((order as any).id ?? '0000').padStart(4, '0')}`;
 
   try {
-    page.drawText(`Invoice #: ${invNum}`, { x: SIDE, y: TOP - 78, size: 12, font, color: rgb(0, 0, 0) });
+    const yLabel: number = TOP - 78;
+    const xLeft: 48  = SIDE;
+
+    const invoiceWord = 'Invoice #: ';
+    const suffix      = ` ${invNum}`;
+
+    const invoiceWordWidth = font.widthOfTextAtSize(invoiceWord, 12);
+
+    page.drawText(invoiceWord, {
+      x: xLeft,
+      y: yLabel,
+      size: 12,
+      font: fontBold,
+      color: rgb(239 / 255, 68 / 255, 68 / 255),
+    });
+
+    page.drawText(suffix, {
+      x: xLeft + invoiceWordWidth,
+      y: yLabel,
+      size: 12,
+      font,
+      color: rgb(0, 0, 0),
+    });
   } catch {  }
+
 
   const colWidth: number = Math.floor(contentWidth / 2 - 12);
   const gap = 24;
@@ -165,7 +188,7 @@ export async function generatePdfBuffer(order: OrderInstance): Promise<Buffer> {
   const yLeftEnd: number = drawLinesColumn(xLeft, yColTop, customerLines, colWidth, 12, 2, 12);
   const yRightEnd: number = drawLinesColumn(xRight, yColTop, ogpLines, colWidth, 12, 2, 14);
 
-  let y = Math.min(yLeftEnd, yRightEnd) - 24;
+  let y: number = Math.min(yLeftEnd, yRightEnd) - 24;
 
   if (tasks.length > 0) {
     y = drawItemsTable({
@@ -175,7 +198,7 @@ export async function generatePdfBuffer(order: OrderInstance): Promise<Buffer> {
       xLeft: SIDE,
       yTop: y,
       width: contentWidth,
-      rows: tasks.map((t: TaskRow) => ({
+      rows: tasks.map((t: TaskRow): {description: string; quantity: number; unitPriceCents: number} => ({
         description: `${sanitizeInline(String(t.task || 'Task'))} (${Math.max(0, Number(t.hours) || 0)}h @ $${(Math.max(0, Number(t.rateCents) || 0) / 100).toFixed(2)}/h)`,
         quantity: Math.max(0, Number(t.hours) || 0),
         unitPriceCents: Math.max(0, Number(t.rateCents) || 0),
