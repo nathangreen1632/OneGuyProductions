@@ -1,4 +1,3 @@
-// Server/src/types/pdf.types.ts
 import type { PDFFont, PDFPage } from 'pdf-lib';
 
 export type TTextStyleType = Readonly<{
@@ -41,9 +40,9 @@ export type TDrawRightAlignedPairsOptsType = Readonly<{
   xRight: number;
   startY: number;
   rows: ReadonlyArray<TRightPairsRowType>;
-  size?: number;             // default 12
-  rowGap?: number;           // default 14
-  labelColumnWidth?: number; // default 220
+  size?: number;
+  rowGap?: number;
+  labelColumnWidth?: number;
 }>;
 
 export type TDrawItemsTableOptsType = Readonly<{
@@ -58,13 +57,3 @@ export type TDrawItemsTableOptsType = Readonly<{
   header?: string;
 }>;
 
-export type TDrawTasksTableOptsType = Readonly<{
-  page: PDFPage;
-  font: PDFFont;
-  fontBold: PDFFont;
-  xLeft: number;
-  yTop: number;
-  width: number;
-  rows: ReadonlyArray<TTaskRowType>;
-  line: TDrawLineFnType;
-}>;
