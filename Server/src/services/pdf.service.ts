@@ -13,6 +13,7 @@ import {
   pdfSafeString as safe,
 } from '../helpers/pdf.helper.js';
 import { money, computeTotals } from '../helpers/money.helper.js';
+import {TDrawLineFnType} from "../types/pdf.types.js";
 
 export async function generatePdfBuffer(order: OrderInstance): Promise<Buffer> {
   const pdfDoc: PDFDocument = await PDFDocument.create();
@@ -26,8 +27,8 @@ export async function generatePdfBuffer(order: OrderInstance): Promise<Buffer> {
   const TOP: number = page.getSize().height - SIDE;
   const BOTTOM = 64;
 
-  const drawLineRaw = makeDrawLine(page);
-  const drawHeaderOnly = (x1: number, y1: number, x2: number, y2: number, thickness = 0.5): void => {
+  const drawLineRaw: TDrawLineFnType = makeDrawLine(page);
+  const drawHeaderOnly: TDrawLineFnType = (x1: number, y1: number, x2: number, y2: number, thickness = 0.5): void => {
     if ((thickness ?? 0.5) >= 0.5) {
       drawLineRaw(x1, y1, x2, y2, thickness);
     }
