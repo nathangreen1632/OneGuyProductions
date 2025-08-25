@@ -1,52 +1,63 @@
-import React, {type ChangeEvent, type RefObject, useMemo, useRef, useState} from 'react';
-import type { InvoiceItem } from '../../types/invoice.types';
-import { money, computeTotals } from '../../helpers/money.helper';
+import React, { type ChangeEvent, type RefObject } from 'react';
 import { X } from 'lucide-react';
+import type { InvoiceItem } from '../../types/invoice.types';
+import { money } from '../../helpers/money.helper';
 
-type TPropsType = Readonly<{
-  orderId: number;
-  initialItems?: InvoiceItem[];
-  initialTaxRate?: number;
-  initialDiscountCents?: number;
-  initialShippingCents?: number;
+export type TInvoiceEditorViewPropsType = Readonly<{
+  items: Array<InvoiceItem & { id: string }>;
+  taxRate: number;
+  discountPercent: number;
+  shippingCents: number;
+  saving: boolean;
+  totals: { subtotal: number; discount: number; tax: number; shipping: number; total: number };
+
+  hoursRef: RefObject<HTMLInputElement | null>;
+  rateRef: RefObject<HTMLInputElement | null>;
+  noteRef: RefObject<HTMLInputElement | null>;
+
+  onAddTime: (hours: number, rateDollars: number, note: string) => void;
+  onAddBlankItem: () => void;
+  onDescriptionChange: (id: string, value: string) => void;
+  onQuantityChange: (id: string, value: number) => void;
+  onUnitPriceChange: (id: string, dollars: number) => void;
+  onRemoveItem: (id: string) => void;
+
+  onTaxRateChange: (v: number) => void;
+  onDiscountPercentChange: (v: number) => void;
+  onShippingDollarsChange: (v: number) => void;
+
+  onSave: () => void;
+  onDownloadPdf: () => void;
 }>;
 
-type TLineItemType = InvoiceItem & { id: string };
+export default function InvoiceEditorView(props: TInvoiceEditorViewPropsType): React.ReactElement {
+  const {
+    items,
+    taxRate,
+    discountPercent,
+    shippingCents,
+    saving,
+    totals,
 
-type TPlainInvoiceItemType = InvoiceItem;
+    hoursRef,
+    rateRef,
+    noteRef,
 
-let __iidCounter: number = 0;
+    onAddTime,
+    onAddBlankItem,
+    onDescriptionChange,
+    onQuantityChange,
+    onUnitPriceChange,
+    onRemoveItem,
 
-function makeId(): string {
-  const c: Crypto | undefined = (globalThis as unknown as { crypto?: Crypto }).crypto;
+    onTaxRateChange,
+    onDiscountPercentChange,
+    onShippingDollarsChange,
 
-  if (c?.randomUUID) {
-    return c.randomUUID();
-  }
+    onSave,
+    onDownloadPdf,
+  } = props;
 
-  if (c?.getRandomValues) {
-    const bytes = new Uint8Array(12);
-    c.getRandomValues(bytes);
-    let rnd: string = '';
-    for (let i: number = 0; i < bytes.length; i += 3) {
-      const n: number = (bytes[i] << 16) | (bytes[i + 1] << 8) | bytes[i + 2];
-      rnd += n.toString(36).padStart(5, '0');
-    }
-    return `iid_${Date.now().toString(36)}_${rnd}`;
-  }
-
-  __iidCounter = (__iidCounter + 1) >>> 0;
-  return `iid_${Date.now().toString(36)}_${__iidCounter.toString(36)}`;
-}
-
-
-export default function InvoiceEditor({
-                                        orderId,
-                                        initialItems = [],
-                                        initialTaxRate = 0,
-                                        initialDiscountCents = 0,
-                                        initialShippingCents = 0,
-                                      }: TPropsType): React.ReactElement {
   const inputBase =
     'w-full rounded-xl px-2 py-1.5 text-sm bg-[var(--theme-surface)] border border-[var(--theme-border)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30';
   const inputRight = `${inputBase} text-right`;
@@ -58,147 +69,9 @@ export default function InvoiceEditor({
   const btnIconRed =
     'inline-flex items-center justify-center rounded-lg p-0.5 text-[var(--theme-button-red)] hover:text-[var(--theme-button-red-hover)] bg-transparent transition-colors';
 
-  const seededItems: TLineItemType[] = useMemo(() => {
-    return (initialItems ?? []).map((it) => ({
-      id: makeId(),
-      description: it.description ?? '',
-      quantity: Number(it.quantity) || 0,
-      unitPriceCents: Number(it.unitPriceCents) || 0,
-    }));
-  }, [initialItems]);
-
-  const [items, setItems] = useState<TLineItemType[]>(seededItems);
-  const [taxRate, setTaxRate] = useState<number>(Number(initialTaxRate) || 0);
-  const [shippingCents, setShippingCents] = useState<number>(Number(initialShippingCents) || 0);
-  const [saving, setSaving] = useState<boolean>(false);
-
-  const initialPercent: number = useMemo(() => {
-    const subtotalInit: number = (initialItems ?? []).reduce((sum: number, it: InvoiceItem): number => {
-      const q: number = Math.max(0, Number(it.quantity) || 0);
-      const unit: number = Math.max(0, Number(it.unitPriceCents) || 0);
-      return sum + q * unit;
-    }, 0);
-    if (subtotalInit > 0 && initialDiscountCents > 0) {
-      return (initialDiscountCents / subtotalInit) * 100;
-    }
-    return 0;
-  }, [initialItems, initialDiscountCents]);
-
-  const [discountPercent, setDiscountPercent] = useState<number>(initialPercent);
-
-  const hoursRef: RefObject<HTMLInputElement | null> = useRef<HTMLInputElement>(null);
-  const rateRef: RefObject<HTMLInputElement | null> = useRef<HTMLInputElement>(null);
-  const noteRef: RefObject<HTMLInputElement | null> = useRef<HTMLInputElement>(null);
-
-  const subtotalCents: number = useMemo((): number => {
-    return items.reduce((sum: number, it: TLineItemType): number => {
-      const q: number = Math.max(0, Number(it.quantity) || 0);
-      const unit: number = Math.max(0, Number(it.unitPriceCents) || 0);
-      return sum + q * unit;
-    }, 0);
-  }, [items]);
-
-  const discountCentsFromPercent: number = useMemo((): number => {
-    const pct: number = Math.max(0, Number(discountPercent) || 0) / 100;
-    return Math.round(subtotalCents * pct);
-  }, [discountPercent, subtotalCents]);
-
-  const totals = useMemo(
-    () =>
-      computeTotals(
-        items.map<TPlainInvoiceItemType>(({ description, quantity, unitPriceCents }) => ({
-          description,
-          quantity,
-          unitPriceCents,
-        })),
-        { taxRate, discountCents: discountCentsFromPercent, shippingCents }
-      ),
-    [items, taxRate, discountCentsFromPercent, shippingCents]
-  );
-
-  function addBlankItem(): void {
-    setItems((prev: TLineItemType[]): TLineItemType[] => [
-      ...prev,
-      { id: makeId(), description: '', quantity: 1, unitPriceCents: 0 },
-    ]);
-  }
-
-  function addTimeEntry(hours: number, rateDollars: number, note?: string): void {
-    const qty: number = Math.max(0, Number(hours) || 0);
-    const rateCents: number = Math.round((Number(rateDollars) || 0) * 100);
-    const descLabel: string = note?.trim() ? `Time: ${note}` : 'Time';
-    setItems((prev: TLineItemType[]): TLineItemType[] => [
-      ...prev,
-      {
-        id: makeId(),
-        description: `${descLabel} (${qty}h @ $${Number(rateDollars || 0).toFixed(2)}/h)`,
-        quantity: qty,
-        unitPriceCents: rateCents,
-      },
-    ]);
-  }
-
-  function updateItemById(id: string, patch: Partial<InvoiceItem>): void {
-    setItems((prev: TLineItemType[]): TLineItemType[] =>
-      prev.map((it: TLineItemType): TLineItemType => (it.id === id ? { ...it, ...patch } : it))
-    );
-  }
-
-  function removeItemById(id: string): void {
-    setItems((prev: TLineItemType[]): TLineItemType[] => prev.filter((it: TLineItemType): boolean => it.id !== id));
-  }
-
-  async function saveInvoice(): Promise<void> {
-    setSaving(true);
-    try {
-      const plainItems: TPlainInvoiceItemType[] = items.map(({ description, quantity, unitPriceCents }) => ({
-        description,
-        quantity,
-        unitPriceCents,
-      }));
-
-      const res = await fetch(`/api/order/${orderId}/invoice`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          items: plainItems,
-          taxRate,
-          discountCents: discountCentsFromPercent,
-          shippingCents,
-        }),
-      });
-      setSaving(false);
-      if (!res.ok) return;
-    } catch {
-      setSaving(false);
-    }
-  }
-
-  async function downloadPdf(): Promise<void> {
-    await saveInvoice();
-    const resp: Response = await fetch(`/api/order/${orderId}/invoice`, { credentials: 'include' });
-    if (!resp.ok) return;
-
-    const blob: Blob = await resp.blob();
-    const url: string = URL.createObjectURL(blob);
-    const a:  HTMLAnchorElement = document.createElement('a');
-    a.href = url;
-    a.download = `order-${orderId}.pdf`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-
   return (
     <section
-      className="
-        rounded-2xl
-        bg-[var(--theme-surface)]
-        text-[var(--theme-text)]
-        shadow-[0_4px_14px_0_var(--theme-shadow)]
-        p-3 sm:p-4 space-y-4
-      "
+      className="rounded-2xl bg-[var(--theme-surface)] text-[var(--theme-text)] shadow-[0_4px_14px_0_var(--theme-shadow)] p-3 sm:p-4 space-y-4"
       aria-label="Invoice and Quote"
     >
       <header className="space-y-0.5">
@@ -238,7 +111,7 @@ export default function InvoiceEditor({
             const h: number = Number(hoursRef.current?.value || 0);
             const r: number = Number(rateRef.current?.value || 0);
             const n: string = noteRef.current?.value || '';
-            addTimeEntry(h, r, n);
+            onAddTime(h, r, n);
           }}
         >
           + Add Time
@@ -247,7 +120,7 @@ export default function InvoiceEditor({
 
       <div className="space-y-2 sm:space-y-3">
         <div className="sm:hidden space-y-2">
-          {items.map((it: TLineItemType, idx: number): React.ReactElement => {
+          {items.map((it: InvoiceItem & {id: string}, idx: number): React.ReactElement => {
             const amount: number = (Number(it.quantity) || 0) * (Number(it.unitPriceCents) || 0);
             return (
               <div
@@ -256,7 +129,9 @@ export default function InvoiceEditor({
               >
                 <input
                   value={it.description}
-                  onChange={(e: ChangeEvent<HTMLInputElement>): void => updateItemById(it.id, { description: e.target.value })}
+                  onChange={(e: ChangeEvent<HTMLInputElement>): void =>
+                    onDescriptionChange(it.id, e.target.value)
+                  }
                   className={inputBase}
                   placeholder="Description"
                   aria-label={`Item ${idx + 1} description`}
@@ -269,7 +144,9 @@ export default function InvoiceEditor({
                       min={0}
                       step="0.25"
                       value={it.quantity}
-                      onChange={(e: ChangeEvent<HTMLInputElement>): void => updateItemById(it.id, { quantity: Number(e.target.value) })}
+                      onChange={(e: ChangeEvent<HTMLInputElement>): void =>
+                        onQuantityChange(it.id, Number(e.target.value))
+                      }
                       className={inputRight}
                       aria-label={`Item ${idx + 1} quantity`}
                     />
@@ -281,10 +158,9 @@ export default function InvoiceEditor({
                       min={0}
                       step="5"
                       value={(Number(it.unitPriceCents) || 0) / 100}
-                      onChange={(e: ChangeEvent<HTMLInputElement>): void => {
-                        const dollars = Number(e.target.value) || 0;
-                        updateItemById(it.id, { unitPriceCents: Math.round(dollars * 100) });
-                      }}
+                      onChange={(e: ChangeEvent<HTMLInputElement>): void =>
+                        onUnitPriceChange(it.id, Number(e.target.value))
+                      }
                       className={inputRight}
                       aria-label={`Item ${idx + 1} unit price in USD`}
                     />
@@ -297,7 +173,7 @@ export default function InvoiceEditor({
                 <div className="flex justify-end">
                   <button
                     type="button"
-                    onClick={(): void => removeItemById(it.id)}
+                    onClick={(): void => onRemoveItem(it.id)}
                     className={btnIconRed}
                     aria-label={`Remove item ${idx + 1}`}
                     title="Remove line"
@@ -323,14 +199,16 @@ export default function InvoiceEditor({
             </tr>
             </thead>
             <tbody>
-            {items.map((it: TLineItemType): React.ReactElement => {
+            {items.map((it: InvoiceItem & {id: string}): React.ReactElement => {
               const amount: number = (Number(it.quantity) || 0) * (Number(it.unitPriceCents) || 0);
               return (
                 <tr key={it.id} className="border-b border-[var(--theme-border)] last:border-b-0 align-middle">
                   <td className="px-2 py-1">
                     <input
                       value={it.description}
-                      onChange={(e: ChangeEvent<HTMLInputElement>): void => updateItemById(it.id, { description: e.target.value })}
+                      onChange={(e: ChangeEvent<HTMLInputElement>): void =>
+                        onDescriptionChange(it.id, e.target.value)
+                      }
                       className={inputBase}
                       placeholder="Description"
                     />
@@ -341,7 +219,9 @@ export default function InvoiceEditor({
                       min={0}
                       step="1"
                       value={it.quantity}
-                      onChange={(e: ChangeEvent<HTMLInputElement>): void => updateItemById(it.id, { quantity: Number(e.target.value) })}
+                      onChange={(e: ChangeEvent<HTMLInputElement>): void =>
+                        onQuantityChange(it.id, Number(e.target.value))
+                      }
                       className={inputRight}
                     />
                   </td>
@@ -353,10 +233,9 @@ export default function InvoiceEditor({
                         min={0}
                         step="1"
                         value={(Number(it.unitPriceCents) || 0) / 100}
-                        onChange={(e: ChangeEvent<HTMLInputElement>): void => {
-                          const dollars = Number(e.target.value) || 0;
-                          updateItemById(it.id, { unitPriceCents: Math.round(dollars * 100) });
-                        }}
+                        onChange={(e: ChangeEvent<HTMLInputElement>): void =>
+                          onUnitPriceChange(it.id, Number(e.target.value))
+                        }
                         className={inputRight}
                       />
                     </div>
@@ -365,7 +244,7 @@ export default function InvoiceEditor({
                   <td className="px-2">
                     <button
                       type="button"
-                      onClick={(): void => removeItemById(it.id)}
+                      onClick={(): void => onRemoveItem(it.id)}
                       className={btnIconRed}
                       aria-label="Remove line"
                       title="Remove line"
@@ -380,7 +259,7 @@ export default function InvoiceEditor({
           </table>
 
           <div className="mt-3">
-            <button type="button" onClick={addBlankItem} className={btnBlue}>
+            <button type="button" onClick={onAddBlankItem} className={btnBlue}>
               + Add Line
             </button>
           </div>
@@ -395,7 +274,7 @@ export default function InvoiceEditor({
             step=".001"
             min={0}
             value={taxRate}
-            onChange={(e: ChangeEvent<HTMLInputElement>): void => setTaxRate(Number(e.target.value) || 0)}
+            onChange={(e: ChangeEvent<HTMLInputElement>): void => onTaxRateChange(Number(e.target.value))}
             className={inputBase}
           />
         </label>
@@ -407,7 +286,9 @@ export default function InvoiceEditor({
             step="1"
             min={0}
             value={discountPercent}
-            onChange={(e: ChangeEvent<HTMLInputElement>): void => setDiscountPercent(Number(e.target.value) || 0)}
+            onChange={(e: ChangeEvent<HTMLInputElement>): void =>
+              onDiscountPercentChange(Number(e.target.value))
+            }
             className={inputBase}
           />
         </label>
@@ -419,7 +300,9 @@ export default function InvoiceEditor({
             step="1"
             min={0}
             value={(shippingCents || 0) / 100}
-            onChange={(e: ChangeEvent<HTMLInputElement>): void => setShippingCents(Math.round((Number(e.target.value) || 0) * 100))}
+            onChange={(e: ChangeEvent<HTMLInputElement>): void =>
+              onShippingDollarsChange(Number(e.target.value))
+            }
             className={inputBase}
           />
         </label>
@@ -450,10 +333,10 @@ export default function InvoiceEditor({
       </div>
 
       <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
-        <button type="button" disabled={saving} onClick={saveInvoice} className={btnPrimary}>
+        <button type="button" disabled={saving} onClick={onSave} className={btnPrimary}>
           {saving ? 'Saving…' : 'Save'}
         </button>
-        <button type="button" onClick={downloadPdf} className={btnGreen}>
+        <button type="button" onClick={onDownloadPdf} className={btnGreen}>
           Generate PDF
         </button>
       </div>
