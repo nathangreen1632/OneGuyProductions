@@ -202,8 +202,8 @@ export default function InvoiceEditorLogic({
     onTaxRateChange: (v: number): void => setTaxRate(v || 0),
     onDiscountPercentChange: (v: number): void => setDiscountPercent(v || 0),
     onShippingDollarsChange: (v: number): void => setShippingCents(Math.round((Number(v) || 0) * 100)),
-    onSave: saveInvoice,
-    onDownloadPdf: downloadPdf,
+    onSave: (): void => { void saveInvoice(); },
+    onDownloadPdf: (): void => { void downloadPdf(); },
   };
 
   return <InvoiceEditorView {...viewProps} />;
