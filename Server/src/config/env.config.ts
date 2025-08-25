@@ -11,6 +11,7 @@ export const REQUIRED_ENV: string[] = [
   'GOOGLE_CREDENTIALS_B64',
   'JWT_EXPIRES_IN',
   'JWT_SECRET',
+  'LOGO_BASE64',
   'PORT',
   'PUBLIC_BASE_URL',
   'RECAPTCHA_MIN_SCORE',
@@ -39,6 +40,8 @@ export const EnvConfig = {
 
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN,
   JWT_SECRET: process.env.JWT_SECRET,
+
+  LOGO_BASE64: process.env.LOGO_BASE64,
 
   NODE_ENV: process.env.NODE_ENV ?? 'development',
 
