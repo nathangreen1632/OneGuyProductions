@@ -1,10 +1,16 @@
 import { rgb, PDFFont, PDFImage, PDFPage } from 'pdf-lib';
 
-// Basic inline sanitizer – keep your existing implementation if you have one.
+// Remove all Unicode Control & Format characters, then normalize whitespace
+const CTRL_OR_FORMAT = /[\p{Cc}\p{Cf}]/gu;
+
 export function sanitizeInline(v: string): string {
   if (!v) return '';
-  return v.replace(/\s+/g, ' ').replace(/[\u0000-\u001F]/g, '').trim();
+  return v
+    .replace(CTRL_OR_FORMAT, '')   // no control chars in the literal → S6324 satisfied
+    .replace(/\s+/g, ' ')
+    .trim();
 }
+
 
 export type TextStyle = {
   size: number;
@@ -69,45 +75,42 @@ export function layoutRichText(
   return cursorY;
 }
 
-// Two-column addresses block used near the top.
-export function drawTwoAddressColumns(
-  page: PDFPage,
-  font: PDFFont,
-  size: number,
-  xLeft: number,
-  yTop: number,
-  colWidth: number,
-  gap: number,
-  billTo: string,
-  billFrom: string
-) {
-  const style: TextStyle = { font, size, color: { r: 0, g: 0, b: 0 } };
-  layoutRichText(page, billTo, xLeft, yTop, colWidth, style);
-  layoutRichText(page, billFrom, xLeft + colWidth + gap, yTop, colWidth, style);
-}
+export type RightPairsRow = { label: string; value: string; bold?: boolean };
+
+export type DrawRightAlignedPairsOpts = {
+  page: PDFPage;
+  font: PDFFont;
+  fontBold: PDFFont;
+  xRight: number;
+  startY: number;
+  rows: RightPairsRow[];
+  size?: number;        // default 12
+  rowGap?: number;      // default 14
+  labelColumnWidth?: number; // default 220 (was hard-coded)
+};
 
 // Right-aligned key/value pairs (totals).
-export function drawRightAlignedPairs(
-  page: PDFPage,
-  font: PDFFont,
-  fontBold: PDFFont,
-  xRight: number,
-  startY: number,
-  rows: Array<{ label: string; value: string; bold?: boolean }>,
-  size = 12,
-  rowGap = 14
-): number {
+export function drawRightAlignedPairs(opts: DrawRightAlignedPairsOpts): void {
+  const {
+    page, font, fontBold, xRight, startY, rows,
+    size = 12,
+    rowGap = 14,
+    labelColumnWidth = 220,
+  } = opts;
+
   let y = startY;
   for (const r of rows) {
-    const vW = (r.bold ? fontBold : font).widthOfTextAtSize(r.value, size);
+    const face = r.bold ? fontBold : font;
+    const valueWidth = face.widthOfTextAtSize(r.value, size);
     try {
-      page.drawText(r.label, { x: xRight - 220, y, size, font, color: rgb(0, 0, 0) });
-      page.drawText(r.value, { x: xRight - vW, y, size, font: r.bold ? fontBold : font, color: rgb(0, 0, 0) });
+      page.drawText(r.label, { x: xRight - labelColumnWidth, y, size, font, color: rgb(0, 0, 0) });
+      page.drawText(r.value, { x: xRight - valueWidth,     y, size, font: face, color: rgb(0, 0, 0) });
     } catch { /* no-throw */ }
     y -= rowGap;
   }
-  return y;
+  // no return -> resolves Sonar "don't return y"
 }
+
 
 // Items table — now normalized to 12pt
 export function drawItemsTable(opts: {
@@ -232,3 +235,47 @@ export function drawPageNumbers(page: PDFPage, font: PDFFont, pageIndex: number,
   }
 }
 
+// BigInt-safe JSON replacer
+export const JSON_BIGINT_REPLACER = (_k: string, val: unknown) =>
+  (typeof val === 'bigint' ? String(val) : val);
+
+// primitives → inline string (or null if not a handled primitive)
+export function inlineFromPrimitive(v: unknown): string | null {
+  switch (typeof v) {
+    case 'string':  return sanitizeInline(v);
+    case 'number':
+    case 'boolean':
+    case 'bigint':  return String(v);
+    case 'symbol':  return sanitizeInline((v.description ?? '').toString());
+    case 'function': return '';
+    default:        return null;
+  }
+}
+
+// Date / date-like → inline string (or null)
+export function inlineFromDateLike(v: unknown): string | null {
+  if (v instanceof Date) {
+    return Number.isNaN(v.getTime()) ? '' : sanitizeInline(v.toLocaleString());
+  }
+  const o = v as { toISOString?: () => string } | null;
+  if (o && typeof o.toISOString === 'function') {
+    try {
+      const d = new Date(o.toISOString());
+      return Number.isNaN(d.getTime()) ? '' : sanitizeInline(d.toLocaleString());
+    } catch { /* ignore */ }
+  }
+  return null;
+}
+
+// Main helper used by PDF code
+export function pdfSafeString(v: unknown): string {
+  if (v == null) return '';
+  const p = inlineFromPrimitive(v); if (p !== null) return p;
+  const d = inlineFromDateLike(v);  if (d !== null) return d;
+  try {
+    const json = JSON.stringify(v, JSON_BIGINT_REPLACER);
+    return json ? sanitizeInline(json) : '';
+  } catch {
+    return '';
+  }
+}
