@@ -10,6 +10,7 @@ import {
   drawLogo,
   type ItemRow,
   type TaskRow,
+  pdfSafeString as safe,
 } from '../helpers/pdf.helper.js';
 import { money, computeTotals } from '../helpers/money.helper.js';
 
@@ -31,19 +32,6 @@ export async function generatePdfBuffer(order: OrderInstance): Promise<Buffer> {
       drawLineRaw(x1, y1, x2, y2, thickness);
     }
   };
-
-  function safe(v: unknown): string {
-    if (v == null) return '';
-    if (typeof v === 'string') return sanitizeInline(v);
-    if (typeof v === 'number' || typeof v === 'boolean') return String(v);
-    try {
-      // @ts-ignore
-      if (v && typeof v.toISOString === 'function') {
-        return sanitizeInline(new Date(v as any).toLocaleString());
-      }
-    } catch {  }
-    return sanitizeInline(String(v ?? ''));
-  }
 
   const items: ItemRow[] = Array.isArray((order as any).items) ? (order as any).items : [];
   const tasks: TaskRow[] = Array.isArray((order as any).tasks) ? (order as any).tasks : [];
@@ -234,7 +222,17 @@ export async function generatePdfBuffer(order: OrderInstance): Promise<Buffer> {
   const rowsCount: number = pairs.length;
   const rowGap = 16;
   const startY: number = BOTTOM + 12 + (rowsCount - 1) * rowGap;
-  drawRightAlignedPairs(page, font, fontBold, SIDE + contentWidth, startY, pairs, 12, rowGap);
+  drawRightAlignedPairs({
+    page,
+    font,
+    fontBold,
+    xRight: SIDE + contentWidth,
+    startY,
+    rows: pairs,
+    size: 12,
+    rowGap,
+  });
+
 
   drawPageNumbers(page, font, 0, 1, SIDE + contentWidth, BOTTOM - 14);
 
