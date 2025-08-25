@@ -11,6 +11,7 @@ import {
   markOrderRead,
   markAllOrdersRead,
   getInbox,
+  updateOrderInvoice,
 } from '../controllers/order.controller.js';
 import { recaptchaMiddleware } from '../middleware/recaptcha.middleware.js';
 import { authenticateToken } from '../middleware/auth.middleware.js';
@@ -25,7 +26,9 @@ router.get('/inbox', authenticateToken, getInbox);
 router.patch('/:id', authenticateToken, updateOrder);
 router.patch('/:id/cancel', authenticateToken, cancelOrder);
 router.patch('/:id/link-user', authenticateToken, linkOrderToCurrentUser);
-router.get('/:id/invoice', authenticateToken, downloadOrderInvoice);
+
+router.patch('/:id/invoice', authenticateToken, updateOrderInvoice);
+router.get('/:id/invoice',   authenticateToken, downloadOrderInvoice);
 
 router.get('/:orderId/updates', authenticateToken, getOrderThread);
 router.post('/:orderId/updates', authenticateToken, addOrderUpdate);

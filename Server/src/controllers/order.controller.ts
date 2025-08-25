@@ -6,7 +6,7 @@ import {Order, OrderUpdate, User} from '../models/index.js';
 import {isWithin72Hours} from '../utils/time.js';
 import {generatePdfBuffer} from '../services/pdf.service.js';
 import {OrderInstance} from '../models/order.model.js';
-import {createCommentUpdate} from '../services/orderUpdate.service.js';
+import {createCommentUpdate, CreateCommentUpdateResult} from '../services/orderUpdate.service.js';
 import {markAllRead, markOneRead} from '../services/readReceipt.service.js';
 import {getCustomerOrdersWithUnread, getInboxForUser} from '../services/inbox.service.js';
 import {ingestEmailReply} from '../services/emailIngest.service.js';
@@ -217,14 +217,13 @@ export async function downloadOrderInvoice(req: Request, res: Response): Promise
 
     const order: OrderInstance | null = await Order.unscoped().findByPk(orderId, {
       include: [
-        {
-          model: User,
-          as: 'customer',
-          attributes: ['id', 'username', 'email'],
-          required: false,
-        },
+        { model: User, as: 'customer', attributes: ['id', 'username', 'email'], required: false },
       ],
-      attributes: ['id','name','email','businessName','projectType','budget','timeline','customerId','status','createdAt','updatedAt','assignedAdminId','description'],
+      attributes: [
+        'id','name','email','businessName','projectType','budget','timeline','customerId','status',
+        'createdAt','updatedAt','assignedAdminId','description',
+        'items','taxRate','discountCents','shippingCents',
+      ],
     });
 
     if (!order) {
@@ -232,27 +231,84 @@ export async function downloadOrderInvoice(req: Request, res: Response): Promise
       return;
     }
 
-    const isOwner: boolean = (order as any).customerId === authUser.id;
-    const isAdmin: boolean = authUser.role === 'admin' || authUser.isAdmin === true;
-    if (!isOwner && !isAdmin) {
-      res.status(403).json({ error: 'Forbidden' });
-      return;
-    }
-
-    (order as any).customerName = (order as any).name?.trim() ||
+    (order as any).customerName =
+      (order as any).name?.trim() ||
       (order as any).customer?.username?.trim() ||
       (order as any).email?.trim() ||
       'Customer';
 
-    const pdfBuffer: Buffer<ArrayBufferLike> = await generatePdfBuffer(order);
+    const pdfBuffer: Buffer = await generatePdfBuffer(order);
+    const filename = `OneGuyProductions_Invoice_${order.id}.pdf`;
 
-    const filename = `OneGuyProductions_Order_${order.id}.pdf`;
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.send(pdfBuffer);
   } catch (err) {
     console.error('downloadOrderInvoice error:', err);
     res.status(500).json({ error: 'Failed to generate invoice PDF.' });
+  }
+}
+
+export async function updateOrderInvoice(req: Request, res: Response): Promise<void> {
+  const orderId: number = Number(req.params.id);
+  if (!Number.isFinite(orderId)) {
+    res.status(400).json({ error: 'Invalid order id.' });
+    return;
+  }
+
+  const authUser = (req as any).user ?? null;
+  if (!authUser?.id) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+
+  try {
+    const order: OrderInstance | null = await Order.unscoped().findByPk(orderId);
+    if (!order) {
+      res.status(404).json({ error: 'Order not found.' });
+      return;
+    }
+
+    const body = req.body ?? {};
+    const rawItems = Array.isArray(body.items) ? body.items : [];
+
+    const items: Array<{ description: string; quantity: number; unitPriceCents: number }> =
+      rawItems.map((r: any) => {
+        const description: string = String(r?.description ?? '').slice(0, 200);
+        const quantity: number = Number(r?.quantity ?? 0);
+        const unitPriceCents: number = Number(r?.unitPriceCents ?? 0);
+        return {
+          description,
+          quantity: Number.isFinite(quantity) ? quantity : 0,
+          unitPriceCents: Number.isFinite(unitPriceCents) ? unitPriceCents : 0,
+        };
+      });
+
+    const taxRate: number = Number(body.taxRate ?? 0);
+    const discountCents: number = Number(body.discountCents ?? 0);
+    const shippingCents: number = Number(body.shippingCents ?? 0);
+
+    await order.update({
+      items,
+      taxRate:       Number.isFinite(taxRate) ? taxRate : 0,
+      discountCents: Number.isFinite(discountCents) ? discountCents : 0,
+      shippingCents: Number.isFinite(shippingCents) ? shippingCents : 0,
+    });
+
+    res.status(200).json({
+      success: true,
+      order: {
+        id: order.id,
+        items: order.items,
+        taxRate: order.taxRate,
+        discountCents: order.discountCents,
+        shippingCents: order.shippingCents,
+      },
+    });
+    return;
+  } catch (err) {
+    console.error('updateOrderInvoice error:', err);
+    res.status(500).json({ error: 'Failed to update invoice data.' });
   }
 }
 
@@ -265,7 +321,7 @@ export async function addOrderUpdate(req: Request, res: Response): Promise<void>
     body?: string;
     requiresCustomerResponse?: boolean;
   };
-  const safeBody = sanitizeAndValidateBody(body, res);
+  const safeBody: string | null = sanitizeAndValidateBody(body, res);
   if (!safeBody) return;
 
   const { actor, order } = await fetchActorAndOrder(actorUserId, orderIdNum);
@@ -277,14 +333,14 @@ export async function addOrderUpdate(req: Request, res: Response): Promise<void>
   const { isAdmin, isOwner } = deriveRoles(actor, order, actorUserId);
   if (!ensureAuthorized(isAdmin, isOwner, res)) return;
 
-  const finalRCR = finalRequiresCustomerResponseFlag(requiresCustomerResponse, isAdmin);
+  const finalRCR: boolean = finalRequiresCustomerResponseFlag(requiresCustomerResponse, isAdmin);
 
-  const result = await createCommentUpdate(orderIdNum, actorUserId, safeBody, finalRCR);
+  const result: CreateCommentUpdateResult = await createCommentUpdate(orderIdNum, actorUserId, safeBody, finalRCR);
   if (handleCreateUpdateError(res, result)) return;
 
-  const created = result?.update;
+  const created: OrderUpdateModel | undefined = result?.update;
 
-  const targetUserId = resolveTargetUserId(isAdmin, order);
+  const targetUserId: number | undefined = resolveTargetUserId(isAdmin, order);
   await safeNotify(orderIdNum, actorUserId, targetUserId, safeBody.slice(0, 240));
 
   res.status(201).json({

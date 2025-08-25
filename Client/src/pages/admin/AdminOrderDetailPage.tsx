@@ -8,6 +8,8 @@ import { useAdminStore } from '../../store/useAdmin.store';
 import type { OrderThreadDto, TDetailsType } from '../../types/admin.types';
 import type { OrderStatus } from '../../types/order.types';
 
+import InvoiceEditorLogic from '../../components/admin/InvoiceEditorLogic.tsx';
+
 const LOG_PREFIX = 'AdminOrderDetailPage';
 
 function isNonEmptyString(v: unknown): v is string {
@@ -16,7 +18,7 @@ function isNonEmptyString(v: unknown): v is string {
 
 function offlineHint(): string {
   try {
-    return typeof navigator !== 'undefined' && 'onLine' in navigator && (navigator).onLine
+    return typeof navigator !== 'undefined' && 'onLine' in navigator && (navigator as any).onLine
       ? ' You appear to be offline.'
       : '';
   } catch {
@@ -70,7 +72,6 @@ export default function AdminOrderDetailPage(): React.ReactElement {
 
   const { threads, fetchThread, sendUpdate } = useAdminStore();
 
-  // Be defensive when reading by both numeric and string keys
   let data: OrderThreadDto | undefined;
   try {
     data = Number.isFinite(orderId)
@@ -141,7 +142,9 @@ export default function AdminOrderDetailPage(): React.ReactElement {
   const canPost: boolean = Boolean(data.canPost);
 
   return (
-    <div className="grid gap-4 md:grid-cols-5 text-[var(--theme-text)]">
+    <div
+      className="grid gap-4 md:grid-cols-5 text-[var(--theme-text)] items-start [&&>*]:min-w-0"
+    >
       <div className="md:col-span-5">
         <button
           onClick={(): void => safeNavigate(nav, -1)}
@@ -158,20 +161,24 @@ export default function AdminOrderDetailPage(): React.ReactElement {
         </button>
       </div>
 
+      {/* TIMELINE COLUMN */}
       <section
         className="
-          md:col-span-3 rounded-2xl
+          md:col-span-2 rounded-2xl
           bg-[var(--theme-bg)]
           shadow-[0_4px_14px_0_var(--theme-shadow)]
           transition-colors duration-200
           p-3 sm:p-4
+          w-full
+          self-stretch
         "
       >
         <div className="mb-3 h-0.5 w-full" />
         <AdminTimeline updates={data.updates ?? []} />
       </section>
 
-      <aside className="md:col-span-2 space-y-3">
+      {/* ASIDE COLUMN */}
+      <aside className="md:col-span-3 space-y-3 w-full [&&>*]:w-full [&&>*]:self-stretch">
         <div className="rounded-2xl bg-[var(--theme-surface)] shadow-[0_4px_14px_0_var(--theme-shadow)] p-3 sm:p-4 space-y-3">
           <div className="flex items-start gap-3">
             <div className="flex-1 min-w-0">
@@ -232,6 +239,7 @@ export default function AdminOrderDetailPage(): React.ReactElement {
             bg-[var(--theme-surface)]
             shadow-[0_4px_14px_0_var(--theme-shadow)]
             p-3 sm:p-4
+            w-full
           "
         >
           <AdminStatusChips orderId={data.order.id} status={data.order.status} />
@@ -247,6 +255,7 @@ export default function AdminOrderDetailPage(): React.ReactElement {
             focus:outline-none
             focus:ring-2
             focus:ring-[var(--theme-focus)]/30
+            w-full
           "
         >
           <AdminComposer
@@ -254,7 +263,7 @@ export default function AdminOrderDetailPage(): React.ReactElement {
             onSend={async (body: string, requiresResponse: boolean): Promise<boolean> => {
               setSending(true);
               try {
-                const ok = await sendUpdate(orderId, body, requiresResponse);
+                const ok: boolean = await sendUpdate(orderId, body, requiresResponse);
                 if (!ok) toast.error('Failed to post update.');
                 return ok;
               } catch (err) {
@@ -265,6 +274,16 @@ export default function AdminOrderDetailPage(): React.ReactElement {
                 setSending(false);
               }
             }}
+          />
+        </div>
+
+        <div className="w-full">
+          <InvoiceEditorLogic
+            orderId={data.order.id}
+            initialItems={(data.order as any).items ?? []}
+            initialTaxRate={Number((data.order as any).taxRate ?? 0)}
+            initialDiscountCents={Number((data.order as any).discountCents ?? 0)}
+            initialShippingCents={Number((data.order as any).shippingCents ?? 0)}
           />
         </div>
       </aside>

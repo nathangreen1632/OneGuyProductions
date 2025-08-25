@@ -2,6 +2,8 @@
 // 📦 FORM & SUBMISSION TYPES (OrderForm → POST payload/response)
 // ─────────────────────────────────────────────────────────────
 
+import type {InvoiceItem} from "./invoice.types.ts";
+
 export interface OrderFormData {
   name: string;
   email: string;
@@ -55,11 +57,8 @@ export interface OrderUpdateEntry {
 }
 
 export interface Order {
-  // IDs
   id: number;
   customerId: number;
-
-  // Customer & project info
   name: string;
   email: string;
   businessName: string;
@@ -67,12 +66,14 @@ export interface Order {
   budget: string;
   timeline: string;
   description: string;
-
-  // Status & meta
   status: OrderStatus;
-  createdAt: string; // ISO timestamp
-  updatedAt: string; // ISO timestamp
+  createdAt: string;
+  updatedAt: string;
   updates: OrderUpdateEntry[];
+  items?: InvoiceItem[];
+  taxRate?: number | string;
+  discountCents?: number;
+  shippingCents?: number;
 }
 
 export type OrderState = {

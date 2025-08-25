@@ -1,216 +1,265 @@
-import {PDFDocument, PDFFont, PDFPage, rgb, StandardFonts} from 'pdf-lib';
+import {PDFDocument, PDFFont, PDFImage, PDFPage, rgb, StandardFonts} from 'pdf-lib';
 import type { OrderInstance } from '../models/order.model.js';
 import {
   sanitizeInline,
   layoutRichText,
   drawItemsTable,
   makeDrawLine,
-  paintHeaderFooter,
-  drawTwoAddressColumns,
-  drawOrderIdLine,
   drawRightAlignedPairs,
   drawPageNumbers,
+  drawLogo,
   type ItemRow,
-  type TextStyle,
+  type TaskRow,
+  pdfSafeString as safe,
 } from '../helpers/pdf.helper.js';
 import { money, computeTotals } from '../helpers/money.helper.js';
-
-type Row = [string, string];
+import {TDrawLineFnType} from "../types/pdf.types.js";
 
 export async function generatePdfBuffer(order: OrderInstance): Promise<Buffer> {
   const pdfDoc: PDFDocument = await PDFDocument.create();
 
-  const COLOR_BLACK: [number, number, number] = [0, 0, 0];
-  const COLOR_RED:   [number, number, number] = [239/255, 68/255, 68/255]; // #ef4444
-  const COLOR_FOOTER:[number, number, number] = [0.4, 0.4, 0.4];
-  const COLOR_PGNUM: [number, number, number] = [0.5, 0.5, 0.5];
-
   const font: PDFFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const fontBold: PDFFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-  const SIZE_TITLE = 20;
-  const SIZE_SECTION = 14;
-  const SIZE_TEXT = 12;
-  const SIZE_FOOTER = 10;
+  const page: PDFPage = pdfDoc.addPage([612, 792]);
+  const SIDE = 48;
+  const contentWidth: number = page.getSize().width - SIDE * 2;
+  const TOP: number = page.getSize().height - SIDE;
+  const BOTTOM = 64;
 
-  const INCH = 72;
-  const HALF_IN = 36;
-  const QUARTER_IN = 30;
-  const SIDE: 36 = HALF_IN;
-  const TOP_CONTENT: 36 = HALF_IN;
-  const BOTTOM_CONTENT: 72 = INCH;
-  const FOOTER_Y: 30 = QUARTER_IN;
-
-  let page: PDFPage = pdfDoc.addPage();
-  const pageRef = { page };
-  let { width } = page.getSize();
-  const cursor = { y: 0 };
-  const contentWidth = width - SIDE * 2;
-
-  const bodyStyle: TextStyle = { font, fontBold, size: SIZE_TEXT, color: COLOR_BLACK };
-
-  const doPaintHeaderFooter: () => void = (): void =>
-    paintHeaderFooter({
-      pageRef,
-      cursor,
-      font,
-      fontBold,
-      sizeTitle: SIZE_TITLE,
-      sizeFooter: SIZE_FOOTER,
-      side: SIDE,
-      topContent: TOP_CONTENT,
-      footerY: FOOTER_Y,
-      colorBrand: COLOR_BLACK,
-      colorSuffix: COLOR_BLACK,
-      colorRule: COLOR_RED,
-      colorFooter: COLOR_FOOTER,
-      brandText: 'One Guy Productions',
-      suffixText: ' - Invoice',
-      footerMsg:
-        'Thank you for working with One Guy Productions. This invoice reflects your order submission details.',
-    });
-
-  const newPage: () => void = (): void => {
-    page = pdfDoc.addPage();
-    pageRef.page = page;
-    doPaintHeaderFooter();
-    ({ width } = pageRef.page.getSize());
+  const drawLineRaw: TDrawLineFnType = makeDrawLine(page);
+  const drawHeaderOnly: TDrawLineFnType = (x1: number, y1: number, x2: number, y2: number, thickness = 0.5): void => {
+    if ((thickness ?? 0.5) >= 0.5) {
+      drawLineRaw(x1, y1, x2, y2, thickness);
+    }
   };
 
-  doPaintHeaderFooter();
+  const items: ItemRow[] = Array.isArray((order as any).items) ? (order as any).items : [];
+  const tasks: TaskRow[] = Array.isArray((order as any).tasks) ? (order as any).tasks : [];
 
-  function safe(v: string | number | boolean | Date | null | undefined): string {
-    if (v == null) return '';
-    if (typeof v === 'string') return sanitizeInline(v);
-    if (typeof v === 'number' || typeof v === 'boolean') {
-      return String(v);
+  const totals = computeTotals(items, {
+    taxRate: Number((order as any).taxRate ?? 0),
+    discountCents: Number((order as any).discountCents ?? 0),
+    shippingCents: Number((order as any).shippingCents ?? 0),
+  });
+
+  drawLineRaw(SIDE, TOP - 56, SIDE + contentWidth, TOP - 56, 0.8);
+
+  try {
+    const logoB64: string | undefined =
+      (order as any).logoBase64 || (order as any).companyLogoBase64 || undefined;
+    if (logoB64) {
+      const bytes: Buffer<ArrayBuffer> = Buffer.from(logoB64.split(',').pop() ?? '', 'base64');
+      const img: PDFImage | null = await pdfDoc.embedPng(bytes).catch(async (): Promise<PDFImage | null> => {
+        try { return await pdfDoc.embedJpg(bytes); } catch { return null; }
+      });
+      drawLogo(page, img, SIDE, TOP - 12, 160, 44);
     }
-    return Number.isNaN(v.getTime()) ? '' : sanitizeInline(v.toLocaleString());
-  }
+  } catch {  }
 
-  drawTwoAddressColumns({
-    pageRef, cursor, newPage, bottom: BOTTOM_CONTENT,
-    font, fontBold,
-    headingColor: COLOR_RED,
-    bodyColor: COLOR_BLACK,
-    xLeft: SIDE,
-    xRight: SIDE + 260,
-    left:  { heading: 'From',   lines: ['One Guy Productions', 'orders@oneguyproductions.com'] },
-    right: { heading: 'Bill To', lines: [safe((order as any).name ?? (order as any).customer?.name ?? ''),
-        safe((order as any).email ?? (order as any).customer?.email ?? '')] },
-  });
+  try {
+    const totalText: string = money(totals.total);
+    const totalSize = 20;
+    const totalTextWidth: number = fontBold.widthOfTextAtSize(totalText, totalSize);
 
-  drawOrderIdLine({
-    pageRef, cursor, newPage,
-    bottom: BOTTOM_CONTENT, side: SIDE,
-    font, fontBold,
-    size: SIZE_SECTION,
-    label: 'Order ID: ',
-    value: safe((order as any).id ?? (order as any).orderId ?? ''),
-    labelColor: COLOR_RED,
-    valueColor: COLOR_BLACK,
-    leading: 18,
-  });
+    const xTotal: number = SIDE + contentWidth - totalTextWidth;
+    const yTotal: number = TOP - 30;
 
-  const drawLine = makeDrawLine({
-    pageRef, cursor, newPage,
-    bottom: BOTTOM_CONTENT,
-    side: SIDE,
-    font, fontBold,
-    defaultSize: SIZE_TEXT,
-    defaultColor: COLOR_BLACK,
-  });
+    const labelText = 'Amount Due:';
+    const labelSize = 25;
+    const labelWidth: number = font.widthOfTextAtSize(labelText, labelSize);
+    const gap = 8;
+    const xLabel: number = xTotal - gap - labelWidth;
 
-  drawLine(`Customer Name: ${safe((order as any).name ?? (order as any).customer?.name ?? '')}`, { bold: true });
-  drawLine(`Email: ${safe((order as any).email ?? (order as any).customer?.email ?? '')}`, { bold: true });
-  drawLine(`Business: ${safe((order as any).businessName || 'N/A')}`, { bold: true });
-  drawLine(`Submitted: ${safe((order as any).createdAt ? new Date((order as any).createdAt).toLocaleString() : 'Unknown')}`, { bold: true });
-
-  if (cursor.y - (24 + SIZE_SECTION) < BOTTOM_CONTENT) newPage();
-  cursor.y -= 24;
-  pageRef.page.drawText('Project Details', {
-    x: SIDE, y: cursor.y, size: SIZE_SECTION, font: fontBold, color: rgb(...COLOR_RED),
-  });
-  drawLine(`Project Type: ${safe((order as any).projectType)}`);
-  drawLine(`Budget: ${safe((order as any).budget)}`);
-  drawLine(`Timeline: ${safe((order as any).timeline)}`);
-  drawLine(`Status: ${safe((order as any).status)}`);
-
-  const rows: ItemRow[] = Array.isArray((order as any).items) ? (order as any).items : [];
-  if (rows.length > 0) {
-    if (cursor.y - (24 + SIZE_SECTION) < BOTTOM_CONTENT) newPage();
-    cursor.y -= 24;
-    pageRef.page.drawText('Line Items', {
-      x: SIDE, y: cursor.y, size: SIZE_SECTION, font: fontBold, color: rgb(...COLOR_RED)
+    page.drawText(labelText, {
+      x: xLabel,
+      y: yTotal,
+      size: labelSize,
+      font,
+      color: rgb(0, 0, 0),
     });
 
-    drawItemsTable(pageRef, {
-      cursor, newPage,
-      width: contentWidth, left: SIDE, bottom: BOTTOM_CONTENT,
-      font, fontBold, rows,
-      moneyFn: (cents: number): string => money(cents),
+    page.drawText(totalText, {
+      x: xTotal,
+      y: yTotal,
+      size: totalSize,
+      font: fontBold,
+      color: rgb(239/255, 68/255, 68/255),
     });
 
-    const { subtotal, discount, tax, shipping, total } = computeTotals(rows, {
-      taxRate: Number((order as any).taxRate ?? 0),
-      discountCents: Number((order as any).discountCents ?? 0),
-      shippingCents: Number((order as any).shippingCents ?? 0),
+    const invoiceDate: Date = (order as any).invoiceCreatedAt
+      ? new Date((order as any).invoiceCreatedAt)
+      : new Date();
+    const mm: string = String(invoiceDate.getMonth() + 1).padStart(2, '0');
+    const dd: string = String(invoiceDate.getDate()).padStart(2, '0');
+    const yyyy: number = invoiceDate.getFullYear();
+    const mdy = `${mm}-${dd}-${yyyy}`;
+
+    const dateLabel = `Invoice Date: ${mdy}`;
+    const dateSize = 10;
+    const dateWidth: number = font.widthOfTextAtSize(dateLabel, dateSize);
+    const xDate: number = SIDE + contentWidth - dateWidth;
+    const yDate: number = yTotal - 14;
+
+    page.drawText(dateLabel, {
+      x: xDate,
+      y: yDate,
+      size: dateSize,
+      font,
+      color: rgb(0.45, 0.45, 0.45),
     });
+  } catch {  }
 
-    const totals: Row[] = [];
-    totals.push(['Subtotal', money(subtotal)]);
-    if (discount) totals.push(['Discount', `-${money(discount)}`]);
-    if (tax) totals.push(['Tax', money(tax)]);
-    if (shipping) totals.push(['Shipping', money(shipping)]);
-    totals.push(['Total', money(total)]);
+  const createdAt: Date = (order as any).createdAt ? new Date((order as any).createdAt) : new Date();
+  const invNum: string =
+    (order as any).invoiceNumber ??
+    `INV-${createdAt.getFullYear()}-${String((order as any).id ?? '0000').padStart(4, '0')}`;
 
-    drawRightAlignedPairs({
-      pageRef, cursor, newPage,
-      bottom: BOTTOM_CONTENT,
-      labelX: SIDE + contentWidth - 200,
-      valueX: SIDE + contentWidth - 90,
-      pairs: totals,
-      font, fontBold,
+  try {
+    const yLabel: number = TOP - 78;
+    const xLeft: 48  = SIDE;
+
+    const invoiceWord = 'Invoice #: ';
+    const suffix      = ` ${invNum}`;
+
+    const invoiceWordWidth = font.widthOfTextAtSize(invoiceWord, 12);
+
+    page.drawText(invoiceWord, {
+      x: xLeft,
+      y: yLabel,
       size: 12,
-      leading: 16,
-      color: COLOR_BLACK,
+      font: fontBold,
+      color: rgb(239 / 255, 68 / 255, 68 / 255),
     });
 
-    cursor.y -= 10;
+    page.drawText(suffix, {
+      x: xLeft + invoiceWordWidth,
+      y: yLabel,
+      size: 12,
+      font,
+      color: rgb(0, 0, 0),
+    });
+  } catch {  }
+
+
+  const colWidth: number = Math.floor(contentWidth / 2 - 12);
+  const gap = 24;
+  const xLeft: 48 = SIDE;
+  const xRight: number = SIDE + colWidth + gap;
+
+  try {
+    page.drawText('Customer', { x: xLeft, y: TOP - 104, size: 12, font: fontBold, color: rgb(239/255, 68/255, 68/255) });
+    page.drawText('One Guy Productions', { x: xRight, y: TOP - 104, size: 12, font: fontBold, color: rgb(239/255, 68/255, 68/255) });
+  } catch {  }
+
+  const customerLines: string[] = [
+    `Customer Name: ${safe((order as any).name ?? (order as any).customer?.name ?? '')}`,
+    `Email: ${safe((order as any).email ?? (order as any).customer?.email ?? '')}`,
+    `Business: ${safe((order as any).businessName || 'N/A')}`,
+    `Submitted: ${safe((order as any).createdAt ? new Date((order as any).createdAt).toLocaleDateString() : 'Unknown')}`,
+  ];
+
+  const ogpLines: string[] = [
+    'ngreen@oneguyproductions.com',
+    'Paddington Drive',
+    'Kyle, TX 78640',
+    '512-787-0879',
+  ];
+
+  function drawLinesColumn(
+    x: number,
+    yStart: number,
+    lines: string[],
+    maxWidth: number,
+    size = 12,
+    lineWrapGap = 2,
+    rowGap = 12
+  ): number {
+    const style = { font, size, color: { r: 0, g: 0, b: 0 } };
+    let yCursor: number = yStart;
+    for (const ln of lines) {
+      yCursor = layoutRichText(page, ln, x, yCursor, maxWidth, style, lineWrapGap);
+      yCursor -= rowGap;
+    }
+    return yCursor;
   }
 
-  if (cursor.y - (24 + SIZE_SECTION) < BOTTOM_CONTENT) newPage();
-  cursor.y -= 24;
-  pageRef.page.drawText('Description:', {
-    x: SIDE, y: cursor.y, size: SIZE_SECTION, font: fontBold, color: rgb(...COLOR_RED),
-  });
+  const yColTop: number = TOP - 120;
+  const yLeftEnd: number = drawLinesColumn(xLeft, yColTop, customerLines, colWidth, 12, 2, 12);
+  const yRightEnd: number = drawLinesColumn(xRight, yColTop, ogpLines, colWidth, 12, 2, 14);
 
-  const AFTER_DESC_GAP = 12;
-  if (cursor.y - AFTER_DESC_GAP < BOTTOM_CONTENT) newPage();
-  cursor.y -= AFTER_DESC_GAP;
+  let y: number = Math.min(yLeftEnd, yRightEnd) - 24;
 
-  layoutRichText({
-    pageRef,
-    newPage,
-    cursor,
-    x: SIDE,
-    contentWidth,
-    bottomContentMargin: BOTTOM_CONTENT,
-    lineHeight: 16,
-    paraGap: 16,
-    style: bodyStyle,
-    text: String((order as any).description || ''),
-  });
+  if (tasks.length > 0) {
+    y = drawItemsTable({
+      page,
+      font,
+      fontBold,
+      xLeft: SIDE,
+      yTop: y,
+      width: contentWidth,
+      rows: tasks.map((t: TaskRow): {description: string; quantity: number; unitPriceCents: number} => ({
+        description: `${sanitizeInline(String(t.task || 'Task'))} (${Math.max(0, Number(t.hours) || 0)}h @ $${(Math.max(0, Number(t.rateCents) || 0) / 100).toFixed(2)}/h)`,
+        quantity: Math.max(0, Number(t.hours) || 0),
+        unitPriceCents: Math.max(0, Number(t.rateCents) || 0),
+      })),
+      line: drawHeaderOnly,
+      header: 'Task',
+    }) - 8;
+  }
 
-  drawPageNumbers({
-    pdfDoc,
+  y = drawItemsTable({
+    page,
     font,
-    size: SIZE_FOOTER,
-    side: SIDE,
-    footerY: FOOTER_Y,
-    color: COLOR_PGNUM,
+    fontBold,
+    xLeft: SIDE,
+    yTop: y,
+    width: contentWidth,
+    rows: items,
+    line: drawHeaderOnly,
+    header: '',
   });
 
-  const bytes: Uint8Array<ArrayBufferLike> = await pdfDoc.save();
+  const terms: string = safe((order as any).termsText || 'Net 30');
+  const remarks: string = safe((order as any).notesText || 'Thanks for choosing One Guy Productions! Please think of us for your next project.');
+  const bodyStyle12 = { font, size: 12, color: { r: 0, g: 0, b: 0 } };
+
+  try {
+    const termsLabelY: number = y - 10;
+    page.drawText('Terms', { x: SIDE, y: termsLabelY, size: 12, font: fontBold, color: rgb(239/255, 68/255, 68/255) });
+    layoutRichText(page, terms, SIDE, termsLabelY - 16, Math.floor(contentWidth / 2 - 24), bodyStyle12, 4);
+
+    const remarksY: number = termsLabelY - 56;
+    page.drawText('Remarks', { x: SIDE, y: remarksY, size: 12, font: fontBold, color: rgb(239/255, 68/255, 68/255) });
+    layoutRichText(page, remarks, SIDE, remarksY - 16, Math.floor(contentWidth / 2 - 24), bodyStyle12, 4);
+  } catch {  }
+
+  drawLineRaw(SIDE, BOTTOM, SIDE + contentWidth, BOTTOM, 0.6);
+
+  const pairs = [
+    { label: 'Subtotal', value: money(totals.subtotal) },
+    ...(totals.discount ? [{ label: 'Discount', value: `-${money(totals.discount)}` }] : []),
+    ...(totals.tax ? [{ label: 'Tax', value: money(totals.tax) }] : []),
+    ...(totals.shipping ? [{ label: 'Shipping', value: money(totals.shipping) }] : []),
+    { label: 'Total', value: money(totals.total), bold: true },
+  ];
+  const rowsCount: number = pairs.length;
+  const rowGap = 16;
+  const startY: number = BOTTOM + 12 + (rowsCount - 1) * rowGap;
+  drawRightAlignedPairs({
+    page,
+    font,
+    fontBold,
+    xRight: SIDE + contentWidth,
+    startY,
+    rows: pairs,
+    size: 12,
+    rowGap,
+  });
+
+
+  drawPageNumbers(page, font, 0, 1, SIDE + contentWidth, BOTTOM - 14);
+
+  const bytes:Uint8Array<ArrayBufferLike> = await pdfDoc.save();
   return Buffer.from(bytes);
 }
